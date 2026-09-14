@@ -167,7 +167,15 @@ function parseBgeCards($: cheerio.CheerioAPI): MangaCard[] {
       updatedAt = m ? m[1] : descP;
     }
 
-    const refs: ChapterRef[] = [];
+    // Tentukan Awal vs Terbaru dari PREFIKS LABEL, bukan urutan/posisi link.
+    // Kartu dengan hanya 1 link (komik baru rilis 1 chapter, atau markup
+    // beda dari biasanya) dulu selalu jatuh ke refs[0]/firstChapter meski
+    // labelnya "Terbaru: ..." — akibatnya latestChapter kosong dan kartu
+    // di listing (/terbaru, beranda) tidak pernah menampilkan chapter
+    // terbaru, walau halaman detail komik (yang mengecek prefiks label,
+    // lihat fetchMangaDetail di bawah) selalu benar.
+    let firstChapter: ChapterRef | undefined;
+    let latestChapter: ChapterRef | undefined;
     root.find("div.new1 a[href]").each((_, a) => {
       const $a = $(a);
       const url = toPath($a.attr("href"));
@@ -175,8 +183,16 @@ function parseBgeCards($: cheerio.CheerioAPI): MangaCard[] {
       // chapter) dilewati. Label "Awal: Chapter 1" / "Terbaru: Chapter 10".
       if (!url || !/-chapter-/.test(url)) return;
       const text = $a.text().replace(/\s+/g, " ").trim();
+      const prefixMatch = text.match(/^(Awal|Terbaru):\s*/i);
       const label = text.replace(/^(Awal|Terbaru):\s*/i, "").trim();
-      if (label) refs.push({ label, url });
+      if (!label) return;
+      const prefix = prefixMatch?.[1].toLowerCase();
+      if (prefix === "awal") firstChapter = { label, url };
+      else if (prefix === "terbaru") latestChapter = { label, url };
+      // Fallback tanpa prefiks yang dikenali: pakai posisi seperti semula
+      // (link pertama = awal, berikutnya = terbaru) daripada kehilangan data.
+      else if (!firstChapter) firstChapter = { label, url };
+      else if (!latestChapter) latestChapter = { label, url };
     });
 
     cards.push({
@@ -187,8 +203,8 @@ function parseBgeCards($: cheerio.CheerioAPI): MangaCard[] {
       ...(genre ? { genre } : {}),
       ...(updatedAt ? { updatedAt } : {}),
       ...(synopsis ? { synopsis } : {}),
-      ...(refs[0] ? { firstChapter: refs[0] } : {}),
-      ...(refs[1] ? { latestChapter: refs[1] } : {}),
+      ...(firstChapter ? { firstChapter } : {}),
+      ...(latestChapter ? { latestChapter } : {}),
     });
   });
   return dedupeCards(cards);
