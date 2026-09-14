@@ -50,8 +50,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="id" suppressHydrationWarning className={`${display.variable} ${sans.variable}`}>
       <head>
-        {/* Cover & halaman chapter dimuat dari CDN Komiku — sambungkan lebih
-            awal agar handshake TLS/DNS tidak menunggu gambar pertama. */}
+        {/* CDN gambar disambungkan lebih awal agar handshake TLS/DNS
+            tidak menunggu gambar pertama. */}
         <link rel="preconnect" href="https://img.komiku.org" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://thumbnail.komiku.org" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://api.komiku.org" />

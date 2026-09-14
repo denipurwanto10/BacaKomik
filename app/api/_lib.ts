@@ -62,7 +62,13 @@ export async function handle<T>(
     );
   } catch (e) {
     if (e instanceof KomikuError) {
-      return NextResponse.json({ error: e.toJSON() }, { status: e.status ?? 502 });
+      // URL sumber lengkap hanya masuk log server — ke browser kirim
+      // message saja agar domain asal tidak bocor via DevTools.
+      console.error(`[api-error] ${e.source}: ${e.message}`);
+      return NextResponse.json(
+        { error: { message: e.message, source: "upstream" } },
+        { status: e.status ?? 502 },
+      );
     }
     return NextResponse.json(
       { error: { message: "Terjadi kesalahan tak terduga.", source: "internal" } },
