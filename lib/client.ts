@@ -4,15 +4,20 @@
  *
  * Dilengkapi cache memori singkat + dedupe request:
  * - Navigasi bolak-balik (komik → chapter → kembali) tidak fetch ulang
- *   selama data masih segar (TTL 60 detik).
+ *   selama data masih segar (TTL 30 detik).
  * - Komponen yang me-request URL sama bersamaan hanya memicu 1 fetch.
+ * - `stale` true = data basi (< 5 menit) dikembalikan langsung sambil
+ *   fetch baru jalan di background (stale-while-revalidate) — layar
+ *   tampil instan lalu diperbarui diam-diam saat data segar tiba.
  */
 
 export interface ApiSuccess<T> {
   data: T;
 }
 
-const TTL_MS = 30_000;  // 30 detik
+const TTL_MS = 30_000; // 30 detik — data segar, tanpa jaringan.
+/** Batas data basi yang masih layak tampil sambil disegarkan: 5 menit. */
+const STALE_MS = 5 * 60_000;
 const cache = new Map<string, { at: number; data: unknown }>();
 const inflight = new Map<string, Promise<unknown>>();
 
@@ -44,6 +49,7 @@ export async function apiGet<T>(path: string, opts?: { signal?: AbortSignal }): 
   const p = fetchJson<T>(path, opts?.signal)
     .then((data) => {
       cache.set(path, { at: Date.now(), data });
+      notify(path, data);
       return data;
     })
     .finally(() => {
@@ -51,6 +57,64 @@ export async function apiGet<T>(path: string, opts?: { signal?: AbortSignal }): 
     });
   if (!opts?.signal) inflight.set(path, p);
   return p;
+}
+
+/**
+ * Stale-while-revalidate: kembalikan data basi seketika (kalau ada),
+ * sambil fetch baru di background. `onFresh` dipanggil saat data segar
+ * tiba agar UI diperbarui diam-diam. Mengembalikan `{ data, stale }`.
+ */
+export async function apiGetSWR<T>(
+  path: string,
+  onFresh: (data: T) => void,
+): Promise<{ data: T | null; stale: boolean }> {
+  const hit = cache.get(path);
+  const fresh = hit && Date.now() - hit.at < TTL_MS;
+  if (fresh) return { data: hit.data as T, stale: false };
+  if (hit && Date.now() - hit.at < STALE_MS) {
+    // Basi tapi layak tampil — segarkan di background, jangan dedupe
+    // dengan request lain agar onFresh selalu dipicu untuk pemanggil ini.
+    fetchJson<T>(path)
+      .then((data) => {
+        cache.set(path, { at: Date.now(), data });
+        notify(path, data);
+        onFresh(data);
+      })
+      .catch(() => {
+        // Background refresh boleh gagal diam-diam — data basi tetap tampil.
+      });
+    return { data: hit.data as T, stale: true };
+  }
+  const data = await apiGet<T>(path);
+  return { data, stale: false };
+}
+
+// Subscriber per-path untuk update reaktif (dipakai prefetch agresif).
+type Listener = (data: unknown) => void;
+const listeners = new Map<string, Set<Listener>>();
+
+function notify(path: string, data: unknown) {
+  listeners.get(path)?.forEach((fn) => {
+    try {
+      fn(data);
+    } catch {
+      // abaikan listener rusak
+    }
+  });
+}
+
+/** Berlangganan data path — dipanggil tiap ada data baru (fetch/prefetch). */
+export function subscribeApi<T>(path: string, fn: (data: T) => void): () => void {
+  let set = listeners.get(path);
+  if (!set) {
+    set = new Set();
+    listeners.set(path, set);
+  }
+  const wrapped = fn as Listener;
+  set.add(wrapped);
+  return () => {
+    set!.delete(wrapped);
+  };
 }
 
 /** Intip cache tanpa fetch — untuk melengkapi data tanpa request tambahan. */

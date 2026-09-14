@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
       }
       return { latest, popular, recommended };
     },
-    // Homepage paling sering dibuka — simpan 2 menit di edge/CDN.
-    { revalidate: 120 },
+    // Homepage paling sering dibuka — 30 dtk agar update cepat masuk.
+    { revalidate: 30 },
   );
 }

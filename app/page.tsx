@@ -2,29 +2,24 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { apiGet, invalidateApi } from "@/lib/client";
+import { apiGet, apiGetSWR, invalidateApi, prefetchApi } from "@/lib/client";
 import { timeAgo, useHistory } from "@/lib/history";
 import type { MangaCard } from "@/lib/api/types";
 import { MangaGrid, SectionHead, GridSkeleton, ListSkeleton, ErrorState, EmptyState } from "@/components/states";
 import { RankRow, UpdateRow } from "@/components/cards";
 
-interface LatestPayload {
-  items: MangaCard[];
-  hasNextPage: boolean;
-}
-
-interface PopularPayload {
-  period: string;
-  items: MangaCard[];
+interface HomePayload {
+  latest: MangaCard[];
+  popular: MangaCard[];
+  recommended: MangaCard[];
 }
 
 /**
- * Tiap section memuat sendiri-sendiri lewat endpoint ringan —
- * section yang datanya tiba duluan langsung tampil tanpa menunggu
- * section lain (sebelumnya satu /api/home menunggu 3 scrape Komiku).
+ * Section beranda: tampil instan dari cache (basi < 5 mnt) lalu segarkan
+ * diam-diam — layar tidak pernah kosong menunggu jaringan.
  */
-function useSection<T>(key: string, fetcher: () => Promise<T>) {
-  const [data, setData] = useState<T | null>(null);
+function useHomeSection<K extends keyof HomePayload>(key: K) {
+  const [data, setData] = useState<MangaCard[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const load = useCallback(
@@ -32,11 +27,16 @@ function useSection<T>(key: string, fetcher: () => Promise<T>) {
       setError(null);
       if (data) setRefreshing(true);
       try {
-        if (fresh) invalidateApi();
-        setData(await fetcher());
+        if (fresh) invalidateApi("/api/home");
+        const res = await apiGetSWR<HomePayload>("/api/home", (home) => {
+          setData(home[key]);
+          setRefreshing(false);
+        });
+        setData(res.data ? res.data[key] : null);
+        // Kalau data basi, onFresh di atas yang mematikan spinner.
+        if (!res.stale) setRefreshing(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Gagal memuat data.");
-      } finally {
         setRefreshing(false);
       }
     },
@@ -51,15 +51,20 @@ function useSection<T>(key: string, fetcher: () => Promise<T>) {
 
 export default function HomePage() {
   const { entries: history } = useHistory();
-  const popular = useSection("popular", () =>
-    apiGet<PopularPayload>("/api/popular?period=harian").then((r) => r.items),
-  );
-  const latest = useSection("latest", () =>
-    apiGet<LatestPayload>("/api/latest?page=1&orderby=modified").then((r) => r.items),
-  );
-  const recommended = useSection("recommended", () =>
-    apiGet<LatestPayload>("/api/latest?page=1&orderby=date").then((r) => r.items),
-  );
+  // 1 request gabungan untuk 3 section (hemat handshake, ramah rate limit).
+  const popular = useHomeSection("popular");
+  const latest = useHomeSection("latest");
+  const recommended = useHomeSection("recommended");
+
+  // Prefetch agresif: selagi user di beranda, panaskan genre + halaman 2
+  // terbaru di background agar navigasi berikutnya terasa instan.
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      prefetchApi("/api/genres");
+      prefetchApi("/api/latest?page=2&orderby=modified");
+    }, 2500);
+    return () => window.clearTimeout(t);
+  }, []);
 
   return (
     <div className="flex min-w-0 flex-col gap-3 sm:gap-5">
