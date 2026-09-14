@@ -1,7 +1,10 @@
+import type { NextRequest } from "next/server";
 import { getLatest, getPopular, getRecommended } from "@/lib/api/manga";
-import { handle } from "../_lib";
+import { guard, handle } from "../_lib";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const blocked = await guard(req);
+  if (blocked) return blocked;
   return handle(
     async () => {
       const [latest, popular, recommended] = await Promise.all([

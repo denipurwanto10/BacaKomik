@@ -1,7 +1,47 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { KomikuError } from "@/lib/api/komiku";
+import { isAuthed, rateLimited } from "@/lib/gate";
 
-/** Bungkus handler agar KomikuError menjadi JSON error yang konsisten. */
+/**
+ * Bungkus handler agar KomikuError menjadi JSON error yang konsisten.
+ * Proteksi lapis API (selain middleware gate):
+ * - Rate limit 60 req/menit/IP — cegah 1 orang menyedot API.
+ * - Origin/Referer check — tolak embed lintas-situs (header mudah
+ *   dipalsukan, jadi ini pertahanan kedua; gate password yang utama).
+ */
+export async function guard(req: NextRequest): Promise<NextResponse | null> {
+  if (rateLimited(req)) {
+    return NextResponse.json(
+      { error: { message: "Terlalu banyak permintaan. Tunggu sebentar.", source: "rate-limit" } },
+      { status: 429 },
+    );
+  }
+  if (!isAuthed(req)) {
+    return NextResponse.json(
+      { error: { message: "Akses terkunci.", source: "gate" } },
+      { status: 401 },
+    );
+  }
+  const origin = req.headers.get("origin");
+  const referer = req.headers.get("referer");
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
+  const sameSite = (u: string | null) => {
+    if (!u) return false;
+    try {
+      return new URL(u).host === host;
+    } catch {
+      return false;
+    }
+  };
+  if ((origin || referer) && !sameSite(origin) && !sameSite(referer)) {
+    return NextResponse.json(
+      { error: { message: "Akses ditolak.", source: "gate" } },
+      { status: 403 },
+    );
+  }
+  return null;
+}
+
 export async function handle<T>(
   fn: () => Promise<T>,
   opts?: { revalidate?: number },

@@ -24,6 +24,17 @@ export const metadata: Metadata = {
   title: "BacaKomik — Baca Manga, Manhwa & Manhua Bahasa Indonesia",
   description:
     "Platform baca komik online: manga, manhwa, dan manhua terbaru dalam Bahasa Indonesia.",
+  // Situs pribadi — jangan dirayapi / ditampilkan mesin pencari.
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+    },
+  },
 };
 
 // viewport-fit=cover diperlukan agar env(safe-area-inset-bottom) terbaca
