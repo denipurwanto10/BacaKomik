@@ -408,10 +408,11 @@ export default function ReaderPage({
             )}
             <Link
               href={`/komik/${data.mangaSlug}`}
+              aria-label="Semua chapter"
               className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-line-dark px-2 py-2.5 text-[13px] font-medium text-fg-dark"
             >
               <IconList className="h-4 w-4 shrink-0" />
-              <span className="truncate">Semua Chapter</span>
+              <span className="truncate">All</span>
             </Link>
             {nextHref ? (
               <Link
@@ -431,13 +432,17 @@ export default function ReaderPage({
         </div>
       )}
 
-      {/* Tombol kembali-ke-atas — tab bar disembunyikan saat membaca,
-          jadi menempel ke bawah (bukan bottom-20 seperti halaman daftar). */}
+      {/* Tombol kembali-ke-atas — naik di atas overlay tap-nav agar tidak
+          bertabrakan (overlay ~64px + gap 12px → bottom ± 5.5rem mobile). */}
       {((mode === "scroll" && showTop) || mode === "page") && (
         <button
           onClick={scrollTop}
           aria-label="Kembali ke atas"
-          className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] right-3 z-40 flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border border-line-dark bg-ink-2/95 text-fg-dark shadow-xl backdrop-blur transition-transform active:scale-95 sm:bottom-6 sm:right-6 dark:border-line-dark"
+          className={`fixed right-3 z-40 flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border border-line-dark bg-ink-2/95 text-fg-dark shadow-xl backdrop-blur transition-all active:scale-95 sm:bottom-6 sm:right-6 dark:border-line-dark ${
+            mode === "scroll" && showTapNav
+              ? "bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))]"
+              : "bottom-[calc(1rem+env(safe-area-inset-bottom,0px))]"
+          }`}
         >
           <IconUp className="h-5 w-5" />
         </button>
