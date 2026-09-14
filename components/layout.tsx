@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTheme } from "./theme";
 
 const NAV = [
@@ -117,8 +117,7 @@ export function Main({ children }: { children: React.ReactNode }) {
 }
 
 /** Fixed bottom tab bar — app-like primary nav for mobile, hidden on desktop. */
-export function MobileTabBar() {
-  const pathname = usePathname();
+export function MobileTabBar() {  const pathname = usePathname();
   // Tab bar kecil: Beranda, Terbaru, Peringkat, Riwayat, Cari.
   // Genre & Favorit tetap di nav desktop + halaman masing-masing.
   const items = [
@@ -167,6 +166,45 @@ export function Footer() {
         </p>
       </div>
     </footer>
+  );
+}
+
+/**
+ * Tombol kembali-ke-atas global — tampil di SEMUA halaman (daftar, detail,
+ * terbaru, genre…) setelah user scroll ke bawah (>600px).
+ * Di halaman baca (/baca/…) tidak tampil karena reader punya tombolnya
+ * sendiri agar tidak dobel.
+ */
+export function BackToTop() {
+  const pathname = usePathname();
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 600);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [pathname]);
+
+  if (pathname.startsWith("/baca/")) return null;
+  if (!visible) return null;
+
+  return (
+    <button
+      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      aria-label="Kembali ke atas"
+      className="pb-safe fixed bottom-20 right-3 z-40 flex h-11 w-11 touch-manipulation items-center justify-center rounded-full bg-accent text-white shadow-xl transition-transform active:scale-95 md:bottom-6 md:right-6"
+    >
+      <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+        <path
+          d="M12 19V5m0 0l-6 6m6-6l6 6"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </button>
   );
 }
 

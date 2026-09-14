@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme";
-import { Footer, Header, Main, MobileTabBar } from "@/components/layout";
+import { BackToTop, Footer, Header, Main, MobileTabBar } from "@/components/layout";
 import "./globals.css";
 
 // Semua halaman memuat data live dari Komiku.org saat request —
@@ -62,6 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Main>{children}</Main>
           <Footer />
           <MobileTabBar />
+          <BackToTop />
         </ThemeProvider>
       </body>
     </html>
