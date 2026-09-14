@@ -61,8 +61,8 @@ async function fetchHtml(url: string): Promise<string> {
   } catch (e) {
     throw new KomikuError(
       e instanceof DOMException && e.name === "AbortError"
-        ? "Komiku.org terlalu lama merespons. Coba lagi."
-        : "Tidak dapat terhubung ke Komiku.org. Periksa koneksi internet lalu coba lagi.",
+        ? "Sumber data terlalu lama merespons. Coba lagi."
+        : "Tidak dapat terhubung ke sumber data. Periksa koneksi internet lalu coba lagi.",
       url,
     );
   } finally {
@@ -70,7 +70,7 @@ async function fetchHtml(url: string): Promise<string> {
   }
   if (!res.ok) {
     throw new KomikuError(
-      `Komiku.org merespons dengan status ${res.status} untuk halaman ini.`,
+      `Sumber data merespons dengan status ${res.status} untuk halaman ini.`,
       url,
       res.status,
     );

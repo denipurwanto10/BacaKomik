@@ -61,7 +61,7 @@ export default function GenreDetailPage({ params }: { params: Promise<{ slug: st
       {loading && <GridSkeleton count={12} />}
       {error && <ErrorState message={error} onRetry={() => load(1, false)} />}
       {!loading && !error && items.length === 0 && (
-        <EmptyState message={`Tidak ada komik genre "${title}" dari Komiku.org.`} />
+        <EmptyState message={`Tidak ada komik genre "${title}" dari sumber data.`} />
       )}
       {!loading && !error && items.length > 0 && (
         <>

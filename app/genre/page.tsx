@@ -54,7 +54,7 @@ export default function GenreListPage() {
       {genres && filtered.length === 0 && (
         <EmptyState
           message={
-            q ? `Genre "${q}" tidak ditemukan.` : "Belum ada genre dari Komiku.org."
+            q ? `Genre "${q}" tidak ditemukan.` : "Belum ada genre dari sumber data."
           }
         />
       )}

@@ -23,7 +23,7 @@ const sans = Inter({
 export const metadata: Metadata = {
   title: "BacaKomik — Baca Manga, Manhwa & Manhua Bahasa Indonesia",
   description:
-    "Platform baca komik online: manga, manhwa, dan manhua terbaru dengan data langsung dari Komiku.org.",
+    "Platform baca komik online: manga, manhwa, dan manhua terbaru dalam Bahasa Indonesia.",
 };
 
 // viewport-fit=cover diperlukan agar env(safe-area-inset-bottom) terbaca

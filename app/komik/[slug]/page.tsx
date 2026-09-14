@@ -248,7 +248,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
           />
         )}
         {detail.chapters.length === 0 && (
-          <EmptyState message="Belum ada chapter untuk komik ini di Komiku.org." />
+          <EmptyState message="Belum ada chapter untuk komik ini di sumber data." />
         )}
         {chapters.length === 0 && detail.chapters.length > 0 && (
           <EmptyState message={`Tidak ada chapter yang cocok dengan "${filter}".`} />

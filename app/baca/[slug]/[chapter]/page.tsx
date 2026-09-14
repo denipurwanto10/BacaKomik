@@ -293,7 +293,7 @@ export default function ReaderPage({
               key={i}
               className="flex min-h-40 items-center justify-center border-b border-ink-3 px-4 py-8 text-center text-xs text-muted-dark"
             >
-              Halaman {i + 1} gagal dimuat dari Komiku. Periksa koneksi lalu muat ulang.
+              Halaman {i + 1} gagal dimuat dari sumber data. Periksa koneksi lalu muat ulang.
             </div>
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
@@ -392,7 +392,7 @@ function PageMode({
       <div className="relative min-w-0 overflow-hidden rounded-lg bg-black min-[420px]:rounded-xl">
         {isFailed ? (
           <div className="flex min-h-60 items-center justify-center px-4 py-12 text-center text-xs text-muted-dark">
-            Halaman {cur + 1} gagal dimuat dari Komiku. Periksa koneksi lalu muat ulang.
+            Halaman {cur + 1} gagal dimuat dari sumber data. Periksa koneksi lalu muat ulang.
           </div>
         ) : (
           // eslint-disable-next-line @next/next/no-img-element

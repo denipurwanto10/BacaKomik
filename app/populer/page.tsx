@@ -63,7 +63,7 @@ function PopulerContent() {
       {!items && !error && <ListSkeleton count={10} />}
       {error && <ErrorState message={error} onRetry={load} />}
       {items && items.length === 0 && (
-        <EmptyState message="Belum ada data peringkat dari Komiku.org." />
+        <EmptyState message="Belum ada data peringkat dari sumber data." />
       )}
       {items && items.length > 0 && (
         <div className="grid min-w-0 gap-x-8 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 lg:grid-cols-2 dark:border-line-dark dark:bg-ink-2">

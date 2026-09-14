@@ -105,7 +105,7 @@ export default function HomePage() {
         {!popular.data && !popular.error && <ListSkeleton count={5} />}
         {popular.error && <ErrorState message={popular.error} onRetry={popular.load} />}
         {popular.data && popular.data.length === 0 && (
-          <EmptyState message="Belum ada data peringkat dari Komiku.org." />
+          <EmptyState message="Belum ada data peringkat dari sumber data." />
         )}
         {popular.data && popular.data.length > 0 && (
           <div className="grid gap-x-6 lg:grid-cols-2">
@@ -121,7 +121,7 @@ export default function HomePage() {
         <SectionHead title="Update Terbaru" href="/terbaru" />
         {!latest.data && !latest.error && <ListSkeleton count={8} />}
         {latest.data && latest.data.length === 0 && !latest.error && (
-          <EmptyState message="Belum ada update dari Komiku.org." />
+          <EmptyState message="Belum ada update dari sumber data." />
         )}
         {latest.data && latest.data.length > 0 && (
           <div className="grid gap-x-6 lg:grid-cols-2">
@@ -137,7 +137,7 @@ export default function HomePage() {
         <SectionHead title="Rekomendasi" href="/terbaru?orderby=date" />
         {!recommended.data && !recommended.error && <GridSkeleton count={6} />}
         {recommended.data && recommended.data.length === 0 && !recommended.error && (
-          <EmptyState message="Belum ada rekomendasi dari Komiku.org." />
+          <EmptyState message="Belum ada rekomendasi dari sumber data." />
         )}
         {recommended.data && recommended.data.length > 0 && (
           <MangaGrid items={recommended.data.slice(0, 12)} />

@@ -127,7 +127,7 @@ function TerbaruContent() {
       {loading && <GridSkeleton count={12} />}
       {error && <ErrorState message={error} onRetry={() => load(1, tipe, status, false)} />}
       {!loading && !error && items.length === 0 && (
-        <EmptyState message="Tidak ada komik dari Komiku.org untuk filter ini." />
+        <EmptyState message="Tidak ada komik dari sumber data untuk filter ini." />
       )}
       {!loading && !error && items.length > 0 && (
         <>

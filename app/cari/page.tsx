@@ -72,7 +72,7 @@ function CariContent() {
       {q && !items && !error && <GridSkeleton count={9} />}
       {error && <ErrorState message={error} onRetry={load} />}
       {items && q && items.length === 0 && (
-        <EmptyState message={`Tidak ada hasil dari Komiku.org untuk "${q}". Coba kata kunci lain.`} />
+        <EmptyState message={`Tidak ada hasil dari sumber data untuk "${q}". Coba kata kunci lain.`} />
       )}
       {items && items.length > 0 && <MangaGrid items={items} />}
     </div>
