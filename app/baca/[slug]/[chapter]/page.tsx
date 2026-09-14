@@ -253,6 +253,12 @@ export default function ReaderPage({
       if (!el) return;
       // Tombol kembali-ke-atas: tampil setelah 600px agar tidak mengganggu awal baca.
       setShowTop(window.scrollY > 600);
+      // Mentok atas/bawah → paksa sembunyikan overlay tap-nav karena nav
+      // permanen (ChapterNav) sudah terlihat di posisi itu.
+      const doc = document.documentElement;
+      const atTop = window.scrollY <= 8;
+      const atBottom = window.scrollY + window.innerHeight >= doc.scrollHeight - 8;
+      if (atTop || atBottom) setShowTapNav(false);
       const rect = el.getBoundingClientRect();
       const total = rect.height - window.innerHeight;
       const scrolled = -rect.top;
@@ -274,8 +280,13 @@ export default function ReaderPage({
   if (!data) return <ReaderSkeleton />;
 
   // Tap gambar (mode scroll): toggle overlay navigasi; sembunyikan otomatis
-  // setelah 6 detik agar tidak menutupi bacaan.
+  // setelah 6 detik agar tidak menutupi bacaan. Tidak dimunculkan saat
+  // mentok paling atas / bawah karena ChapterNav permanen sudah terlihat.
   const tapNav = () => {
+    const doc = document.documentElement;
+    const atTop = window.scrollY <= 8;
+    const atBottom = window.scrollY + window.innerHeight >= doc.scrollHeight - 8;
+    if (atTop || atBottom) return;
     setShowTapNav((v) => {
       if (!v) {
         window.setTimeout(() => setShowTapNav(false), 6000);
