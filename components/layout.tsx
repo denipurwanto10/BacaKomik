@@ -163,7 +163,7 @@ export function Footer() {
         <p className="font-display font-bold text-fg dark:text-fg-dark">BacaKomik</p>
         <p className="mt-1">
           Seluruh data (judul, cover, sinopsis, chapter, peringkat) dimuat langsung dari
-          Komiku.org. BacaKomik tidak menyimpan konten komik.
+          sumber eksternal. BacaKomik tidak menyimpan konten komik.
         </p>
       </div>
     </footer>
