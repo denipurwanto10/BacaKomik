@@ -28,9 +28,11 @@ export function middleware(req: NextRequest) {
   // Anti-index lapis transport — berlaku walau crawler mengabaikan robots.txt.
   res.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet");
 
-  // Halaman login selalu lolos (kalau sudah login → lempar ke beranda).
-  if (pathname === "/masuk") {
-    if (isAuthed(req)) {
+  // Halaman login + API login selalu lolos (kalau sudah login → lempar ke beranda).
+  // PENTING: /api/gate harus dikecualikan — kalau tidak, user yang belum
+  // login tidak akan pernah bisa login karena request login-nya ikut diblokir.
+  if (pathname === "/masuk" || pathname === "/api/gate") {
+    if (pathname === "/masuk" && isAuthed(req)) {
       const url = req.nextUrl.clone();
       url.pathname = "/";
       return NextResponse.redirect(url);
