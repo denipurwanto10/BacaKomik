@@ -41,6 +41,37 @@ function IconList({ className }: { className?: string }) {
   );
 }
 
+function IconUp({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path
+        d="M12 19V5m0 0l-6 6m6-6l6 6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** Hitung href Prev/Next chapter — dipakai nav atas/bawah + overlay tap. */
+function navHrefs(
+  data: ChapterData | null,
+  slug: string,
+  chapter: string,
+): { prevHref: string | null; nextHref: string | null } {
+  const toNum = (c: string) => parseFloat(c.replace(/-(\d+)$/, ".$1"));
+  const cur = toNum(chapter);
+  const prevHref = data?.prevUrl ? chapterPathToRoute(data.prevUrl) : null;
+  const nextHref = data?.nextUrl
+    ? chapterPathToRoute(data.nextUrl)
+    : !data?.prevUrl && Number.isFinite(cur)
+      ? `/baca/${slug}/${String(cur + 1).replace(".", "-")}`
+      : null;
+  return { prevHref, nextHref };
+}
+
 function ChapterNav({
   data,
   slug,
@@ -52,19 +83,13 @@ function ChapterNav({
 }) {
   // nextUrl akurat dari server (daftar chapter). Bila absen (gagal scrape
   // daftar / chapter terbaru), tebak +1 seperti sebelumnya.
-  const toNum = (c: string) => parseFloat(c.replace(/-(\d+)$/, ".$1"));
-  const cur = toNum(chapter);
-  const nextHref = data?.nextUrl
-    ? chapterPathToRoute(data.nextUrl)
-    : !data?.prevUrl && Number.isFinite(cur)
-      ? `/baca/${slug}/${String(cur + 1).replace(".", "-")}`
-      : null;
+  const { prevHref, nextHref } = navHrefs(data, slug, chapter);
 
   return (
     <div className="flex min-w-0 items-center justify-between gap-1.5 rounded-2xl border border-line-dark bg-ink-2 px-1.5 py-1.5 text-sm sm:gap-2 sm:rounded-full sm:px-2 sm:py-2">
-      {data?.prevUrl ? (
+      {prevHref ? (
         <Link
-          href={chapterPathToRoute(data.prevUrl)}
+          href={prevHref}
           className="flex min-w-0 flex-1 items-center justify-center gap-1 rounded-xl bg-accent px-2 py-2 text-[13px] font-semibold text-white sm:flex-none sm:rounded-full sm:px-4"
         >
           <IconChevron dir="left" className="h-4 w-4 shrink-0" />
@@ -122,6 +147,11 @@ export default function ReaderPage({
   // Mode baca: "scroll" (semua halaman memanjang) atau "page" (satu per satu).
   const [mode, setMode] = useState<"scroll" | "page">("scroll");
   const [pageIdx, setPageIdx] = useState(0);
+  // Overlay navigasi chapter (Prev / Daftar isi / Next) — muncul saat gambar
+  // di-tap (mobile) atau tombol daftar ditekan. Auto-sembunyi 6 detik.
+  const [showTapNav, setShowTapNav] = useState(false);
+  // Tombol kembali-ke-atas — muncul setelah user scroll cukup jauh.
+  const [showTop, setShowTop] = useState(false);
 
   useEffect(() => {
     try {
@@ -147,6 +177,8 @@ export default function ReaderPage({
     setFailed(new Set());
     setPageIdx(0);
     setProgress(0);
+    setShowTapNav(false);
+    setShowTop(false);
     savedProgressRef.current = 0;
     try {
       setData(
@@ -219,6 +251,8 @@ export default function ReaderPage({
     const onScroll = () => {
       const el = pagesRef.current;
       if (!el) return;
+      // Tombol kembali-ke-atas: tampil setelah 600px agar tidak mengganggu awal baca.
+      setShowTop(window.scrollY > 600);
       const rect = el.getBoundingClientRect();
       const total = rect.height - window.innerHeight;
       const scrolled = -rect.top;
@@ -238,6 +272,20 @@ export default function ReaderPage({
 
   if (error) return <ErrorState message={error} onRetry={load} />;
   if (!data) return <ReaderSkeleton />;
+
+  // Tap gambar (mode scroll): toggle overlay navigasi; sembunyikan otomatis
+  // setelah 6 detik agar tidak menutupi bacaan.
+  const tapNav = () => {
+    setShowTapNav((v) => {
+      if (!v) {
+        window.setTimeout(() => setShowTapNav(false), 6000);
+      }
+      return !v;
+    });
+  };
+
+  const { prevHref, nextHref } = navHrefs(data, data.mangaSlug, chapter);
+  const scrollTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
   return (
     <div className="mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-2.5 sm:gap-3">
@@ -321,7 +369,8 @@ export default function ReaderPage({
                 setFailed((s) => new Set(s).add(i));
               }}
               data-pg={i}
-              className="w-full select-none"
+              onClick={tapNav}
+              className="w-full cursor-pointer select-none"
             />
           ),
         )}
@@ -337,6 +386,60 @@ export default function ReaderPage({
       )}
 
       <ChapterNav data={data} slug={data.mangaSlug} chapter={chapter} />
+
+      {/* Overlay tap: Prev / Daftar isi / Next — muncul saat gambar di-tap */}
+      {mode === "scroll" && showTapNav && (
+        <div className="fixed inset-x-3 bottom-20 z-40 sm:bottom-6">
+          <div className="mx-auto flex w-full max-w-3xl items-center gap-1.5 rounded-2xl border border-line-dark bg-ink-2/95 p-1.5 text-sm shadow-2xl backdrop-blur">
+            {prevHref ? (
+              <Link
+                href={prevHref}
+                className="flex min-w-0 flex-1 items-center justify-center gap-1 rounded-xl bg-accent px-2 py-2.5 text-[13px] font-semibold text-white"
+              >
+                <IconChevron dir="left" className="h-4 w-4 shrink-0" />
+                <span className="truncate">Prev</span>
+              </Link>
+            ) : (
+              <span className="flex min-w-0 flex-1 cursor-not-allowed items-center justify-center gap-1 px-2 py-2.5 text-[13px] text-muted-dark">
+                <IconChevron dir="left" className="h-4 w-4 shrink-0" />
+                <span className="truncate">Prev</span>
+              </span>
+            )}
+            <Link
+              href={`/komik/${data.mangaSlug}`}
+              className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-line-dark px-2 py-2.5 text-[13px] font-medium text-fg-dark"
+            >
+              <IconList className="h-4 w-4 shrink-0" />
+              <span className="truncate">Semua Chapter</span>
+            </Link>
+            {nextHref ? (
+              <Link
+                href={nextHref}
+                className="flex min-w-0 flex-1 items-center justify-center gap-1 rounded-xl border border-line-dark px-2 py-2.5 text-[13px] font-medium text-fg-dark"
+              >
+                <span className="truncate">Next</span>
+                <IconChevron dir="right" className="h-4 w-4 shrink-0" />
+              </Link>
+            ) : (
+              <span className="flex min-w-0 flex-1 cursor-not-allowed items-center justify-center gap-1 px-2 py-2.5 text-[13px] text-muted-dark">
+                <span className="truncate">Next</span>
+                <IconChevron dir="right" className="h-4 w-4 shrink-0" />
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Tombol kembali-ke-atas */}
+      {((mode === "scroll" && showTop) || mode === "page") && (
+        <button
+          onClick={scrollTop}
+          aria-label="Kembali ke atas"
+          className="fixed bottom-20 right-3 z-40 flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border border-line-dark bg-ink-2/95 text-fg-dark shadow-xl backdrop-blur transition-transform active:scale-95 sm:bottom-6 sm:right-6 dark:border-line-dark"
+        >
+          <IconUp className="h-5 w-5" />
+        </button>
+      )}
     </div>
   );
 }
