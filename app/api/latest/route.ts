@@ -27,6 +27,6 @@ export async function GET(req: NextRequest) {
         ...(genre2 ? { genre2 } : {}),
         ...(status ? { status } : {}),
       }),
-    { revalidate: 120 },
+    { revalidate: 30 },
   );
 }

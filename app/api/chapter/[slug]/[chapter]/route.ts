@@ -11,6 +11,6 @@ export async function GET(
   if (blocked) return blocked;
   // Chapter tidak berubah setelah terbit — simpan 1 jam.
   return handle(() => getChapter(decodeURIComponent(slug), decodeURIComponent(chapter)), {
-    revalidate: 3600,
+    revalidate: 30,
   });
 }

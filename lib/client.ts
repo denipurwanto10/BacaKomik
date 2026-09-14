@@ -12,7 +12,7 @@ export interface ApiSuccess<T> {
   data: T;
 }
 
-const TTL_MS = 60_000;
+const TTL_MS = 30_000;  // 30 detik
 const cache = new Map<string, { at: number; data: unknown }>();
 const inflight = new Map<string, Promise<unknown>>();
 

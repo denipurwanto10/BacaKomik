@@ -14,6 +14,6 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ slug: strin
       page,
       ...(await getMangaByGenre(decodeURIComponent(slug), page)),
     }),
-    { revalidate: 300 },
+    { revalidate: 30 },
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { apiGet } from "@/lib/client";
+import { apiGet, invalidateApi } from "@/lib/client";
 import { timeAgo, useHistory } from "@/lib/history";
 import type { MangaCard } from "@/lib/api/types";
 import { MangaGrid, SectionHead, GridSkeleton, ListSkeleton, ErrorState, EmptyState } from "@/components/states";
@@ -26,19 +26,27 @@ interface PopularPayload {
 function useSection<T>(key: string, fetcher: () => Promise<T>) {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const load = useCallback(async () => {
-    setError(null);
-    try {
-      setData(await fetcher());
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Gagal memuat data.");
-    }
+  const [refreshing, setRefreshing] = useState(false);
+  const load = useCallback(
+    async (fresh = false) => {
+      setError(null);
+      if (data) setRefreshing(true);
+      try {
+        if (fresh) invalidateApi();
+        setData(await fetcher());
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Gagal memuat data.");
+      } finally {
+        setRefreshing(false);
+      }
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+    [key],
+  );
   useEffect(() => {
     load();
   }, [load]);
-  return { data, error, load };
+  return { data, error, load, refreshing };
 }
 
 export default function HomePage() {
@@ -101,7 +109,35 @@ export default function HomePage() {
 
       {/* Peringkat — ringkas di atas untuk mobile */}
       <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
-        <SectionHead title="Peringkat Harian" href="/populer" />
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <SectionHead title="Peringkat Harian" href="/populer" />
+          </div>
+          <button
+            onClick={() => {
+              popular.load(true);
+              latest.load(true);
+              recommended.load(true);
+            }}
+            aria-label="Muat ulang data terbaru"
+            title="Muat ulang data terbaru"
+            className="flex h-9 w-9 shrink-0 touch-manipulation items-center justify-center rounded-full border border-line text-muted transition-colors hover:border-accent hover:text-accent sm:h-8 sm:w-8 dark:border-line-dark dark:text-muted-dark"
+          >
+            <svg
+              className={`h-4 w-4 ${popular.refreshing || latest.refreshing || recommended.refreshing ? "animate-spin" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4 4v6h6M20 20v-6h-6M5.6 9a7 7 0 0 1 12.8 0M18.4 15a7 7 0 0 1-12.8 0"
+              />
+            </svg>
+          </button>
+        </div>
         {!popular.data && !popular.error && <ListSkeleton count={5} />}
         {popular.error && <ErrorState message={popular.error} onRetry={popular.load} />}
         {popular.data && popular.data.length === 0 && (

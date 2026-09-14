@@ -13,6 +13,6 @@ export async function GET(req: NextRequest) {
   const blocked = await guard(req);
   if (blocked) return blocked;
   return handle(async () => ({ period, items: await fetchRanking(period) }), {
-    revalidate: 300,
+    revalidate: 30,
   });
 }
