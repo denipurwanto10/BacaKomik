@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { apiGet } from "@/lib/client";
+import { apiGet, invalidateApi } from "@/lib/client";
 import type { GenreRef, MangaCard } from "@/lib/api/types";
 import { MangaGrid, SectionHead, GridSkeleton, ErrorState, EmptyState } from "@/components/states";
 
@@ -82,6 +82,8 @@ function TerbaruContent() {
   );
 
   useEffect(() => {
+    // Saat membuka /terbaru, jangan gunakan hasil lama dari memory cache.
+    invalidateApi();
     load(1, tipe, status, genre1, genre2, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderby, tipe, status, genre1, genre2]);

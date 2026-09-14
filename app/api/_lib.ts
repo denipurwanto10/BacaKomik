@@ -54,7 +54,7 @@ export async function handle<T>(
         ? {
             headers: {
               // Browser + CDN boleh menyimpan respons — isinya memang di-cache
-              // singkat di sisi server (revalidate 300s di fetchHtml).
+              // singkat di sisi server (revalidate 30s di fetchHtml).
               "Cache-Control": `public, s-maxage=${opts.revalidate}, stale-while-revalidate=${opts.revalidate * 2}`,
             },
           }

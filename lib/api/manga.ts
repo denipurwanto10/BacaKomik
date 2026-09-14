@@ -12,12 +12,17 @@ import type { ChapterItem, MangaCard, MangaDetail } from "./types";
 
 /** Chapter terbaru yang baru update (sumber: komiku.org + api.komiku.org). */
 export async function getLatest(page = 1): Promise<MangaCard[]> {
-  const params: MangaListParams = { orderby: "modified", page };
-  try {
-    const { items } = await fetchMangaList(params);
-    if (items.length > 0) return items;
-  } catch {
-    // fallback ke homepage bila fragment API gagal
+  const params: MangaListParams = { orderby: "modified", page, fresh: true };
+  // Coba 2x — kegagalan fragment API sering cuma sementara (beban
+  // bersamaan saat /api/home menembak beberapa request sekaligus),
+  // jadi jangan langsung jatuh ke fetchHome() yang datanya lebih basi.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const { items } = await fetchMangaList(params);
+      if (items.length > 0) return items;
+    } catch {
+      // coba lagi (attempt berikutnya) sebelum fallback
+    }
   }
   const home = await fetchHome();
   return page > 1 ? [] : home.latest;

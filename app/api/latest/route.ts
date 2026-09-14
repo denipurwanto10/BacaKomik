@@ -2,6 +2,8 @@ import type { NextRequest } from "next/server";
 import { fetchMangaList } from "@/lib/api/komiku";
 import { guard, handle } from "../_lib";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
@@ -26,7 +28,10 @@ export async function GET(req: NextRequest) {
         ...(genre ? { genre } : {}),
         ...(genre2 ? { genre2 } : {}),
         ...(status ? { status } : {}),
+        fresh: true,
       }),
-    { revalidate: 30 },
+    // Jangan biarkan browser/CDN menyimpan daftar chapter terbaru.
+    // Endpoint ini harus langsung mengikuti update dari sumber.
+    undefined,
   );
 }
