@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.*
+
+# Next.js build output & cache
+.next/
+out/
+next-env.d.ts
+tsconfig.tsbuildinfo
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
+
+# Env (tidak ikut push)
+.env
+.env*.local
+
+# Arsip lokal (tidak ikut push)
+Komik.zip
