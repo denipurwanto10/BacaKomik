@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
     | null;
   const tipe = searchParams.get("tipe") as "manga" | "manhwa" | "manhua" | null;
   const genre = searchParams.get("genre");
+  const genre2 = searchParams.get("genre2");
   const status = searchParams.get("status") as "ongoing" | "end" | null;
   const blocked = await guard(req);
   if (blocked) return blocked;
@@ -23,6 +24,7 @@ export async function GET(req: NextRequest) {
         ...(orderby ? { orderby } : {}),
         ...(tipe ? { tipe } : {}),
         ...(genre ? { genre } : {}),
+        ...(genre2 ? { genre2 } : {}),
         ...(status ? { status } : {}),
       }),
     { revalidate: 120 },
