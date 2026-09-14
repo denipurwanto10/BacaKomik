@@ -387,9 +387,10 @@ export default function ReaderPage({
 
       <ChapterNav data={data} slug={data.mangaSlug} chapter={chapter} />
 
-      {/* Overlay tap: Prev / Daftar isi / Next — muncul saat gambar di-tap */}
+      {/* Overlay tap: Prev / Daftar isi / Next — muncul saat gambar di-tap.
+          Tab bar disembunyikan saat membaca, jadi cukup 1rem + safe-area dari bawah. */}
       {mode === "scroll" && showTapNav && (
-        <div className="fixed inset-x-3 bottom-20 z-40 sm:bottom-6">
+        <div className="fixed inset-x-3 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] z-40 sm:bottom-6">
           <div className="mx-auto flex w-full max-w-3xl items-center gap-1.5 rounded-2xl border border-line-dark bg-ink-2/95 p-1.5 text-sm shadow-2xl backdrop-blur">
             {prevHref ? (
               <Link
@@ -430,12 +431,13 @@ export default function ReaderPage({
         </div>
       )}
 
-      {/* Tombol kembali-ke-atas */}
+      {/* Tombol kembali-ke-atas — tab bar disembunyikan saat membaca,
+          jadi menempel ke bawah (bukan bottom-20 seperti halaman daftar). */}
       {((mode === "scroll" && showTop) || mode === "page") && (
         <button
           onClick={scrollTop}
           aria-label="Kembali ke atas"
-          className="fixed bottom-20 right-3 z-40 flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border border-line-dark bg-ink-2/95 text-fg-dark shadow-xl backdrop-blur transition-transform active:scale-95 sm:bottom-6 sm:right-6 dark:border-line-dark"
+          className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] right-3 z-40 flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border border-line-dark bg-ink-2/95 text-fg-dark shadow-xl backdrop-blur transition-transform active:scale-95 sm:bottom-6 sm:right-6 dark:border-line-dark"
         >
           <IconUp className="h-5 w-5" />
         </button>
