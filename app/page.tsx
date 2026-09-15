@@ -175,7 +175,7 @@ export default function HomePage() {
 
       {/* Rekomendasi */}
       <section className="min-w-0">
-        <SectionHead title="Rekomendasi" href="/terbaru?orderby=date" />
+        <SectionHead title="Rekomendasi" href="/terbaru" />
         {!recommended.data && !recommended.error && <GridSkeleton count={6} />}
         {recommended.data && recommended.data.length === 0 && !recommended.error && (
           <EmptyState message="Belum ada rekomendasi dari sumber data." />
