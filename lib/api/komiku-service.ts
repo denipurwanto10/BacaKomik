@@ -7,15 +7,19 @@
  */
 export {
   fetchChapter,
+  fetchCommentIds,
+  fetchComments,
   fetchGenres,
   fetchHome,
   fetchMangaByGenre,
   fetchMangaDetail,
   fetchMangaList,
   fetchRanking,
+  fetchReplies,
   KomikuError,
   mangaSlugFromPath,
   parseChapterPath,
+  type CommentSort,
   type MangaListParams,
   type RankPeriod,
 } from "./komiku";
@@ -24,9 +28,13 @@ export type {
   ChapterData,
   ChapterItem,
   ChapterRef,
+  CommentPage,
   GenreRef,
+  KomikuComment,
+  KomikuReply,
   KomikType,
   MangaCard,
   MangaDetail,
   PagedResult,
+  ReplyPage,
 } from "./types";

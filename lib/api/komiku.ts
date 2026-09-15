@@ -633,3 +633,177 @@ export async function fetchGenres(): Promise<GenreRef[]> {
   });
   return genres;
 }
+
+/* ------------------------------------------------------------------ */
+/* Komentar (plus.komiku.org — API baca publik, tanpa login)            */
+/*                                                                     */
+/* Komiku memuat komentar dinamis via                                   */
+/* https://plus.komiku.org/api/mobile/v1.0/{preview/series,             */
+/* preview/chapter,comment/list,reply/list} dengan header               */
+/* x-package-name/x-version-code (dipakai aplikasi Komiku Plus          */
+/* sendiri). Endpoint baca (preview/list) terbuka tanpa auth —          */
+/* hanya tulis (add/update/delete/react) yang butuh login, jadi         */
+/* web ini read-only: tampilkan + balasan, tanpa form kirim.            */
+/* ------------------------------------------------------------------ */
+
+const KOMIKU_PLUS = "https://plus.komiku.org/api/mobile/v1.0";
+
+const PLUS_HEADERS = {
+  "User-Agent": UA,
+  Referer: KOMIKU_BASE + "/",
+  Accept: "application/json",
+  "x-package-name": "id.komiku.plus",
+  "x-fcm-token": "null",
+  "x-version-code": "5",
+};
+
+async function fetchPlusJson(url: string): Promise<unknown> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 12_000);
+  let res: Response;
+  try {
+    res = await fetch(url, { headers: PLUS_HEADERS, signal: ctrl.signal });
+  } catch (e) {
+    throw new KomikuError(
+      e instanceof DOMException && e.name === "AbortError"
+        ? "Sumber komentar terlalu lama merespons. Coba lagi."
+        : "Tidak dapat terhubung ke sumber komentar.",
+      url,
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+  if (!res.ok) {
+    throw new KomikuError(
+      `Sumber komentar merespons dengan status ${res.status}.`,
+      url,
+      res.status,
+    );
+  }
+  try {
+    return await res.json();
+  } catch {
+    throw new KomikuError("Respons komentar tidak dikenali.", url);
+  }
+}
+
+/** Ambil id seri + chapter Komiku dari markup halaman (data-series-id). */
+export async function fetchCommentIds(
+  kind: "manga" | "chapter",
+  ref: string,
+): Promise<{ seriesId: string; chapterId: string }> {
+  const url =
+    kind === "manga"
+      ? `${KOMIKU_BASE}/manga/${encodeURIComponent(ref.replace(/^\/+|\/+$/g, ""))}/`
+      : `${KOMIKU_BASE}/${ref.replace(/^\/+|\/+$/g, "")}/`;
+  const html = await fetchHtml(url);
+  const seriesId = html.match(/data-series-id="(\d+)"/)?.[1] ?? "";
+  const chapterId = html.match(/data-chapter-id="(\d*)"/)?.[1] ?? "";
+  if (!seriesId) {
+    throw new KomikuError("ID komentar tidak ditemukan di halaman ini.", url);
+  }
+  return { seriesId, chapterId: kind === "manga" ? "" : chapterId };
+}
+
+interface PlusCommentRaw {
+  hash_id?: string;
+  member_display_name?: string;
+  member_profile_image?: string;
+  body?: string;
+  sticker_image?: string;
+  relative_time?: string;
+  chapter_title?: string;
+  reply_total?: number;
+  reaction_emotes?: { emote?: string; total?: number }[];
+}
+
+function mapComment(c: PlusCommentRaw): import("./types").KomikuComment {
+  const reactions = Array.isArray(c.reaction_emotes)
+    ? c.reaction_emotes
+        .filter((e) => e && typeof e.total === "number" && e.total > 0)
+        .map((e) => ({ emote: String(e.emote ?? ""), total: e.total as number }))
+    : [];
+  return {
+    hashId: String(c.hash_id ?? ""),
+    author: String(c.member_display_name ?? "Anonim").trim() || "Anonim",
+    avatar: String(c.member_profile_image ?? ""),
+    body: String(c.body ?? ""),
+    ...(c.sticker_image ? { sticker: String(c.sticker_image) } : {}),
+    time: String(c.relative_time ?? ""),
+    ...(c.chapter_title ? { chapterTitle: String(c.chapter_title) } : {}),
+    ...(typeof c.reply_total === "number" ? { replyCount: c.reply_total } : {}),
+    reactions,
+  };
+}
+
+function mapReply(c: PlusCommentRaw): import("./types").KomikuReply {
+  return {
+    hashId: String(c.hash_id ?? ""),
+    author: String(c.member_display_name ?? "Anonim").trim() || "Anonim",
+    avatar: String(c.member_profile_image ?? ""),
+    body: String(c.body ?? ""),
+    ...(c.sticker_image ? { sticker: String(c.sticker_image) } : {}),
+    time: String(c.relative_time ?? ""),
+  };
+}
+
+export type CommentSort = "popular" | "latest" | "earliest" | "subscribed";
+
+/** Daftar komentar: level komik (chapterId "") atau satu chapter. */
+export async function fetchComments(
+  seriesId: string,
+  chapterId: string,
+  sort: CommentSort = "latest",
+  page = 1,
+): Promise<import("./types").CommentPage> {
+  const qs = new URLSearchParams({
+    series_id: seriesId,
+    chapter_id: chapterId,
+    sort_type: sort,
+    page: String(Math.max(1, page)),
+  });
+  const json = (await fetchPlusJson(`${KOMIKU_PLUS}/comment/list?${qs}`)) as {
+    code?: string;
+    message?: string;
+    chapter_data?: { comment_total?: number };
+    data?: PlusCommentRaw[];
+    paging?: { next_page?: number | null; prev_page?: number | null };
+  };
+  if (json.code !== "OK") {
+    throw new KomikuError(json.message || "Gagal memuat komentar.", "comment/list");
+  }
+  const items = Array.isArray(json.data) ? json.data.map(mapComment) : [];
+  return {
+    seriesId,
+    chapterId,
+    total: Number(json.chapter_data?.comment_total ?? items.length) || 0,
+    items,
+    nextPage: json.paging?.next_page ?? null,
+    prevPage: json.paging?.prev_page ?? null,
+  };
+}
+
+/** Daftar balasan satu komentar. */
+export async function fetchReplies(
+  hashId: string,
+  page = 1,
+): Promise<import("./types").ReplyPage> {
+  const qs = new URLSearchParams({
+    comment_hash_id: hashId,
+    page: String(Math.max(1, page)),
+  });
+  const json = (await fetchPlusJson(`${KOMIKU_PLUS}/reply/list?${qs}`)) as {
+    code?: string;
+    message?: string;
+    data?: PlusCommentRaw[];
+    paging?: { next_page?: number | null; prev_page?: number | null };
+  };
+  if (json.code !== "OK") {
+    throw new KomikuError(json.message || "Gagal memuat balasan.", "reply/list");
+  }
+  return {
+    items: Array.isArray(json.data) ? json.data.map(mapReply) : [],
+    nextPage: json.paging?.next_page ?? null,
+    prevPage: json.paging?.prev_page ?? null,
+  };
+}

@@ -6,6 +6,7 @@ import { isBookmarked, setLatestSeen, toggleBookmark } from "@/lib/bookmarks";
 import { getHistoryEntry, type HistoryEntry } from "@/lib/history";
 import type { MangaCard, MangaDetail } from "@/lib/api/types";
 import { chapterPathToRoute, TypeBadge, UpdateRow } from "@/components/cards";
+import { Comments } from "@/components/comments";
 import { ErrorState, EmptyState } from "@/components/states";
 import Link from "next/link";
 
@@ -318,6 +319,10 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
           })}
         </div>
       </section>
+
+      {/* Komentar Komiku — read-only, tanpa login. Gagal muat = error state
+          di dalam section, detail tetap utuh. */}
+      <Comments kind="manga" ref={slug} />
 
       {/* Komik Serupa — 12 judul se-genre utama (tanpa judul saat ini),
           dibungkus kartu + baris horizontal seperti section beranda.

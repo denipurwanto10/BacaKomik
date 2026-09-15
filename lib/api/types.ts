@@ -112,3 +112,60 @@ export interface ApiError {
   source: string;
   status?: number;
 }
+
+/* ------------------------------------------------------------------ */
+/* Komentar (plus.komiku.org — API baca publik, tanpa login)            */
+/* ------------------------------------------------------------------ */
+
+/** Satu komentar Komiku (read-only). */
+export interface KomikuComment {
+  /** id unik komentar (untuk ambil balasan) */
+  hashId: string;
+  /** nama tampilan penulis */
+  author: string;
+  /** URL avatar penulis (bisa kosong) */
+  avatar: string;
+  /** isi komentar (teks polos) */
+  body: string;
+  /** URL gambar stiker — bila komentar berupa stiker tanpa teks */
+  sticker?: string;
+  /** label waktu relatif dari sumber, mis. "8 jam lalu" */
+  time: string;
+  /** judul chapter asal komentar (bila ada) */
+  chapterTitle?: string;
+  /** jumlah balasan (bila diketahui) */
+  replyCount?: number;
+  /** reaksi, mis. [{ emote: "love", total: 3 }] */
+  reactions: { emote: string; total: number }[];
+}
+
+/** Satu balasan komentar (struktur sama, tanpa nested lagi). */
+export interface KomikuReply {
+  hashId: string;
+  author: string;
+  avatar: string;
+  body: string;
+  sticker?: string;
+  time: string;
+}
+
+/** Hasil daftar komentar berhalaman. */
+export interface CommentPage {
+  /** id seri Komiku (untuk request berikutnya) */
+  seriesId: string;
+  /** id chapter Komiku ("" untuk komentar level komik) */
+  chapterId: string;
+  total: number;
+  items: KomikuComment[];
+  /** halaman berikut (null bila habis) */
+  nextPage: number | null;
+  /** halaman sebelumnya (null bila di awal) */
+  prevPage: number | null;
+}
+
+/** Hasil daftar balasan berhalaman. */
+export interface ReplyPage {
+  items: KomikuReply[];
+  nextPage: number | null;
+  prevPage: number | null;
+}
