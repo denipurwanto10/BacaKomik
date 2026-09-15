@@ -60,7 +60,7 @@ export function MangaGridCard({ item }: { item: MangaCard }) {
         )}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
         {item.type && (
-          <div className="absolute left-1.5 top-1.5">
+          <div className="absolute right-1.5 top-1.5">
             <TypeBadge type={item.type} />
           </div>
         )}
@@ -109,10 +109,14 @@ export function UpdateRow({ item }: { item: MangaCard }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={item.thumbnail} alt="" loading="lazy" className="h-full w-full object-cover" />
         ) : null}
+        {item.type && (
+          <div className="absolute right-1 top-1">
+            <TypeBadge type={item.type} className="px-1 text-[9px]" />
+          </div>
+        )}
       </Link>
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex min-w-0 items-center gap-1.5">
-          <TypeBadge type={item.type} />
           <Link
             href={`/komik/${item.slug}`}
             className="min-w-0 flex-1 truncate text-[13px] font-semibold leading-snug text-fg hover:text-accent sm:text-sm dark:text-fg-dark"
@@ -168,7 +172,7 @@ export function RankRow({ item }: { item: MangaCard }) {
       <Link
         href={`/komik/${item.slug}`}
         aria-label={item.title}
-        className="h-14 w-11 shrink-0 overflow-hidden rounded-lg bg-paper-3 min-[420px]:h-16 min-[420px]:w-12 dark:bg-ink-3"
+        className="relative h-14 w-11 shrink-0 overflow-hidden rounded-lg bg-paper-3 min-[420px]:h-16 min-[420px]:w-12 dark:bg-ink-3"
       >
         {item.thumbnail ? (
           // eslint-disable-next-line @next/next/no-img-element

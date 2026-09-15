@@ -22,7 +22,7 @@ export function KomikListCard({ item }: { item: MangaCard }) {
       <Link
         href={`/komik/${item.slug}`}
         aria-label={item.title}
-        className="h-[132px] w-[96px] shrink-0 overflow-hidden rounded-lg bg-paper-3 sm:h-[112px] sm:w-[168px] dark:bg-ink-3"
+        className="relative h-[132px] w-[96px] shrink-0 overflow-hidden rounded-lg bg-paper-3 sm:h-[112px] sm:w-[168px] dark:bg-ink-3"
       >
         {item.thumbnail ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -32,12 +32,14 @@ export function KomikListCard({ item }: { item: MangaCard }) {
             Tanpa cover
           </span>
         )}
+        {item.type && (
+          <div className="absolute right-1 top-1">
+            <TypeBadge type={item.type} />
+          </div>
+        )}
       </Link>
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex min-w-0 items-start gap-1.5">
-          <span className="mt-0.5 shrink-0">
-            <TypeBadge type={item.type} />
-          </span>
           <Link
             href={`/komik/${item.slug}`}
             className="min-w-0 flex-1 break-words font-display text-[13px] font-bold leading-snug text-fg hover:text-accent sm:text-[15px] dark:text-fg-dark"

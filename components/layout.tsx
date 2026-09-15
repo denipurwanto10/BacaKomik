@@ -174,16 +174,38 @@ export function Footer() {
  * terbaru, genre…) setelah user scroll ke bawah (>600px).
  * Di halaman baca (/baca/…) tidak tampil karena reader punya tombolnya
  * sendiri agar tidak dobel.
+ * Mobile: tombol disembunyikan saat sudah dekat ke bawah halaman
+ * (<350px dari dasar) agar tidak menutupi pagination. Desktop tidak
+ * berubah (tetap tampil seperti semula).
  */
 export function BackToTop() {
   const pathname = usePathname();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > 600);
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (y <= 600) {
+        setVisible(false);
+        return;
+      }
+      // Mobile saja: sembunyikan saat pagination (di dasar konten)
+      // sedang terlihat agar tombol melayang tidak menabraknya.
+      if (window.innerWidth < 768) {
+        const doc = document.documentElement;
+        const distToBottom = doc.scrollHeight - y - window.innerHeight;
+        setVisible(distToBottom > 350);
+      } else {
+        setVisible(true);
+      }
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
   }, [pathname]);
 
   if (pathname.startsWith("/baca/")) return null;

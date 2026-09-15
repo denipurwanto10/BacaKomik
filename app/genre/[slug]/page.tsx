@@ -1,10 +1,11 @@
 "use client";
 
-import { Suspense, use, useCallback, useEffect, useState } from "react";
+import { Suspense, use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { apiGet } from "@/lib/client";
+import { apiGet, invalidateApi } from "@/lib/client";
 import type { MangaCard } from "@/lib/api/types";
 import { KomikListCard, KomikListSkeleton } from "@/components/komik-list";
+import { Pagination } from "@/components/pagination";
 import { SectionHead, ErrorState, EmptyState } from "@/components/states";
 
 interface LatestPayload {
@@ -27,6 +28,13 @@ const TIPES = [
   { v: "manhua", label: "Manhua" },
   { v: "manhwa", label: "Manhwa" },
 ] as const;
+
+/** Halaman dari URL (?page=N). Default 1. */
+function parsePage(raw: string | null): number {
+  const n = parseInt(raw || "", 10);
+  if (!Number.isFinite(n) || n < 1 || n > 50) return 1;
+  return n;
+}
 
 function GenreDetailContent({ slug }: { slug: string }) {
   const router = useRouter();
@@ -51,54 +59,106 @@ function GenreDetailContent({ slug }: { slug: string }) {
       return "";
     }
   });
+
+  const filtersKey = `${orderby}|${tipe}`;
+
+  // Satu halaman tampil dalam satu waktu — posisi dibaca dari URL (?page=N)
+  // sehingga refresh maupun kembali dari komik langsung membuka halaman
+  // yang sama. Keluar lalu masuk lagi tanpa ?page= otomatis mulai dari
+  // halaman 1.
+  const [page, setPage] = useState<number>(() => parsePage(sp.get("page")));
   const [items, setItems] = useState<MangaCard[]>([]);
-  const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(false);
+
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(
-    async (p: number, o: Orderby, t: string, append: boolean) => {
-      if (append) setLoadingMore(true);
-      else {
-        setLoading(true);
-        setError(null);
-      }
+  const bootedRef = useRef(false);
+  // Filter yang sudah diterapkan — perubahan dibanding nilai ini yang
+  // memicu reset ke halaman 1. Perbandingan nilai, aman dari
+  // double-effect StrictMode.
+  const appliedFiltersRef = useRef(filtersKey);
+  const listTopRef = useRef<HTMLDivElement>(null);
+
+  const buildQs = useCallback(
+    (p: number) => {
+      // Pakai /api/latest (endpoint /manga/ + ?genre=) agar mendukung
+      // orderby + tipe — endpoint /genre/<slug>/ tidak mendukung keduanya.
+      const qs = new URLSearchParams({
+        genre: slug,
+        page: String(p),
+        orderby,
+      });
+      if (tipe) qs.set("tipe", tipe);
+      return qs;
+    },
+    [slug, orderby, tipe],
+  );
+
+  const scrollToList = useCallback(() => {
+    requestAnimationFrame(() => {
+      listTopRef.current?.scrollIntoView({ block: "start" });
+    });
+  }, []);
+
+  // Muat satu halaman penuh (mengganti daftar, bukan menumpuk).
+  const loadPage = useCallback(
+    async (p: number) => {
+      setLoading(true);
+      setError(null);
       try {
-        // Pakai /api/latest (endpoint /manga/ + ?genre=) agar mendukung
-        // orderby + tipe — endpoint /genre/<slug>/ tidak mendukung keduanya.
-        const qs = new URLSearchParams({
-          genre: slug,
-          page: String(p),
-          orderby: o,
-        });
-        if (t) qs.set("tipe", t);
-        const res = await apiGet<LatestPayload>(`/api/latest?${qs}`);
-        setItems((prev) => {
-          if (!append) return res.items;
-          const seen = new Set(prev.map((p) => p.slug));
-          return [...prev, ...res.items.filter((it) => !seen.has(it.slug))];
-        });
+        const res = await apiGet<LatestPayload>(`/api/latest?${buildQs(p)}`);
+        setItems(res.items);
         setHasNext(res.hasNextPage);
         setPage(p);
       } catch (e) {
-        if (!append) setError(e instanceof Error ? e.message : "Gagal memuat data.");
+        setError(e instanceof Error ? e.message : "Gagal memuat data.");
       } finally {
         setLoading(false);
-        setLoadingMore(false);
       }
     },
-    [slug],
+    [buildQs],
   );
 
+  // Mount pertama: buka halaman sesuai URL.
   useEffect(() => {
-    load(1, orderby, tipe, false);
-    // Pilihan filter ditulis ke URL (replace, tanpa reload) + sessionStorage
-    // per-genre agar tidak reset saat buka komik lalu kembali.
+    if (bootedRef.current) return;
+    bootedRef.current = true;
+    appliedFiltersRef.current = filtersKey;
+    invalidateApi();
+    void loadPage(parsePage(sp.get("page")));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Perubahan filter (bukan mount): kembali ke halaman 1.
+  useEffect(() => {
+    if (appliedFiltersRef.current === filtersKey) return;
+    appliedFiltersRef.current = filtersKey;
+    invalidateApi();
+    scrollToList();
+    void loadPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtersKey]);
+
+  // Pindah halaman via pagination.
+  const goTo = useCallback(
+    (p: number) => {
+      const target = Math.min(Math.max(1, p), 50);
+      if (target === page || loading) return;
+      scrollToList();
+      void loadPage(target);
+    },
+    [page, loading, loadPage, scrollToList],
+  );
+
+  // Filter + halaman ditulis ke URL (replace, tanpa reload) + sessionStorage
+  // per-genre (filter saja) agar tidak reset saat buka komik lalu kembali.
+  useEffect(() => {
+    if (!bootedRef.current) return;
     const qs = new URLSearchParams();
     if (orderby !== "modified") qs.set("orderby", orderby);
     if (tipe) qs.set("tipe", tipe);
+    if (page > 1) qs.set("page", String(page));
     router.replace(qs.size > 0 ? `/genre/${slug}?${qs}` : `/genre/${slug}`, {
       scroll: false,
     });
@@ -109,12 +169,12 @@ function GenreDetailContent({ slug }: { slug: string }) {
       // storage diblokir — URL saja sudah cukup
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [load, orderby, tipe]);
+  }, [filtersKey, page]);
 
   const title = slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
-    <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
+    <div ref={listTopRef} className="flex min-w-0 scroll-mt-16 flex-col gap-3 sm:gap-4">
       <SectionHead title={`Genre: ${title}`} />
       <div className="grid grid-cols-2 gap-2 sm:mx-0 sm:flex sm:items-center sm:gap-1.5 sm:overflow-x-auto sm:px-0 sm:pb-0.5">
         <select
@@ -144,7 +204,7 @@ function GenreDetailContent({ slug }: { slug: string }) {
       </div>
 
       {loading && <KomikListSkeleton count={8} />}
-      {error && <ErrorState message={error} onRetry={() => load(1, orderby, tipe, false)} />}
+      {error && <ErrorState message={error} onRetry={() => loadPage(page)} />}
       {!loading && !error && items.length === 0 && (
         <EmptyState message={`Tidak ada komik genre "${title}" dari sumber data.`} />
       )}
@@ -155,15 +215,7 @@ function GenreDetailContent({ slug }: { slug: string }) {
               <KomikListCard key={`${item.slug}#${item.latestChapter?.url ?? ""}`} item={item} />
             ))}
           </div>
-          {hasNext && (
-            <button
-              onClick={() => load(page + 1, orderby, tipe, true)}
-              disabled={loadingMore}
-              className="mx-auto min-h-11 rounded-full border border-line px-6 py-2 text-sm font-semibold text-fg disabled:opacity-50 sm:min-h-0 dark:border-line-dark dark:text-fg-dark"
-            >
-              {loadingMore ? "Memuat…" : "Muat lebih banyak"}
-            </button>
-          )}
+          <Pagination page={page} hasNext={hasNext} pending={loading} onChange={goTo} />
         </>
       )}
     </div>
