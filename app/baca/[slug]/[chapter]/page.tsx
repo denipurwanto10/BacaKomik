@@ -589,16 +589,17 @@ export default function ReaderPage({
         </div>
       )}
 
-      {/* Tombol kembali-ke-atas — naik di atas overlay tap-nav agar tidak
-          bertabrakan (overlay ~64px + gap 12px → bottom ± 5.5rem mobile). */}
+      {/* Tombol kembali-ke-atas — digantung cukup tinggi agar tidak
+          menabrak menu Prev/Isi/Next permanen di dasar konten maupun
+          overlay tap-nav (mobile + desktop). */}
       {((mode === "scroll" && showTop) || mode === "page") && (
         <button
           onClick={scrollTop}
           aria-label="Kembali ke atas"
-          className={`fixed right-3 z-40 flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border border-line-dark bg-ink-2/95 text-fg-dark shadow-xl backdrop-blur transition-all active:scale-95 sm:bottom-6 sm:right-6 dark:border-line-dark ${
+          className={`fixed right-3 z-40 flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border border-line-dark bg-ink-2/95 text-fg-dark shadow-xl backdrop-blur transition-all active:scale-95 sm:right-6 dark:border-line-dark ${
             mode === "scroll" && showTapNav
-              ? "bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))]"
-              : "bottom-[calc(1rem+env(safe-area-inset-bottom,0px))]"
+              ? "bottom-[calc(8.5rem+env(safe-area-inset-bottom,0px))] sm:bottom-36"
+              : "bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] sm:bottom-24"
           }`}
         >
           <IconUp className="h-5 w-5" />
