@@ -546,7 +546,7 @@ export default function ReaderPage({
       <ChapterNav data={data} slug={data.mangaSlug} chapter={chapter} />
 
       {/* Komentar chapter ini — read-only, tanpa login. */}
-      <Comments kind="chapter" ref={`/${slug}-chapter-${chapter}/`} title={`Komentar ${data.chapterLabel || `Chapter ${chapter}`}`} />
+      <Comments kind="chapter" ref={`/${slug}-chapter-${chapter}/`} />
 
       {/* Overlay tap: Prev / Daftar isi / Next — muncul saat gambar di-tap.
           Tab bar disembunyikan saat membaca, jadi cukup 1rem + safe-area dari bawah. */}

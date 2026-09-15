@@ -247,7 +247,7 @@ function AllCommentsModal({
           <h3 className="flex min-w-0 flex-1 items-center gap-2 font-display text-base font-bold text-fg dark:text-fg-dark">
             <span className="h-4 w-1.5 shrink-0 rounded-full bg-accent" />
             <span className="truncate">
-              Semua Komentar
+              Semua
               {total > 0 && <span className="ml-1.5 text-xs font-semibold text-muted dark:text-muted-dark">({total})</span>}
             </span>
           </h3>
