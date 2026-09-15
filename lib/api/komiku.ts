@@ -717,6 +717,18 @@ interface PlusCommentRaw {
   reaction_emotes?: { emote?: string; total?: number }[];
 }
 
+/** Basis URL gambar stiker Komiku Plus (lihat memberv1.5.js Komiku).
+ *  API hanya mengembalikan nama file (mis. "sticker/abc.webp"), jadi
+ *  harus diawali basis ini — tanpa itu gambar tampil rusak (404). */
+const STICKER_BASE = "https://plus.komiku.org/assets/media/images/";
+
+function stickerUrl(raw: unknown): string | undefined {
+  const s = String(raw ?? "").trim();
+  if (!s) return undefined;
+  if (/^https?:\/\//i.test(s)) return s;
+  return STICKER_BASE + s.replace(/^\/+/, "");
+}
+
 function mapComment(c: PlusCommentRaw): import("./types").KomikuComment {
   const reactions = Array.isArray(c.reaction_emotes)
     ? c.reaction_emotes
@@ -728,7 +740,7 @@ function mapComment(c: PlusCommentRaw): import("./types").KomikuComment {
     author: String(c.member_display_name ?? "Anonim").trim() || "Anonim",
     avatar: String(c.member_profile_image ?? ""),
     body: String(c.body ?? ""),
-    ...(c.sticker_image ? { sticker: String(c.sticker_image) } : {}),
+    ...(stickerUrl(c.sticker_image) ? { sticker: stickerUrl(c.sticker_image) as string } : {}),
     time: String(c.relative_time ?? ""),
     ...(c.chapter_title ? { chapterTitle: String(c.chapter_title) } : {}),
     ...(typeof c.reply_total === "number" ? { replyCount: c.reply_total } : {}),
@@ -742,7 +754,7 @@ function mapReply(c: PlusCommentRaw): import("./types").KomikuReply {
     author: String(c.member_display_name ?? "Anonim").trim() || "Anonim",
     avatar: String(c.member_profile_image ?? ""),
     body: String(c.body ?? ""),
-    ...(c.sticker_image ? { sticker: String(c.sticker_image) } : {}),
+    ...(stickerUrl(c.sticker_image) ? { sticker: stickerUrl(c.sticker_image) as string } : {}),
     time: String(c.relative_time ?? ""),
   };
 }
