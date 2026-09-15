@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { apiGet, invalidateApi } from "@/lib/client";
 import type { GenreRef, MangaCard } from "@/lib/api/types";
 import { KomikListCard, KomikListSkeleton } from "@/components/komik-list";
@@ -38,17 +38,35 @@ const STATUSES = [
   { v: "end", label: "Tamat" },
 ] as const;
 
+/** Ambil nilai awal: URL dulu, cadangan sessionStorage (pilihan terakhir). */
+function initFromUrlOrSession(sp: URLSearchParams, key: string): string {
+  const fromUrl = sp.get(key);
+  if (fromUrl !== null) return fromUrl;
+  try {
+    return sessionStorage.getItem(`bk-terbaru-${key}`) ?? "";
+  } catch {
+    return "";
+  }
+}
+
 function TerbaruContent() {
+  const router = useRouter();
   const sp = useSearchParams();
-  const initGenre1 = sp.get("genre") || "";
-  const initGenre2 = sp.get("genre2") || "";
-  const [orderby, setOrderby] = useState<Orderby>(() => parseOrderby(sp.get("orderby")));
-  const [tipe, setTipe] = useState("");
-  const [status, setStatus] = useState("");
+  const [orderby, setOrderby] = useState<Orderby>(() => {
+    const fromUrl = sp.get("orderby");
+    if (fromUrl) return parseOrderby(fromUrl);
+    try {
+      return parseOrderby(sessionStorage.getItem("bk-terbaru-orderby"));
+    } catch {
+      return "modified";
+    }
+  });
+  const [tipe, setTipe] = useState(() => initFromUrlOrSession(sp, "tipe"));
+  const [status, setStatus] = useState(() => initFromUrlOrSession(sp, "status"));
   // Multi-pilih genre: 2 slot (genre + genre2) — batas dari sumber data.
   // Bisa diisi dari URL (?genre=&genre2=) hasil deep-link halaman Genre.
-  const [genre1, setGenre1] = useState(initGenre1);
-  const [genre2, setGenre2] = useState(initGenre2);
+  const [genre1, setGenre1] = useState(() => initFromUrlOrSession(sp, "genre"));
+  const [genre2, setGenre2] = useState(() => initFromUrlOrSession(sp, "genre2"));
   const [genreOpts, setGenreOpts] = useState<GenreRef[]>([]);
   const [items, setItems] = useState<MangaCard[]>([]);
   const [page, setPage] = useState(1);
@@ -100,6 +118,26 @@ function TerbaruContent() {
     // Saat membuka /terbaru, jangan gunakan hasil lama dari memory cache.
     invalidateApi();
     load(1, orderby, tipe, status, genre1, genre2, false);
+    // Pilihan filter ditulis ke URL (replace, tanpa reload) + sessionStorage
+    // agar tidak reset saat buka komik lalu kembali — back button, tab
+    // "Terbaru", maupun refresh semua mempertahankan pilihan terakhir.
+    const qs = new URLSearchParams();
+    if (orderby !== "modified") qs.set("orderby", orderby);
+    if (tipe) qs.set("tipe", tipe);
+    if (status) qs.set("status", status);
+    if (genre1) qs.set("genre", genre1);
+    if (genre2) qs.set("genre2", genre2);
+    const target = qs.size > 0 ? `/terbaru?${qs}` : "/terbaru";
+    router.replace(target, { scroll: false });
+    try {
+      sessionStorage.setItem("bk-terbaru-orderby", orderby);
+      sessionStorage.setItem("bk-terbaru-tipe", tipe);
+      sessionStorage.setItem("bk-terbaru-status", status);
+      sessionStorage.setItem("bk-terbaru-genre", genre1);
+      sessionStorage.setItem("bk-terbaru-genre2", genre2);
+    } catch {
+      // storage diblokir — URL saja sudah cukup
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderby, tipe, status, genre1, genre2]);
 
