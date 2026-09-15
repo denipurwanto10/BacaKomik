@@ -9,6 +9,12 @@ export interface BookmarkEntry {
   cover: string;
   /** tipe komik bila diketahui (badge di daftar favorit) */
   type?: string;
+  /**
+   * latestChapter.url terakhir terlihat saat membuka halaman detail.
+   * Dipakai badge "BARU" di Favorit — absen untuk bookmark lama
+   * (dibuat sebelum fitur ini ada), diperlakukan sebagai belum terlihat.
+   */
+  latestSeen?: string;
   /** timestamp ms ditambahkan */
   addedAt: number;
 }
@@ -68,6 +74,31 @@ export function removeBookmark(slug: string): BookmarkEntry[] {
   writeAll(all);
   notify();
   return all;
+}
+
+/** Ambil satu bookmark berdasarkan slug. */
+export function getBookmark(slug: string): BookmarkEntry | null {
+  return readAll().find((e) => e.slug === slug) ?? null;
+}
+
+/**
+ * Catat latestChapter.url terakhir yang terlihat di halaman detail.
+ * Dipakai badge "BARU" di Favorit — hanya update bila bookmark masih ada.
+ */
+export function setLatestSeen(slug: string, latestUrl: string): void {
+  const prev = readAll();
+  const idx = prev.findIndex((e) => e.slug === slug);
+  if (idx < 0) return;
+  if (prev[idx].latestSeen === latestUrl) return;
+  prev[idx] = { ...prev[idx], latestSeen: latestUrl };
+  writeAll(prev);
+  notify();
+}
+
+/** Ambil token chapter dari URL Komiku "/slug-chapter-11-2/" → "11-2". */
+export function chapterTokenFromKomikuUrl(url: string): string {
+  const m = url.match(/-chapter-(.+?)\/?$/i);
+  return m ? m[1] : "";
 }
 
 /** Hook reaktif: daftar favorit terbaru dulu, ter-update lintas tab/halaman. */

@@ -2,11 +2,11 @@
 
 import { use, useCallback, useEffect, useState } from "react";
 import { apiGet } from "@/lib/client";
-import { isBookmarked, toggleBookmark } from "@/lib/bookmarks";
+import { isBookmarked, setLatestSeen, toggleBookmark } from "@/lib/bookmarks";
 import { getHistoryEntry, type HistoryEntry } from "@/lib/history";
-import type { MangaDetail } from "@/lib/api/types";
+import type { MangaCard, MangaDetail } from "@/lib/api/types";
 import { chapterPathToRoute, TypeBadge } from "@/components/cards";
-import { ErrorState, EmptyState } from "@/components/states";
+import { ErrorState, EmptyState, MangaGrid } from "@/components/states";
 import Link from "next/link";
 
 function DetailSkeleton() {
@@ -24,10 +24,42 @@ function DetailSkeleton() {
   );
 }
 
+interface GenrePayload {
+  genre: string;
+  page: number;
+  items: MangaCard[];
+  hasNextPage: boolean;
+}
+
+/** Komik Serupa (se-genre): 1 request ringan, gagal diam-diam tanpa merusak detail. */
+function useSimilar(detail: MangaDetail | null) {
+  const [items, setItems] = useState<MangaCard[] | null>(null);
+  useEffect(() => {
+    setItems(null);
+    const first = detail?.genres[0]?.slug;
+    if (!first || !detail) return;
+    let cancelled = false;
+    apiGet<GenrePayload>(`/api/genre/${encodeURIComponent(first)}`)
+      .then((res) => {
+        if (!cancelled) {
+          setItems(res.items.filter((it) => it.slug !== detail.slug).slice(0, 12));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setItems([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [detail]);
+  return items;
+}
+
 export default function MangaDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const [detail, setDetail] = useState<MangaDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const similar = useSimilar(detail);
   const [filter, setFilter] = useState("");
   // Urutan daftar chapter: terbaru dulu (bawaan Komiku) atau terlama dulu.
   const [asc, setAsc] = useState(false);
@@ -54,7 +86,13 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
     setError(null);
     setDetail(null);
     try {
-      setDetail(await apiGet<MangaDetail>(`/api/manga/${encodeURIComponent(slug)}`));
+      const d = await apiGet<MangaDetail>(`/api/manga/${encodeURIComponent(slug)}`);
+      setDetail(d);
+      // Tandai chapter terbaru sudah terlihat — badge "BARU" di Favorit
+      // hilang untuk komik ini sampai ada chapter yang lebih baru.
+      if (d.latestChapter?.url && isBookmarked(d.slug)) {
+        setLatestSeen(d.slug, d.latestChapter.url);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Gagal memuat data.");
     }
@@ -110,6 +148,12 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
                   title: detail.title,
                   cover: detail.cover,
                   ...(detail.type ? { type: detail.type } : {}),
+                  // Bookmark baru langsung menandai chapter terbaru saat ini
+                  // sebagai "sudah terlihat" — badge BARU hanya untuk update
+                  // yang datang SETELAH ditambahkan ke favorit.
+                  ...(detail.latestChapter?.url
+                    ? { latestSeen: detail.latestChapter.url }
+                    : {}),
                 });
                 setSaved(now);
               }}
@@ -274,6 +318,26 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
           })}
         </div>
       </section>
+
+      {/* Komik Serupa — 12 judul se-genre utama (tanpa judul saat ini).
+          Gagal fetch = section hilang diam-diam, detail tetap utuh. */}
+      {similar !== null && similar.length > 0 && detail.genres[0] && (
+        <section className="min-w-0">
+          <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
+            <h2 className="flex min-w-0 flex-1 items-center gap-2 font-display text-base font-bold text-fg dark:text-fg-dark">
+              <span className="h-4 w-1.5 shrink-0 rounded-full bg-accent" />
+              <span className="truncate">Serupa: {detail.genres[0].name}</span>
+            </h2>
+            <Link
+              href={`/genre/${detail.genres[0].slug}`}
+              className="shrink-0 rounded-full px-2 py-1 text-xs font-semibold text-accent hover:underline"
+            >
+              Lihat semua
+            </Link>
+          </div>
+          <MangaGrid items={similar} />
+        </section>
+      )}
     </article>
   );
 }

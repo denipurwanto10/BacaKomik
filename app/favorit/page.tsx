@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { useBookmarks } from "@/lib/bookmarks";
-import { TypeBadge } from "@/components/cards";
+import { useEffect, useState } from "react";
+import { apiGet } from "@/lib/client";
+import { chapterTokenFromKomikuUrl, useBookmarks } from "@/lib/bookmarks";
+import { useHistory } from "@/lib/history";
+import type { MangaDetail } from "@/lib/api/types";
+import { chapterPathToRoute, TypeBadge } from "@/components/cards";
 import { SectionHead, EmptyState } from "@/components/states";
 
 function IconTrash({ className }: { className?: string }) {
@@ -20,13 +23,69 @@ function IconTrash({ className }: { className?: string }) {
   );
 }
 
+/** Chapter terbaru yang belum dibaca/dilihat: { label, url Komiku }. */
+type UpdateMap = Record<string, { label: string; url: string }>;
+
 export default function FavoritPage() {
   const { bookmarks, remove } = useBookmarks();
+  const { entries: history } = useHistory();
   const [filter, setFilter] = useState("");
+  // Badge "BARU": dicek di background setelah daftar tampil (konkurensi 3,
+  // pakai cache 30 dtk apiGet — ramah rate limit). Gagal fetch = tanpa badge.
+  const [updates, setUpdates] = useState<UpdateMap>({});
+
+  useEffect(() => {
+    if (bookmarks.length === 0) {
+      setUpdates({});
+      return;
+    }
+    let cancelled = false;
+    const histMap = new Map(history.map((e) => [e.slug, e.chapter]));
+    const run = async () => {
+      const out: UpdateMap = {};
+      const queue = [...bookmarks];
+      const workers = Array.from({ length: 3 }, async () => {
+        while (queue.length > 0 && !cancelled) {
+          const b = queue.shift();
+          if (!b) break;
+          try {
+            const d = await apiGet<MangaDetail>(
+              `/api/manga/${encodeURIComponent(b.slug)}`,
+            );
+            if (cancelled || !d.latestChapter) continue;
+            const latestTok = chapterTokenFromKomikuUrl(d.latestChapter.url);
+            if (!latestTok) continue;
+            // Sudah terlihat = pernah buka detail saat chapter ini terbaru,
+            // ATAU sedang membaca chapter ini (riwayat). Tanpa keduanya
+            // (bookmark lama yang belum pernah dibuka) → jangan badge,
+            // jadikan kunjungan detail berikutnya sebagai baseline.
+            const seen = new Set(
+              [
+                b.latestSeen ? chapterTokenFromKomikuUrl(b.latestSeen) : "",
+                histMap.get(b.slug) ?? "",
+              ].filter(Boolean),
+            );
+            if (seen.size > 0 && !seen.has(latestTok)) {
+              out[b.slug] = { label: d.latestChapter.label, url: d.latestChapter.url };
+            }
+          } catch {
+            // Tanpa badge untuk judul ini — detail diklik user akan fetch ulang.
+          }
+        }
+      });
+      await Promise.all(workers);
+      if (!cancelled) setUpdates(out);
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [bookmarks, history]);
 
   const filtered = bookmarks.filter((b) =>
     b.title.toLowerCase().includes(filter.trim().toLowerCase()),
   );
+  const updateCount = bookmarks.filter((b) => updates[b.slug]).length;
 
   return (
     <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
@@ -35,6 +94,12 @@ export default function FavoritPage() {
         {bookmarks.length > 0 && (
           <p className="-mt-2 text-xs text-muted dark:text-muted-dark">
             {bookmarks.length} judul · tersimpan di perangkat ini
+            {updateCount > 0 && (
+              <span className="font-semibold text-green-600 dark:text-green-400">
+                {" "}
+                · {updateCount} update baru
+              </span>
+            )}
           </p>
         )}
       </div>
@@ -64,30 +129,41 @@ export default function FavoritPage() {
               key={b.slug}
               className="group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-paper-2 transition-shadow hover:shadow-lg hover:shadow-black/5 dark:border-line-dark dark:bg-ink-2 dark:hover:shadow-black/30"
             >
-              <Link
-                href={`/komik/${b.slug}`}
-                aria-label={b.title}
-                className="relative block aspect-[3/4] w-full shrink-0 overflow-hidden bg-paper-3 dark:bg-ink-3"
-              >
-                {b.cover ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={b.cover}
-                    alt={b.title}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center p-2 text-center text-xs text-muted dark:text-muted-dark">
-                    Tanpa cover
-                  </div>
-                )}
+              <div className="relative aspect-[3/4] w-full shrink-0 overflow-hidden bg-paper-3 dark:bg-ink-3">
+                <Link
+                  href={`/komik/${b.slug}`}
+                  aria-label={b.title}
+                  className="absolute inset-0 block"
+                >
+                  {b.cover ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={b.cover}
+                      alt={b.title}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+                    />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center p-2 text-center text-xs text-muted dark:text-muted-dark">
+                      Tanpa cover
+                    </span>
+                  )}
+                </Link>
                 {b.type && (
-                  <div className="absolute left-1.5 top-1.5">
+                  <div className="pointer-events-none absolute left-1.5 top-1.5">
                     <TypeBadge type={b.type} />
                   </div>
                 )}
-              </Link>
+                {updates[b.slug] && (
+                  <Link
+                    href={chapterPathToRoute(updates[b.slug].url)}
+                    title={`Baca ${updates[b.slug].label} sekarang`}
+                    className="absolute bottom-1.5 left-1.5 max-w-[calc(100%-0.75rem)] truncate rounded-md bg-green-600 px-2 py-0.5 text-[10px] font-bold text-white shadow"
+                  >
+                    BARU · {updates[b.slug].label}
+                  </Link>
+                )}
+              </div>
               <button
                 onClick={() => remove(b.slug)}
                 aria-label={`Hapus ${b.title} dari favorit`}

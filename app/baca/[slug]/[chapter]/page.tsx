@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { use, useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { apiGet, peekApiCache, prefetchApi } from "@/lib/client";
-import { saveHistory } from "@/lib/history";
+import { getHistoryEntry, saveHistory } from "@/lib/history";
 import type { ChapterData, MangaDetail } from "@/lib/api/types";
 import { chapterPathToRoute } from "@/components/cards";
 import { ErrorState } from "@/components/states";
@@ -136,6 +137,7 @@ export default function ReaderPage({
   params: Promise<{ slug: string; chapter: string }>;
 }) {
   const { slug, chapter } = use(params);
+  const router = useRouter();
   const [data, setData] = useState<ChapterData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [failed, setFailed] = useState<Set<number>>(new Set());
@@ -144,9 +146,20 @@ export default function ReaderPage({
   // Progres terakhir yang sudah tersimpan — ditulis ulang hanya saat
   // melewati kelipatan 10% agar tidak menulis localStorage tiap scroll.
   const savedProgressRef = useRef(0);
+  // Indeks gambar 0-based terakhir terlihat (untuk persist posisi halaman).
+  const pageNumRef = useRef(0);
   // Mode baca: "scroll" (semua halaman memanjang) atau "page" (satu per satu).
   const [mode, setMode] = useState<"scroll" | "page">("scroll");
   const [pageIdx, setPageIdx] = useState(0);
+  // Dropdown pindah chapter: daftar dari cache detail (hasil prefetch kartu).
+  const [chapters, setChapters] = useState<MangaDetail["chapters"] | null>(null);
+  // Restore posisi sekali per chapter (mode scroll: rasio scroll, mode page:
+  // indeks halaman). Diambil dari riwayat sebelum overwrite persist awal.
+  const restoredRef = useRef("");
+  const [restorePct, setRestorePct] = useState<number | null>(null);
+  // Penanda persist-awal sudah jalan untuk chapter ini (efek jalan ulang
+  // saat restore selesai / mode diganti — persist 0 hanya sekali).
+  const initPersistRef = useRef("");
   // Overlay navigasi chapter (Prev / Daftar isi / Next) — muncul saat gambar
   // di-tap (mobile) atau tombol daftar ditekan. Auto-sembunyi 6 detik.
   const [showTapNav, setShowTapNav] = useState(false);
@@ -179,14 +192,52 @@ export default function ReaderPage({
     setProgress(0);
     setShowTapNav(false);
     setShowTop(false);
+    setRestorePct(null);
+    setChapters(null);
+    pageNumRef.current = 0;
     savedProgressRef.current = 0;
+    // Posisi tersimpan chapter ini (bila dibuka ulang) — dibaca SEBELUM
+    // persist awal menimpanya; restore dilakukan sekali setelah gambar siap.
+    const prev = getHistoryEntry(slug);
+    const sameChapter = prev && prev.chapter === chapter;
+    const savedPage =
+      sameChapter && typeof prev.page === "number" && prev.page >= 0 ? prev.page : 0;
+    const savedPct =
+      sameChapter && prev.progress > 0 && prev.progress < 1 ? prev.progress : null;
     try {
       setData(
         await apiGet<ChapterData>(
           `/api/chapter/${encodeURIComponent(slug)}/${encodeURIComponent(chapter)}`,
         ),
       );
-      window.scrollTo({ top: 0 });
+      // Daftar chapter untuk dropdown: dari cache detail bila ada
+      // (hasil hover-prefetch kartu / kunjungan halaman detail),
+      // kalau tidak ada fetch ringan di background (lihat effect di bawah).
+      const cached = peekApiCache<MangaDetail>(`/api/manga/${encodeURIComponent(slug)}`);
+      if (cached) {
+        setChapters(cached.chapters);
+        // Panaskan prev/next chapter dari daftar agar dropdown terasa instan.
+        const idx = cached.chapters.findIndex((c) =>
+          c.url.includes(`-chapter-${chapter}/`),
+        );
+        for (const j of [idx - 1, idx + 1]) {
+          const tok = cached.chapters[j]?.url.match(/-chapter-(.+?)\/?$/)?.[1];
+          if (tok) {
+            prefetchApi(
+              `/api/chapter/${encodeURIComponent(slug)}/${encodeURIComponent(tok)}`,
+            );
+          }
+        }
+      }
+      const key = `${slug}/${chapter}`;
+      if (restoredRef.current !== key && (savedPage > 0 || savedPct !== null)) {
+        restoredRef.current = key;
+        setPageIdx(savedPage);
+        pageNumRef.current = savedPage;
+        setRestorePct(savedPct);
+      } else {
+        window.scrollTo({ top: 0 });
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Gagal memuat chapter.");
     }
@@ -215,6 +266,24 @@ export default function ReaderPage({
     }
   }, [data, chapter]);
 
+  // Dropdown chapter: bila dibuka langsung (tanpa lewat detail/kartu),
+  // cache kosong — ambil daftar dari server di background, 1 request.
+  // Gagal = dropdown tidak tampil, navigasi Prev/Next tetap jalan.
+  useEffect(() => {
+    if (!data || chapters !== null) return;
+    let cancelled = false;
+    apiGet<MangaDetail>(`/api/manga/${encodeURIComponent(data.mangaSlug)}`)
+      .then((d) => {
+        if (!cancelled) setChapters(d.chapters);
+      })
+      .catch(() => {
+        if (!cancelled) setChapters([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [data, chapters]);
+
   // Progress bar bacaan — mengikuti posisi scroll relatif terhadap tinggi halaman gambar.
   // Progres riwayat ditulis ulang tiap melewati kelipatan 10%.
   // Di mode "page", progres = posisi halaman (hal 1/N … N/N).
@@ -227,7 +296,7 @@ export default function ReaderPage({
       `/api/manga/${encodeURIComponent(data.mangaSlug)}`,
     );
     const cover = cachedDetail?.cover ?? "";
-    const persist = (pct: number) => {
+    const persist = (pct: number, page: number) => {
       saveHistory({
         slug: data.mangaSlug,
         title: baseTitle,
@@ -236,18 +305,54 @@ export default function ReaderPage({
         chapterLabel: data.chapterLabel,
         route: `/baca/${data.mangaSlug}/${chapter}`,
         progress: pct,
+        page,
       });
     };
     if (mode === "page") {
       const pct = data.images.length <= 1 ? 1 : pageIdx / (data.images.length - 1);
       savedProgressRef.current = pct;
+      pageNumRef.current = pageIdx;
       setProgress(pct);
-      persist(pct);
+      persist(pct, pageIdx);
       return;
     }
-    // Catat riwayat begitu chapter berhasil dimuat (posisi awal).
-    savedProgressRef.current = 0;
-    persist(0);
+    // Catat riwayat begitu chapter berhasil dimuat — hormati posisi
+    // tersimpan (buka ulang): jangan timpa dengan 0 bila ada restore.
+    // Guard per chapter karena efek jalan ulang saat restore selesai.
+    const initKey = `${data.mangaSlug}/${chapter}`;
+    if (initPersistRef.current !== initKey) {
+      initPersistRef.current = initKey;
+      const startPage = pageNumRef.current;
+      if (startPage === 0 && restorePct === null) {
+        savedProgressRef.current = 0;
+        persist(0, 0);
+      } else {
+        const pct = restorePct ?? 0;
+        savedProgressRef.current = Math.floor(pct * 10) / 10;
+        setProgress(pct);
+      }
+    }
+    // Restore scroll sekali setelah gambar ter-render (2 frame agar
+    // tinggi kontainer sudah final, baru lompat tanpa animasi).
+    // Listener scroll tetap dipasang di bawah agar persist berjalan.
+    let restoreTimer = 0;
+    let hasRestoreTimer = false;
+    if (restorePct !== null) {
+      const target = restorePct;
+      hasRestoreTimer = true;
+      restoreTimer = window.setTimeout(() => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            const el = pagesRef.current;
+            if (el) {
+              const total = el.offsetHeight - window.innerHeight;
+              if (total > 0) window.scrollTo({ top: Math.round(total * target) });
+            }
+            setRestorePct(null);
+          });
+        });
+      }, 350);
+    }
     const onScroll = () => {
       const el = pagesRef.current;
       if (!el) return;
@@ -264,15 +369,26 @@ export default function ReaderPage({
       const scrolled = -rect.top;
       const pct = total <= 0 ? 1 : Math.min(1, Math.max(0, scrolled / total));
       setProgress(pct);
+      // Indeks gambar paling atas yang terlihat — untuk "lanjutkan di posisi sama".
+      const imgs = el.querySelectorAll("img[data-pg]");
+      let cur = 0;
+      for (let i = 0; i < imgs.length; i++) {
+        if ((imgs[i] as HTMLElement).getBoundingClientRect().top <= 80) cur = i;
+        else break;
+      }
+      pageNumRef.current = cur;
       // Simpan hanya saat melewati batas 10% berikutnya.
       if (pct - savedProgressRef.current >= 0.1 || pct >= 1) {
         savedProgressRef.current = pct >= 1 ? 1 : Math.floor(pct * 10) / 10;
-        persist(savedProgressRef.current);
+        persist(savedProgressRef.current, pageNumRef.current);
       }
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (hasRestoreTimer) window.clearTimeout(restoreTimer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, mode, pageIdx]);
 
@@ -343,6 +459,36 @@ export default function ReaderPage({
       </div>
 
       <ChapterNav data={data} slug={data.mangaSlug} chapter={chapter} />
+
+      {/* Pindah chapter tanpa balik ke detail — daftar dari cache detail,
+          dimuat di background bila cache kosong (lihat effect di bawah). */}
+      {chapters !== null && chapters.length > 1 && (
+        <label className="flex min-w-0 items-center gap-2 rounded-2xl border border-line bg-paper-2 px-3 py-2 text-sm dark:border-line-dark dark:bg-ink-2">
+          <span className="shrink-0 text-xs font-semibold text-muted dark:text-muted-dark">
+            Chapter
+          </span>
+          <select
+            value={chapter}
+            onChange={(e) => {
+              const tok = e.target.value;
+              if (tok && tok !== chapter) router.push(`/baca/${data.mangaSlug}/${tok}`);
+            }}
+            aria-label="Pindah chapter"
+            className="h-9 min-w-0 flex-1 truncate rounded-lg bg-transparent text-sm font-semibold text-fg outline-none dark:text-fg-dark"
+          >
+            {chapters.map((c) => {
+              const tok = c.url.match(/-chapter-(.+?)\/?$/)?.[1] ?? "";
+              if (!tok) return null;
+              return (
+                <option key={c.url} value={tok}>
+                  {c.title}
+                  {c.date ? ` · ${c.date}` : ""}
+                </option>
+              );
+            })}
+          </select>
+        </label>
+      )}
 
       {mode === "scroll" ? (
         <div ref={pagesRef} className="flex min-w-0 flex-col overflow-hidden rounded-lg bg-black min-[420px]:rounded-xl">

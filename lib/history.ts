@@ -18,6 +18,11 @@ export interface HistoryEntry {
   route: string;
   /** progres halaman 0..1 terakhir (untuk "terakhir di hal. X") */
   progress: number;
+  /**
+   * Indeks gambar 0-based terakhir terlihat (untuk lanjutkan di posisi
+   * yang sama saat chapter dibuka ulang — dipakai mode Halaman maupun Scroll).
+   */
+  page?: number;
   /** timestamp ms terakhir dibaca */
   updatedAt: number;
 }
