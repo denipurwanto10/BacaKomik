@@ -1,6 +1,7 @@
 "use client";
 
-import { use, useCallback, useEffect, useState } from "react";
+import { Suspense, use, useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { apiGet } from "@/lib/client";
 import type { MangaCard } from "@/lib/api/types";
 import { KomikListCard, KomikListSkeleton } from "@/components/komik-list";
@@ -27,10 +28,29 @@ const TIPES = [
   { v: "manhwa", label: "Manhwa" },
 ] as const;
 
-export default function GenreDetailPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = use(params);
-  const [orderby, setOrderby] = useState<Orderby>("modified");
-  const [tipe, setTipe] = useState("");
+function GenreDetailContent({ slug }: { slug: string }) {
+  const router = useRouter();
+  const sp = useSearchParams();
+  const [orderby, setOrderby] = useState<Orderby>(() => {
+    const fromUrl = sp.get("orderby") as Orderby | null;
+    if (fromUrl && ORDERBYS.some((o) => o.v === fromUrl)) return fromUrl;
+    try {
+      const saved = sessionStorage.getItem(`bk-genre-${slug}-orderby`) as Orderby | null;
+      if (saved && ORDERBYS.some((o) => o.v === saved)) return saved;
+    } catch {
+      // abaikan — default modified
+    }
+    return "modified";
+  });
+  const [tipe, setTipe] = useState(() => {
+    const fromUrl = sp.get("tipe");
+    if (fromUrl !== null) return fromUrl;
+    try {
+      return sessionStorage.getItem(`bk-genre-${slug}-tipe`) ?? "";
+    } catch {
+      return "";
+    }
+  });
   const [items, setItems] = useState<MangaCard[]>([]);
   const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(false);
@@ -74,6 +94,20 @@ export default function GenreDetailPage({ params }: { params: Promise<{ slug: st
 
   useEffect(() => {
     load(1, orderby, tipe, false);
+    // Pilihan filter ditulis ke URL (replace, tanpa reload) + sessionStorage
+    // per-genre agar tidak reset saat buka komik lalu kembali.
+    const qs = new URLSearchParams();
+    if (orderby !== "modified") qs.set("orderby", orderby);
+    if (tipe) qs.set("tipe", tipe);
+    router.replace(qs.size > 0 ? `/genre/${slug}?${qs}` : `/genre/${slug}`, {
+      scroll: false,
+    });
+    try {
+      sessionStorage.setItem(`bk-genre-${slug}-orderby`, orderby);
+      sessionStorage.setItem(`bk-genre-${slug}-tipe`, tipe);
+    } catch {
+      // storage diblokir — URL saja sudah cukup
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load, orderby, tipe]);
 
@@ -133,5 +167,14 @@ export default function GenreDetailPage({ params }: { params: Promise<{ slug: st
         </>
       )}
     </div>
+  );
+}
+
+export default function GenreDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
+  return (
+    <Suspense fallback={<KomikListSkeleton count={8} />}>
+      <GenreDetailContent slug={slug} />
+    </Suspense>
   );
 }
