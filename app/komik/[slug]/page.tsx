@@ -5,8 +5,8 @@ import { apiGet } from "@/lib/client";
 import { isBookmarked, setLatestSeen, toggleBookmark } from "@/lib/bookmarks";
 import { getHistoryEntry, type HistoryEntry } from "@/lib/history";
 import type { MangaCard, MangaDetail } from "@/lib/api/types";
-import { chapterPathToRoute, TypeBadge } from "@/components/cards";
-import { ErrorState, EmptyState, MangaGrid } from "@/components/states";
+import { chapterPathToRoute, TypeBadge, UpdateRow } from "@/components/cards";
+import { ErrorState, EmptyState } from "@/components/states";
 import Link from "next/link";
 
 function DetailSkeleton() {
@@ -242,9 +242,9 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
         </div>
       </div>
 
-      {/* Sinopsis */}
+      {/* Sinopsis — dibungkus kartu seperti section beranda */}
       {detail.synopsis && (
-        <section className="min-w-0">
+        <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
           <h2 className="mb-2 flex items-center gap-2 font-display text-base font-bold text-fg dark:text-fg-dark">
             <span className="h-4 w-1.5 shrink-0 rounded-full bg-accent" />
             Sinopsis
@@ -256,7 +256,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
       )}
 
       {/* Daftar chapter */}
-      <section className="min-w-0">
+      <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
         <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
           <h2 className="flex min-w-0 flex-1 items-center gap-2 font-display text-base font-bold text-fg dark:text-fg-dark">
             <span className="h-4 w-1.5 shrink-0 rounded-full bg-accent" />
@@ -267,7 +267,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
               onClick={() => setAsc((a) => !a)}
               aria-label={asc ? "Urutkan terbaru dulu" : "Urutkan terlama dulu"}
               title={asc ? "Terbaru dulu" : "Terlama dulu"}
-              className="flex shrink-0 items-center gap-1 rounded-full border border-line px-3 py-1.5 text-[11px] font-semibold text-muted hover:border-accent hover:text-accent sm:text-xs dark:border-line-dark dark:text-muted-dark"
+              className="flex shrink-0 items-center gap-1 rounded-full border border-line bg-paper px-3 py-1.5 text-[11px] font-semibold text-muted hover:border-accent hover:text-accent sm:text-xs dark:border-line-dark dark:bg-ink dark:text-muted-dark"
             >
               <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5">
                 <path
@@ -288,7 +288,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Cari chapter…"
             enterKeyHint="search"
-            className="mb-2 h-12 w-full min-w-0 rounded-full border border-line bg-paper-2 px-4 text-base text-fg outline-none focus-visible:border-accent sm:h-10 sm:max-w-xs sm:text-sm dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark"
+            className="mb-2 h-12 w-full min-w-0 rounded-full border border-line bg-paper px-4 text-base text-fg outline-none focus-visible:border-accent sm:h-10 sm:max-w-xs sm:text-sm dark:border-line-dark dark:bg-ink dark:text-fg-dark"
           />
         )}
         {detail.chapters.length === 0 && (
@@ -297,14 +297,14 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
         {chapters.length === 0 && detail.chapters.length > 0 && (
           <EmptyState message={`Tidak ada chapter yang cocok dengan "${filter}".`} />
         )}
-        <div className="chapter-scroll max-h-[480px] min-w-0 divide-y divide-line overflow-y-auto rounded-2xl border border-line dark:divide-line-dark dark:border-line-dark">
+        <div className="chapter-scroll max-h-[480px] min-w-0 divide-y divide-line overflow-y-auto rounded-xl border border-line bg-paper dark:divide-line-dark dark:border-line-dark dark:bg-ink">
           {ordered.map((c) => {
             const isRead = !!history && c.url.includes(`-chapter-${history.chapter}/`);
             return (
               <Link
                 key={c.url}
                 href={chapterPathToRoute(c.url)}
-                className="flex min-w-0 items-center justify-between gap-2 px-3 py-3 text-sm min-[420px]:px-4 hover:bg-paper dark:hover:bg-ink"
+                className="flex min-w-0 items-center justify-between gap-2 bg-paper px-3 py-3 text-sm min-[420px]:px-4 hover:bg-paper-3 dark:bg-ink dark:hover:bg-ink-3"
               >
                 <span
                   className={`min-w-0 flex-1 truncate font-semibold ${isRead ? "text-muted dark:text-muted-dark" : "text-accent"}`}
@@ -319,10 +319,11 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
         </div>
       </section>
 
-      {/* Komik Serupa — 12 judul se-genre utama (tanpa judul saat ini).
+      {/* Komik Serupa — 12 judul se-genre utama (tanpa judul saat ini),
+          dibungkus kartu + baris horizontal seperti section beranda.
           Gagal fetch = section hilang diam-diam, detail tetap utuh. */}
       {similar !== null && similar.length > 0 && detail.genres[0] && (
-        <section className="min-w-0">
+        <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
           <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
             <h2 className="flex min-w-0 flex-1 items-center gap-2 font-display text-base font-bold text-fg dark:text-fg-dark">
               <span className="h-4 w-1.5 shrink-0 rounded-full bg-accent" />
@@ -335,7 +336,11 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
               Lihat semua
             </Link>
           </div>
-          <MangaGrid items={similar} />
+          <div className="grid gap-x-6 lg:grid-cols-2">
+            {similar.map((item) => (
+              <UpdateRow key={`${item.slug}#${item.latestChapter?.url ?? ""}`} item={item} />
+            ))}
+          </div>
         </section>
       )}
     </article>

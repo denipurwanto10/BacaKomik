@@ -491,12 +491,12 @@ export default function ReaderPage({
       )}
 
       {mode === "scroll" ? (
-        <div ref={pagesRef} className="flex min-w-0 flex-col overflow-hidden rounded-lg bg-black min-[420px]:rounded-xl">
+        <div ref={pagesRef} className="flex min-w-0 flex-col overflow-hidden rounded-lg bg-paper-3 min-[420px]:rounded-xl dark:bg-black">
         {data.images.map((src, i) =>
           failed.has(i) ? (
             <div
               key={i}
-              className="flex min-h-40 items-center justify-center border-b border-ink-3 px-4 py-8 text-center text-xs text-muted-dark"
+              className="flex min-h-40 items-center justify-center border-b border-line px-4 py-8 text-center text-xs text-muted dark:border-ink-3 dark:text-muted-dark"
             >
               Halaman {i + 1} gagal dimuat dari sumber data. Periksa koneksi lalu muat ulang.
             </div>
@@ -657,9 +657,9 @@ function PageMode({
 
   return (
     <div className="flex min-w-0 flex-col gap-2">
-      <div className="relative min-w-0 overflow-hidden rounded-lg bg-black min-[420px]:rounded-xl">
+      <div className="relative min-w-0 overflow-hidden rounded-lg bg-paper-3 min-[420px]:rounded-xl dark:bg-black">
         {isFailed ? (
-          <div className="flex min-h-60 items-center justify-center px-4 py-12 text-center text-xs text-muted-dark">
+          <div className="flex min-h-60 items-center justify-center px-4 py-12 text-center text-xs text-muted dark:text-muted-dark">
             Halaman {cur + 1} gagal dimuat dari sumber data. Periksa koneksi lalu muat ulang.
           </div>
         ) : (

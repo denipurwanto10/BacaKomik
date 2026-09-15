@@ -45,36 +45,26 @@ const STATUSES = [
   { v: "end", label: "Tamat" },
 ] as const;
 
-/** Ambil nilai awal: URL dulu, cadangan sessionStorage (pilihan terakhir). */
-function initFromUrlOrSession(sp: URLSearchParams, key: string): string {
-  const fromUrl = sp.get(key);
-  if (fromUrl !== null) return fromUrl;
-  try {
-    return sessionStorage.getItem(`bk-terbaru-${key}`) ?? "";
-  } catch {
-    return "";
-  }
+/** Ambil nilai awal HANYA dari URL. Masuk /terbaru tanpa parameter
+ *  (mis. dari tab Terbaru, "Lihat semua", dsb.) selalu mulai bersih
+ *  (default) — bukan memakai filter kunjungan sebelumnya. Filter hanya
+ *  bertahan via URL (?orderby=&tipe=&...), mis. saat kembali dari komik
+ *  atau refresh yang URL-nya sudah memuat parameter. */
+function initParam(sp: URLSearchParams, key: string): string {
+  return sp.get(key) ?? "";
 }
 
 function TerbaruContent() {
   const router = useRouter();
   const sp = useSearchParams();
 
-  const [orderby, setOrderby] = useState<Orderby>(() => {
-    const fromUrl = sp.get("orderby");
-    if (fromUrl) return parseOrderby(fromUrl);
-    try {
-      return parseOrderby(sessionStorage.getItem("bk-terbaru-orderby"));
-    } catch {
-      return "modified";
-    }
-  });
-  const [tipe, setTipe] = useState(() => initFromUrlOrSession(sp, "tipe"));
-  const [status, setStatus] = useState(() => initFromUrlOrSession(sp, "status"));
-  // Multi-pilih genre: 2 slot (genre + genre2) — batas dari sumber data.
-  // Bisa diisi dari URL (?genre=&genre2=) hasil deep-link halaman Genre.
-  const [genre1, setGenre1] = useState(() => initFromUrlOrSession(sp, "genre"));
-  const [genre2, setGenre2] = useState(() => initFromUrlOrSession(sp, "genre2"));
+  const [orderby, setOrderby] = useState<Orderby>(() => parseOrderby(sp.get("orderby")));
+  const [tipe, setTipe] = useState(() => initParam(sp, "tipe"));
+  const [status, setStatus] = useState(() => initParam(sp, "status"));
+  // Multi-pilih genre: 2 slot (genre + genre2) — HANYA dari URL (deep-link
+  // halaman Genre). Masuk /terbaru tanpa ?genre= harus mulai bersih.
+  const [genre1, setGenre1] = useState(() => initParam(sp, "genre"));
+  const [genre2, setGenre2] = useState(() => initParam(sp, "genre2"));
 
   const filtersKey = `${orderby}|${tipe}|${status}|${genre1}|${genre2}`;
 
@@ -166,8 +156,9 @@ function TerbaruContent() {
     [page, loading, loadPage, scrollToList],
   );
 
-  // Filter + halaman ditulis ke URL (replace, tanpa reload) + sessionStorage
-  // (filter saja) agar pilihan tidak reset saat buka komik lalu kembali.
+  // Filter + halaman ditulis ke URL (replace, tanpa reload) agar bertahan
+  // saat kembali dari komik maupun refresh. TIDAK disimpan ke sessionStorage:
+  // masuk /terbaru tanpa parameter harus selalu mulai bersih.
   useEffect(() => {
     if (!bootedRef.current) return;
     const qs = new URLSearchParams();
@@ -179,15 +170,6 @@ function TerbaruContent() {
     if (page > 1) qs.set("page", String(page));
     const target = qs.size > 0 ? `/terbaru?${qs}` : "/terbaru";
     router.replace(target, { scroll: false });
-    try {
-      sessionStorage.setItem("bk-terbaru-orderby", orderby);
-      sessionStorage.setItem("bk-terbaru-tipe", tipe);
-      sessionStorage.setItem("bk-terbaru-status", status);
-      sessionStorage.setItem("bk-terbaru-genre", genre1);
-      sessionStorage.setItem("bk-terbaru-genre2", genre2);
-    } catch {
-      // storage diblokir — URL saja sudah cukup
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtersKey, page]);
 
@@ -199,9 +181,12 @@ function TerbaruContent() {
   }, []);
 
   return (
-    <div ref={listTopRef} className="flex min-w-0 scroll-mt-16 flex-col gap-3 sm:gap-4">
-      <SectionHead title="Komik Terbaru" />
-      <div className="grid grid-cols-2 gap-2 sm:mx-0 sm:flex sm:items-center sm:gap-1.5 sm:overflow-x-auto sm:px-0 sm:pb-0.5">
+    <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
+      <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
+        <div ref={listTopRef} className="scroll-mt-16">
+          <SectionHead title="Komik Terbaru" />
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:mx-0 sm:flex sm:items-center sm:gap-1.5 sm:overflow-x-auto sm:px-0 sm:pb-0.5">
         <select
           value={orderby}
           onChange={(e) => setOrderby(parseOrderby(e.target.value))}
@@ -247,7 +232,7 @@ function TerbaruContent() {
           aria-label="Filter genre pertama"
           className="h-11 w-full min-w-0 truncate rounded-full border border-line bg-paper-2 px-3 text-sm font-medium text-fg sm:h-[30px] sm:w-auto sm:max-w-40 sm:shrink-0 sm:text-xs dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark"
         >
-          <option value="">Genre 1: Semua</option>
+          <option value="">Genre 1</option>
           {genreOpts.map((g) => (
             <option key={g.slug} value={g.slug} disabled={g.slug === genre2 && genre2 !== ""}>
               {g.name}
@@ -260,7 +245,7 @@ function TerbaruContent() {
           aria-label="Filter genre kedua"
           className="h-11 w-full min-w-0 truncate rounded-full border border-line bg-paper-2 px-3 text-sm font-medium text-fg sm:h-[30px] sm:w-auto sm:max-w-40 sm:shrink-0 sm:text-xs dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark"
         >
-          <option value="">Genre 2: Semua</option>
+          <option value="">Genre 2</option>
           {genreOpts.map((g) => (
             <option key={g.slug} value={g.slug} disabled={g.slug === genre1 && genre1 !== ""}>
               {g.name}
@@ -276,14 +261,17 @@ function TerbaruContent() {
       )}
       {!loading && !error && items.length > 0 && (
         <>
-          <div className="min-w-0 divide-y divide-line dark:divide-line-dark">
+          <div className="mt-3 min-w-0 divide-y divide-line sm:mt-4 dark:divide-line-dark">
             {items.map((item) => (
               <KomikListCard key={`${item.slug}#${item.latestChapter?.url ?? ""}`} item={item} />
             ))}
           </div>
-          <Pagination page={page} hasNext={hasNext} pending={loading} onChange={goTo} />
+          <div className="mt-3 sm:mt-4">
+            <Pagination page={page} hasNext={hasNext} pending={loading} onChange={goTo} />
+          </div>
         </>
       )}
+      </section>
     </div>
   );
 }

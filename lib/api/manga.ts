@@ -34,10 +34,33 @@ export async function getPopular(): Promise<MangaCard[]> {
   return fetchRanking("harian");
 }
 
-/** Komik rekomendasi — judul-judul terbaru dari ?orderby=date. */
+/** Acak array (Fisher-Yates) — agar rekomendasi tampil beda tiap muat. */
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/** Komik rekomendasi — acak dari ?orderby=rand, dikocok ulang tiap request. */
 export async function getRecommended(): Promise<MangaCard[]> {
-  const { items } = await fetchMangaList({ orderby: "date" });
-  return items;
+  // Coba 2x seperti getLatest — kegagalan fragment API sering sementara.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const { items } = await fetchMangaList({ orderby: "rand", fresh: true });
+      if (items.length > 0) return shuffle(items);
+    } catch {
+      // coba lagi sebelum fallback
+    }
+  }
+  try {
+    const { items } = await fetchMangaList({ orderby: "date" });
+    return shuffle(items);
+  } catch {
+    return [];
+  }
 }
 
 /** Update chapter terbaru (alias getLatest halaman pertama, untuk homepage). */
