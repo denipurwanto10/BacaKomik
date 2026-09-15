@@ -3,17 +3,34 @@
 import { use, useCallback, useEffect, useState } from "react";
 import { apiGet } from "@/lib/client";
 import type { MangaCard } from "@/lib/api/types";
-import { MangaGrid, SectionHead, GridSkeleton, ErrorState, EmptyState } from "@/components/states";
+import { KomikListCard, KomikListSkeleton } from "@/components/komik-list";
+import { SectionHead, ErrorState, EmptyState } from "@/components/states";
 
-interface GenrePayload {
-  genre: string;
-  page: number;
+interface LatestPayload {
   items: MangaCard[];
   hasNextPage: boolean;
 }
 
+const ORDERBYS = [
+  { v: "modified", label: "Update" },
+  { v: "date", label: "Judul Baru" },
+  { v: "popular", label: "Peringkat" },
+  { v: "rand", label: "Acak" },
+] as const;
+
+type Orderby = (typeof ORDERBYS)[number]["v"];
+
+const TIPES = [
+  { v: "", label: "Tipe" },
+  { v: "manga", label: "Manga" },
+  { v: "manhua", label: "Manhua" },
+  { v: "manhwa", label: "Manhwa" },
+] as const;
+
 export default function GenreDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
+  const [orderby, setOrderby] = useState<Orderby>("modified");
+  const [tipe, setTipe] = useState("");
   const [items, setItems] = useState<MangaCard[]>([]);
   const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(false);
@@ -22,16 +39,22 @@ export default function GenreDetailPage({ params }: { params: Promise<{ slug: st
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(
-    async (p: number, append: boolean) => {
+    async (p: number, o: Orderby, t: string, append: boolean) => {
       if (append) setLoadingMore(true);
       else {
         setLoading(true);
         setError(null);
       }
       try {
-        const res = await apiGet<GenrePayload>(
-          `/api/genre/${encodeURIComponent(slug)}?page=${p}`,
-        );
+        // Pakai /api/latest (endpoint /manga/ + ?genre=) agar mendukung
+        // orderby + tipe — endpoint /genre/<slug>/ tidak mendukung keduanya.
+        const qs = new URLSearchParams({
+          genre: slug,
+          page: String(p),
+          orderby: o,
+        });
+        if (t) qs.set("tipe", t);
+        const res = await apiGet<LatestPayload>(`/api/latest?${qs}`);
         setItems((prev) => {
           if (!append) return res.items;
           const seen = new Set(prev.map((p) => p.slug));
@@ -50,25 +73,57 @@ export default function GenreDetailPage({ params }: { params: Promise<{ slug: st
   );
 
   useEffect(() => {
-    load(1, false);
-  }, [load]);
+    load(1, orderby, tipe, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [load, orderby, tipe]);
 
   const title = slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
     <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
       <SectionHead title={`Genre: ${title}`} />
-      {loading && <GridSkeleton count={12} />}
-      {error && <ErrorState message={error} onRetry={() => load(1, false)} />}
+      <div className="grid grid-cols-2 gap-2 sm:mx-0 sm:flex sm:items-center sm:gap-1.5 sm:overflow-x-auto sm:px-0 sm:pb-0.5">
+        <select
+          value={orderby}
+          onChange={(e) => setOrderby(e.target.value as Orderby)}
+          aria-label="Urutkan daftar"
+          className="h-11 w-full min-w-0 rounded-full border border-line bg-paper-2 px-3 text-sm font-medium text-fg sm:h-[30px] sm:w-auto sm:shrink-0 sm:text-xs dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark"
+        >
+          {ORDERBYS.map((o) => (
+            <option key={o.v} value={o.v}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <select
+          value={tipe}
+          onChange={(e) => setTipe(e.target.value)}
+          aria-label="Filter tipe komik"
+          className="h-11 w-full min-w-0 rounded-full border border-line bg-paper-2 px-3 text-sm font-medium text-fg sm:h-[30px] sm:w-auto sm:shrink-0 sm:text-xs dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark"
+        >
+          {TIPES.map((t) => (
+            <option key={t.v} value={t.v}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {loading && <KomikListSkeleton count={8} />}
+      {error && <ErrorState message={error} onRetry={() => load(1, orderby, tipe, false)} />}
       {!loading && !error && items.length === 0 && (
         <EmptyState message={`Tidak ada komik genre "${title}" dari sumber data.`} />
       )}
       {!loading && !error && items.length > 0 && (
         <>
-          <MangaGrid items={items} />
+          <div className="min-w-0 divide-y divide-line dark:divide-line-dark">
+            {items.map((item) => (
+              <KomikListCard key={`${item.slug}#${item.latestChapter?.url ?? ""}`} item={item} />
+            ))}
+          </div>
           {hasNext && (
             <button
-              onClick={() => load(page + 1, true)}
+              onClick={() => load(page + 1, orderby, tipe, true)}
               disabled={loadingMore}
               className="mx-auto min-h-11 rounded-full border border-line px-6 py-2 text-sm font-semibold text-fg disabled:opacity-50 sm:min-h-0 dark:border-line-dark dark:text-fg-dark"
             >
