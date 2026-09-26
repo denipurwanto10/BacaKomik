@@ -8,6 +8,6 @@ export async function GET(req: NextRequest) {
   const blocked = await guard(req);
   if (blocked) return blocked;
   return handle(async () => ({ keyword: q, items: await searchManga(q) }), {
-    revalidate: 120,
+    revalidate: 300,
   });
 }

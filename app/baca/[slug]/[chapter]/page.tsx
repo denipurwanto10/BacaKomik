@@ -142,6 +142,10 @@ export default function ReaderPage({
   const [data, setData] = useState<ChapterData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [failed, setFailed] = useState<Set<number>>(new Set());
+  // Bar progres — ditulis langsung ke DOM lewat ref (bukan state) supaya
+  // scroll tidak memicu re-render komponen reader (dan seluruh daftar
+  // gambarnya) di setiap frame.
+  const progressRef = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
   const pagesRef = useRef<HTMLDivElement>(null);
   // Progres terakhir yang sudah tersimpan — ditulis ulang hanya saat
@@ -313,7 +317,7 @@ export default function ReaderPage({
       const pct = data.images.length <= 1 ? 1 : pageIdx / (data.images.length - 1);
       savedProgressRef.current = pct;
       pageNumRef.current = pageIdx;
-      setProgress(pct);
+      if (progressRef.current) progressRef.current.style.width = `${pct * 100}%`;
       persist(pct, pageIdx);
       return;
     }
@@ -330,7 +334,7 @@ export default function ReaderPage({
       } else {
         const pct = restorePct ?? 0;
         savedProgressRef.current = Math.floor(pct * 10) / 10;
-        setProgress(pct);
+        if (progressRef.current) progressRef.current.style.width = `${pct * 100}%`;
       }
     }
     // Restore scroll sekali setelah gambar ter-render (2 frame agar
@@ -369,6 +373,11 @@ export default function ReaderPage({
       const total = rect.height - window.innerHeight;
       const scrolled = -rect.top;
       const pct = total <= 0 ? 1 : Math.min(1, Math.max(0, scrolled / total));
+      // Update progress bar via ref + state — ref update is immediate (no
+      // re-render delay), state sync ensures React sees it.
+      if (progressRef.current) {
+        progressRef.current.style.width = `${pct * 100}%`;
+      }
       setProgress(pct);
       // Indeks gambar paling atas yang terlihat — untuk "lanjutkan di posisi sama".
       const imgs = el.querySelectorAll("img[data-pg]");
@@ -419,6 +428,7 @@ export default function ReaderPage({
     <div className="mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-2.5 sm:gap-3">
       <div className="sticky top-14 z-30 -mx-3 h-1 bg-line sm:top-[57px] sm:-mx-4 dark:bg-line-dark">
         <div
+          ref={progressRef}
           className="h-full bg-accent transition-[width] duration-150"
           style={{ width: `${progress * 100}%` }}
         />
