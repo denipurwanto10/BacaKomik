@@ -182,16 +182,6 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
               {detail.altTitle}
             </p>
           )}
-          {"sources" in detail && Array.isArray((detail as { sources?: string[] }).sources) && (
-            <p className="mt-1 text-[11px] leading-snug text-muted sm:text-xs dark:text-muted-dark">
-              Sumber:{" "}
-              {(detail as { sources: string[] }).sources.length > 1
-                ? "Komikindo + Komiku (data utama Komikindo)"
-                : (detail as { sources: string[] }).sources[0] === "komikindo"
-                  ? "Komikindo"
-                  : "Komiku"}
-            </p>
-          )}
           {detail.genres.length > 0 && (
             <div className="mt-2.5 flex flex-wrap gap-1.5">
               {detail.genres.map((g) => (
@@ -323,18 +313,6 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
                   {isRead ? "✓ " : ""}
                   {c.title}
                 </span>
-                {/* Badge sumber chapter: Komikindo / Komiku / 2 sumber.
-                    MergedChapterItem.sources terisi dari respons gabungan;
-                    respons lama (tanpa sources) = badge disembunyikan. */}
-                {"sources" in c && Array.isArray((c as { sources?: { source: string }[] }).sources) && (
-                  <span className="shrink-0 rounded border border-line px-1.5 py-0.5 text-[10px] font-semibold leading-tight text-muted dark:border-line-dark dark:text-muted-dark">
-                    {(() => {
-                      const s = (c as { sources: { source: string }[] }).sources.map((r) => r.source);
-                      if (s.length > 1) return "2 sumber";
-                      return s[0] === "komikindo" ? "Komikindo" : "Komiku";
-                    })()}
-                  </span>
-                )}
                 {c.date && <span className="shrink-0 text-[11px] tabular-nums text-muted sm:text-xs dark:text-muted-dark">{c.date}</span>}
               </Link>
             );

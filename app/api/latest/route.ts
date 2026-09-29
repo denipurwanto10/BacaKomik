@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { getLatestPaged } from "@/lib/api/manga";
+import { fetchMangaList } from "@/lib/api/komiku";
 import { guard, handle } from "../_lib";
 
 export const dynamic = "force-dynamic";
@@ -19,42 +19,17 @@ export async function GET(req: NextRequest) {
   const status = searchParams.get("status") as "ongoing" | "end" | null;
   const blocked = await guard(req);
   if (blocked) return blocked;
-  // Filter lanjutan (tipe/genre ganda/status) hanya ada di Komiku —
-  // untuk itu tetap pakai path lama; kasus umum (terbaru + orderby)
-  // lewat agregator multi-source.
-  if (tipe || genre2 || status) {
-    const { fetchMangaList } = await import("@/lib/api/komiku");
-    return handle(
-      () =>
-        fetchMangaList({
-          page,
-          ...(orderby ? { orderby } : {}),
-          ...(tipe ? { tipe } : {}),
-          ...(genre ? { genre } : {}),
-          ...(genre2 ? { genre2 } : {}),
-          ...(status ? { status } : {}),
-          fresh: true,
-        }),
-      undefined,
-    );
-  }
-  // Filter genre tunggal: gabung Komiku + Komikindo, dedupe.
-  if (genre) {
-    const { getMangaByGenre } = await import("@/lib/api/genre");
-    return handle(() => getMangaByGenre(genre, page), { revalidate: 30 });
-  }
   return handle(
-    async () => {
-      if (orderby && orderby !== "modified") {
-        // Orderby non-modified (date/popular/rand) hanya ada di Komiku.
-        const { fetchMangaList } = await import("@/lib/api/komiku");
-        return fetchMangaList({ page, orderby, fresh: true });
-      }
-      // hasNextPage dari flag sumber asli (Komiku/Komikindo), bukan
-      // heuristik jumlah item — satu source mati tidak boleh membuat
-      // pagination hilang padahal halaman berikut masih ada.
-      return getLatestPaged(page);
-    },
+    () =>
+      fetchMangaList({
+        page,
+        ...(orderby ? { orderby } : {}),
+        ...(tipe ? { tipe } : {}),
+        ...(genre ? { genre } : {}),
+        ...(genre2 ? { genre2 } : {}),
+        ...(status ? { status } : {}),
+        fresh: true,
+      }),
     // Jangan biarkan browser/CDN menyimpan daftar chapter terbaru.
     // Endpoint ini harus langsung mengikuti update dari sumber.
     undefined,
