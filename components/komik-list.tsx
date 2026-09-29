@@ -54,9 +54,12 @@ export function KomikListCard({ item }: { item: MangaCard }) {
           </Link>
         </div>
         {meta && (
-          <p className="mt-1 truncate text-[11px] leading-tight text-muted sm:text-xs dark:text-muted-dark">
-            {meta}
-          </p>
+          <div className="mt-1 flex min-w-0 items-center gap-2">
+            <p className="min-w-0 flex-1 truncate text-[11px] leading-tight text-muted sm:text-xs dark:text-muted-dark">
+              {meta}
+            </p>
+            <LatestSourceTag source={item.latestSource} />
+          </div>
         )}
         {item.synopsis && (
           <p className="mt-1.5 line-clamp-1 break-words text-xs leading-relaxed text-fg/75 sm:text-[13px] dark:text-fg-dark/70">
@@ -77,16 +80,13 @@ export function KomikListCard({ item }: { item: MangaCard }) {
               </Link>
             )}
             {item.latestChapter && (
-              <>
-                <Link
-                  href={chapterPathToRoute(item.latestChapter.url)}
-                  className="inline-flex min-h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-accent px-3.5 py-1 text-xs font-semibold text-white shadow-sm shadow-accent/30 transition-opacity hover:opacity-90 sm:min-h-0 sm:rounded-lg sm:px-2.5 sm:py-1 sm:text-xs"
-                >
-                  <span className="sm:hidden">{item.latestChapter.label}</span>
-                  <span className="hidden sm:inline">Terbaru: {item.latestChapter.label}</span>
-                </Link>
-                <LatestSourceTag source={item.latestSource} />
-              </>
+              <Link
+                href={chapterPathToRoute(item.latestChapter.url)}
+                className="inline-flex min-h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-accent px-3.5 py-1 text-xs font-semibold text-white shadow-sm shadow-accent/30 transition-opacity hover:opacity-90 sm:min-h-0 sm:rounded-lg sm:px-2.5 sm:py-1 sm:text-xs"
+              >
+                <span className="sm:hidden">{item.latestChapter.label}</span>
+                <span className="hidden sm:inline">Terbaru: {item.latestChapter.label}</span>
+              </Link>
             )}
           </div>
         )}

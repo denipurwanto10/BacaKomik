@@ -283,10 +283,11 @@ async function enrichRecommended(cards: MangaCard[]): Promise<MangaCard[]> {
       }
       return;
     }
-    // Murni Komiku → genre hanya ada di halaman detail.
+    // Murni Komiku → genre hanya ada di halaman detail. Kartu daftar
+    // cukup SATU genre (aturan tampilan).
     try {
       const d = await fetchMangaDetail(c.slug);
-      const genre = d.genres?.map((g) => g.name).filter(Boolean).slice(0, 3).join(", ");
+      const genre = d.genres?.map((g) => g.name).filter(Boolean).slice(0, 1).join(", ");
       if (genre) out[i] = { ...c, genre };
     } catch {
       // gagal → kartu tetap tampil tanpa genre

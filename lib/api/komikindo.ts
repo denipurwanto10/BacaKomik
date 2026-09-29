@@ -136,7 +136,10 @@ export async function fetchKiMeta(slugs: string[]): Promise<Map<string, KiMeta>>
     const genres = (x.class_list ?? [])
       .filter((c) => c.startsWith("genres-"))
       .map((c) => c.slice("genres-".length).replace(/-/g, " ").replace(/\b\w/g, (m) => m.toUpperCase()));
-    const genre = [...new Set(genres)].slice(0, 3).join(", ");
+    // Genre dari class_list: "genres-action" → "Action". Kartu daftar
+    // hanya butuh SATU genre (aturan tampilan) — detail lengkap ada di
+    // halaman detail (genres[]), jadi potong 1 di sini.
+    const genre = [...new Set(genres)].slice(0, 1).join(", ");
     if (synopsis || genre) out.set(x.slug, { synopsis, genre });
   };
   for (let b = 0; b < uniq.length; b += 10) {
