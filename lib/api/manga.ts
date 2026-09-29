@@ -91,7 +91,17 @@ async function enrichLatest(cards: MangaCard[]): Promise<MangaCard[]> {
               // HEAD: upstream tetap balas 301/200 tanpa body — jauh lebih
               // murah daripada GET halaman reader (±70KB per cek).
               method: "HEAD",
-              headers: { "User-Agent": KI_UA, Referer: KI_WEB + "/" },
+              // Header selengkap fetchHtml — proteksi Komikindo memblokir
+              // request minim (403), termasuk dari IP server.
+              headers: {
+                "User-Agent": KI_UA,
+                Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
+                Referer: KI_WEB + "/",
+                "Sec-Fetch-Site": "same-origin",
+                "Sec-Fetch-Mode": "navigate",
+                "Sec-Fetch-Dest": "document",
+              },
               signal: ctrl.signal,
               next: { revalidate: 300 },
             });
@@ -115,35 +125,47 @@ async function enrichLatest(cards: MangaCard[]): Promise<MangaCard[]> {
   return out;
 }
 
-/** Chapter terbaru (Komikindo /komik-terbaru/ utama + Komiku ?orderby=modified pelengkap). */
-export async function getLatest(page = 1): Promise<MangaCard[]> {
+/** Chapter terbaru (Komikindo /komik-terbaru/ utama + Komiku ?orderby=modified pelengkap).
+ *  Sekali jalan: hasil daftar + flag halaman-berikut TIAP source — dipakai
+ *  /api/latest untuk pagination yang benar walau salah satu source mati. */
+export async function getLatestPaged(page = 1): Promise<{ items: MangaCard[]; hasNextPage: boolean }> {
   const params: MangaListParams = { orderby: "modified", page, fresh: true };
   // Coba 2x — kegagalan fragment API sering cuma sementara (beban
   // bersamaan saat /api/home menembak beberapa request sekaligus),
   // jadi jangan langsung jatuh ke fetchHome() yang datanya lebih basi.
+  // hasNextPage per source dicatat; heuristik jumlah item saja salah saat
+  // satu source mati (halaman Komiku cuma ~10 item — bukan berarti akhir).
+  let kuHasNext = false;
+  let kiHasNext = false;
   const jobs = {
     komiku: async () => {
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
-          const { items } = await fetchMangaList(params);
-          if (items.length > 0) return items;
+          const r = await fetchMangaList(params);
+          if (r.items.length > 0) {
+            kuHasNext = r.hasNextPage;
+            return r.items;
+          }
         } catch {
           // coba lagi (attempt berikutnya) sebelum fallback
         }
       }
       const home = await fetchHome();
+      kuHasNext = page === 1;
       return page > 1 ? [] : home.latest;
     },
     komikindo: async () => {
       try {
-        const { items } = await fetchKiLatest(page);
-        return items;
+        const r = await fetchKiLatest(page);
+        kiHasNext = r.hasNextPage;
+        return r.items;
       } catch {
         return [] as MangaCard[];
       }
     },
   };
   const { data } = await fetchAllSettled(jobs, "latest");
+  const hasNextPage = kuHasNext || kiHasNext;
   if (page > 1) {
     // Pagination dalam (/terbaru?page=N): gabung halaman N kedua source
     // (dedupe judul, data utama Komikindo), lalu URUT TERBARU lintas
@@ -163,14 +185,19 @@ export async function getLatest(page = 1): Promise<MangaCard[]> {
         .filter((c) => !seen.has(c.slug) && !kiKeys.has(normalizeTitle(c.title)))
         .map((c) => ({ ...c, sources: ["komiku" as const], latestSource: "komiku" as const })),
     ]);
-    return enrichLatest(list);
+    return { items: await enrichLatest(list), hasNextPage };
   }
   const merged = mergeCards({ komiku: data.komiku ?? [], komikindo: data.komikindo ?? [] });
   // Halaman 1 (/terbaru awal + home): urut PALING BARU lintas source —
   // Komiku yang lebih segar tampil di atas Komikindo yang basi (dan
   // sebaliknya); saat Komikindo update ia otomatis naik ke atas.
   // Lalu perkaya kartu KI agar setara kartu Komiku (Awal + sinopsis + genre).
-  return enrichLatest(sortByFresh(merged));
+  return { items: await enrichLatest(sortByFresh(merged)), hasNextPage };
+}
+
+/** Chapter terbaru (Komikindo /komik-terbaru/ utama + Komiku ?orderby=modified pelengkap). */
+export async function getLatest(page = 1): Promise<MangaCard[]> {
+  return (await getLatestPaged(page)).items;
 }
 
 /** Komik populer — perbandingan ranking Komiku (views) + terbaru Komikindo.

@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { getLatest } from "@/lib/api/manga";
+import { getLatestPaged } from "@/lib/api/manga";
 import { guard, handle } from "../_lib";
 
 export const dynamic = "force-dynamic";
@@ -45,18 +45,15 @@ export async function GET(req: NextRequest) {
   }
   return handle(
     async () => {
-      let items: Awaited<ReturnType<typeof getLatest>>;
       if (orderby && orderby !== "modified") {
         // Orderby non-modified (date/popular/rand) hanya ada di Komiku.
         const { fetchMangaList } = await import("@/lib/api/komiku");
-        const r = await fetchMangaList({ page, orderby, fresh: true });
-        items = r.items;
-      } else {
-        items = await getLatest(page);
+        return fetchMangaList({ page, orderby, fresh: true });
       }
-      // hasNextPage: agregator tidak tahu total halaman; heuristik lama:
-      // halaman penuh (≈24 item) → kemungkinan ada halaman berikut.
-      return { items, hasNextPage: items.length >= 24 };
+      // hasNextPage dari flag sumber asli (Komiku/Komikindo), bukan
+      // heuristik jumlah item — satu source mati tidak boleh membuat
+      // pagination hilang padahal halaman berikut masih ada.
+      return getLatestPaged(page);
     },
     // Jangan biarkan browser/CDN menyimpan daftar chapter terbaru.
     // Endpoint ini harus langsung mengikuti update dari sumber.
