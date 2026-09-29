@@ -28,6 +28,32 @@ export function TypeBadge({ type, className = "" }: { type?: string; className?:
   );
 }
 
+/** Tanda source data — hanya tampil bila kartu berasal dari gabungan multi-source. */
+export function SourceBadge({ sources, className = "" }: { sources?: string[]; className?: string }) {
+  if (!sources || sources.length === 0) return null;
+  const label = sources.length > 1 ? "2 sumber" : sources[0] === "komikindo" ? "Komikindo" : "Komiku";
+  return (
+    <span
+      className={`inline-block max-w-full shrink-0 truncate rounded px-1.5 py-0.5 text-[10px] font-semibold leading-tight text-muted dark:text-muted-dark ${className}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+/** Tanda source chapter terbaru (kartu gabungan) — kecil, di sebelah
+ *  tombol/label chapter. Tanpa field latestSource = disembunyikan. */
+export function LatestSourceTag({ source, className = "" }: { source?: string; className?: string }) {
+  if (!source) return null;
+  return (
+    <span
+      className={`inline-block shrink-0 rounded border border-line px-1.5 py-0.5 text-[10px] font-semibold leading-tight text-muted dark:border-line-dark dark:text-muted-dark ${className}`}
+    >
+      {source === "komikindo" ? "Komikindo" : "Komiku"}
+    </span>
+  );
+}
+
 /** Kartu grid vertikal: cover + judul + chapter terbaru. */
 export function MangaGridCard({ item }: { item: MangaCard }) {
   const detailPath = `/api/manga/${encodeURIComponent(item.slug)}`;
@@ -64,6 +90,11 @@ export function MangaGridCard({ item }: { item: MangaCard }) {
             <TypeBadge type={item.type} />
           </div>
         )}
+        {item.sources && item.sources.length > 1 && (
+          <div className="absolute left-1.5 top-1.5">
+            <SourceBadge sources={item.sources} className="bg-black/55 text-white" />
+          </div>
+        )}
       </Link>
       <div className="flex min-w-0 flex-1 flex-col p-2 sm:p-2.5">
         <Link
@@ -85,6 +116,7 @@ export function MangaGridCard({ item }: { item: MangaCard }) {
             {item.latestChapter.label}
           </Link>
         )}
+        <LatestSourceTag source={item.latestSource} />
       </div>
     </article>
   );
