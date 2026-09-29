@@ -5,7 +5,7 @@ import { MangaGridCard } from "./cards";
 /** Skeleton loading untuk grid kartu. */
 export function GridSkeleton({ count = 10 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-3 min-[420px]:gap-2.5 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 lg:grid-cols-6">
+    <div aria-hidden="true" className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-3 min-[420px]:gap-2.5 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 lg:grid-cols-6">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="animate-pulse overflow-hidden rounded-xl border border-line dark:border-line-dark">
           <div className="aspect-[3/4] bg-paper-3 dark:bg-ink-3" />
@@ -22,7 +22,7 @@ export function GridSkeleton({ count = 10 }: { count?: number }) {
 /** Skeleton loading untuk daftar baris. */
 export function ListSkeleton({ count = 8 }: { count?: number }) {
   return (
-    <div className="animate-pulse divide-y divide-line dark:divide-line-dark">
+    <div aria-hidden="true" className="animate-pulse divide-y divide-line dark:divide-line-dark">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="flex gap-2.5 py-3 sm:gap-3">
           <div className="h-[60px] w-[92px] shrink-0 rounded-lg bg-paper-3 sm:h-[68px] sm:w-[110px] dark:bg-ink-3" />
@@ -39,13 +39,13 @@ export function ListSkeleton({ count = 8 }: { count?: number }) {
 /** State error: tampilkan pesan jelas, tanpa data pengganti. */
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-xl border border-mark-manga/30 bg-mark-manga/5 px-4 py-10 text-center">
-      <p className="text-sm font-semibold text-mark-manga">Gagal memuat data</p>
-      <p className="max-w-md text-sm text-mark-manga/90">{message}</p>
+    <div role="alert" className="flex flex-col items-center gap-3 rounded-xl border border-danger/25 bg-danger/5 px-4 py-10 text-center dark:border-danger-dark/30 dark:bg-danger-dark/10">
+      <p className="text-sm font-semibold text-danger dark:text-danger-dark">Gagal memuat data</p>
+      <p className="max-w-md text-sm text-danger/90 dark:text-danger-dark/90">{message}</p>
       {onRetry && (
         <button
           onClick={onRetry}
-          className="rounded-full border border-mark-manga/40 px-4 py-1.5 text-sm font-medium text-mark-manga"
+          className="rounded-full border border-danger/40 px-4 py-1.5 text-sm font-medium text-danger transition-colors hover:bg-danger hover:text-white active:scale-[0.97] dark:border-danger-dark/40 dark:text-danger-dark dark:hover:bg-danger-dark dark:hover:text-ink"
         >
           Coba lagi
         </button>

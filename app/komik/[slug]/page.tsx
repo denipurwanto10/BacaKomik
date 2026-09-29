@@ -1,9 +1,10 @@
 "use client";
 
-import { use, useCallback, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useRef, useState } from "react";
 import { apiGet } from "@/lib/client";
 import { isBookmarked, setLatestSeen, toggleBookmark } from "@/lib/bookmarks";
 import { getHistoryEntry, type HistoryEntry } from "@/lib/history";
+import { consumeCoverMorph, flyCover, prefersReducedMotion } from "@/lib/morph";
 import type { MangaCard, MangaDetail } from "@/lib/api/types";
 import { chapterPathToRoute, TypeBadge, UpdateRow } from "@/components/cards";
 import { Comments } from "@/components/comments";
@@ -14,7 +15,7 @@ function DetailSkeleton() {
   return (
     <div className="animate-pulse">
       <div className="flex min-w-0 flex-col gap-3 min-[420px]:gap-4 sm:flex-row">
-        <div className="mx-auto h-56 w-32 shrink-0 rounded-xl bg-paper-3 min-[420px]:h-64 min-[420px]:w-44 sm:mx-0 dark:bg-ink-3" />
+        <div data-cover-slot className="mx-auto h-56 w-32 shrink-0 rounded-xl bg-paper-3 min-[420px]:h-64 min-[420px]:w-44 sm:mx-0 dark:bg-ink-3" />
         <div className="min-w-0 flex-1 space-y-3">
           <div className="h-6 w-3/4 rounded bg-paper-3 dark:bg-ink-3" />
           <div className="h-4 w-1/2 rounded bg-paper-3 dark:bg-ink-3" />
@@ -103,6 +104,37 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
     load();
   }, [load]);
 
+  // Simpan morph sedini mungkin (sebelum render skeleton pertama) agar
+  // tidak hilang karena StrictMode double-render / efek lain.
+  const morphRef = useRef(consumeCoverMorph(slug));
+  const playedRef = useRef(false);
+
+  // Saat skeleton tampil: terbangkan ghost ke slot cover-nya, lalu
+  // teruskan ke hero asli saat data tiba. Tanpa morph = skeleton biasa.
+  useEffect(() => {
+    const morph = morphRef.current;
+    if (!morph || playedRef.current || prefersReducedMotion()) return;
+    const slot = document.querySelector<HTMLElement>("[data-cover-slot]");
+    if (!slot) return;
+    playedRef.current = true;
+    void flyCover(morph, slot);
+  }, []);
+
+  // Konten tiba: hero asli menggantikan slot skeleton — settle lembut
+  // agar "mendarat" dari ghost, lalu bodi masuk berjenjang via CSS.
+  useEffect(() => {
+    if (!detail || !playedRef.current || prefersReducedMotion()) return;
+    const hero = document.querySelector<HTMLElement>("article [data-cover-slot]");
+    hero?.closest("article")?.classList.add("morph-play");
+    hero?.animate(
+      [
+        { opacity: 0.35, transform: "scale(0.985)" },
+        { opacity: 1, transform: "scale(1)" },
+      ],
+      { duration: 240, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+    );
+  }, [detail]);
+
   if (error) return <ErrorState message={error} onRetry={load} />;
   if (!detail) return <DetailSkeleton />;
 
@@ -121,10 +153,10 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
   ];
 
   return (
-    <article className="flex min-w-0 flex-col gap-4 sm:gap-6">
+    <article className="morph-in flex min-w-0 flex-col gap-4 sm:gap-6">
       {/* Header: cover + info */}
       <div className="flex min-w-0 flex-col gap-3 rounded-2xl border border-line bg-paper-2 p-3 min-[420px]:p-4 sm:flex-row sm:gap-5 dark:border-line-dark dark:bg-ink-2">
-        <div className="mx-auto w-32 shrink-0 overflow-hidden rounded-xl bg-paper-3 min-[420px]:w-40 sm:mx-0 sm:w-44 dark:bg-ink-3">
+        <div data-cover-slot className="mx-auto w-32 shrink-0 overflow-hidden rounded-xl bg-paper-3 min-[420px]:w-40 sm:mx-0 sm:w-44 dark:bg-ink-3">
           {detail.cover ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={detail.cover} alt={detail.title} className="aspect-[3/4] w-full object-cover" />
@@ -143,7 +175,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
               </h1>
             </div>
             <button
-              onClick={() => {
+              onClick={(e) => {
                 const now = toggleBookmark({
                   slug: detail.slug,
                   title: detail.title,
@@ -157,11 +189,21 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
                     : {}),
                 });
                 setSaved(now);
+                // Pop kecil — konfirmasi tersimpan/hapus terasa fisik.
+                const svg = e.currentTarget.querySelector("svg");
+                svg?.animate(
+                  [
+                    { transform: "scale(1)" },
+                    { transform: "scale(1.28)" },
+                    { transform: "scale(1)" },
+                  ],
+                  { duration: 260, easing: "cubic-bezier(0.16, 1, 0.3, 1)" },
+                );
               }}
               aria-label={saved ? "Hapus dari favorit" : "Simpan ke favorit"}
               aria-pressed={saved}
               title={saved ? "Hapus dari favorit" : "Simpan ke favorit"}
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors ${
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors active:scale-95 ${
                 saved
                   ? "border-accent bg-accent-soft text-accent dark:bg-accent-soft-dark"
                   : "border-line text-muted hover:border-accent hover:text-accent dark:border-line-dark dark:text-muted-dark"
@@ -183,12 +225,12 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
             </p>
           )}
           {detail.genres.length > 0 && (
-            <div className="mt-2.5 flex flex-wrap gap-1.5">
+            <div className="morph-stagger mt-2.5 flex flex-wrap gap-1.5">
               {detail.genres.map((g) => (
                 <Link
                   key={g.slug}
                   href={`/genre/${g.slug}`}
-                  className="rounded-full border border-line px-2.5 py-1 text-xs font-medium text-muted hover:border-accent hover:text-accent dark:border-line-dark dark:text-muted-dark"
+                  className="morph-stagger-item rounded-full border border-line px-2.5 py-1 text-xs font-medium text-muted hover:border-accent hover:text-accent dark:border-line-dark dark:text-muted-dark"
                 >
                   {g.name}
                 </Link>
@@ -196,20 +238,20 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
             </div>
           )}
           {meta.length > 0 && (
-            <dl className="mt-3 grid min-w-0 grid-cols-1 gap-x-4 gap-y-1.5 text-[13px] min-[420px]:grid-cols-2 sm:max-w-md sm:text-sm">
+            <dl className="morph-stagger mt-3 grid min-w-0 grid-cols-1 gap-x-4 gap-y-1.5 text-[13px] min-[420px]:grid-cols-2 sm:max-w-md sm:text-sm">
               {meta.map(([k, v]) => (
-                <div key={k} className="flex min-w-0 gap-1.5">
+                <div key={k} className="morph-stagger-item flex min-w-0 gap-1.5">
                   <dt className="shrink-0 text-muted dark:text-muted-dark">{k}:</dt>
                   <dd className="min-w-0 flex-1 break-words font-medium text-fg dark:text-fg-dark">{v}</dd>
                 </div>
               ))}
             </dl>
           )}
-          <div className="mt-4 flex min-w-0 flex-col gap-2 min-[420px]:flex-row min-[420px]:flex-wrap">
+          <div className="morph-stagger mt-4 flex min-w-0 flex-col gap-2 min-[420px]:flex-row min-[420px]:flex-wrap">
             {history && (
               <Link
                 href={history.route}
-                className="min-w-0 flex-1 truncate rounded-full bg-accent px-5 py-2.5 text-center text-sm font-semibold text-white shadow-sm shadow-accent/30 min-[420px]:flex-none sm:order-2"
+                className="morph-stagger-item min-w-0 flex-1 truncate rounded-full bg-accent px-5 py-2.5 text-center text-sm font-semibold text-white shadow-sm shadow-accent/30 transition-transform active:scale-[0.98] min-[420px]:flex-none sm:order-2"
               >
                 Lanjutkan · {history.chapterLabel}
                 {history.progress > 0 ? ` (${Math.round(history.progress * 100)}%)` : ""}
@@ -218,7 +260,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
             {detail.latestChapter && !history && (
               <Link
                 href={chapterPathToRoute(detail.latestChapter.url)}
-                className="min-w-0 flex-1 truncate rounded-full bg-accent px-5 py-2.5 text-center text-sm font-semibold text-white shadow-sm shadow-accent/30 min-[420px]:flex-none sm:order-2"
+                className="morph-stagger-item min-w-0 flex-1 truncate rounded-full bg-accent px-5 py-2.5 text-center text-sm font-semibold text-white shadow-sm shadow-accent/30 transition-transform active:scale-[0.98] min-[420px]:flex-none sm:order-2"
               >
                 Lanjut · {detail.latestChapter.label}
               </Link>
@@ -226,7 +268,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
             {detail.latestChapter && history && (
               <Link
                 href={chapterPathToRoute(detail.latestChapter.url)}
-                className="min-w-0 flex-1 truncate rounded-full border border-line px-5 py-2.5 text-center text-sm font-semibold text-fg min-[420px]:flex-none dark:border-line-dark dark:text-fg-dark sm:order-3"
+                className="morph-stagger-item min-w-0 flex-1 truncate rounded-full border border-line px-5 py-2.5 text-center text-sm font-semibold text-fg min-[420px]:flex-none dark:border-line-dark dark:text-fg-dark sm:order-3"
               >
                 Terbaru · {detail.latestChapter.label}
               </Link>
@@ -234,7 +276,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
             {detail.firstChapter && (
               <Link
                 href={chapterPathToRoute(detail.firstChapter.url)}
-                className="min-w-0 flex-1 truncate rounded-full border border-line px-5 py-2.5 text-center text-sm font-semibold text-fg min-[420px]:flex-none dark:border-line-dark dark:text-fg-dark sm:order-1"
+                className="morph-stagger-item min-w-0 flex-1 truncate rounded-full border border-line px-5 py-2.5 text-center text-sm font-semibold text-fg min-[420px]:flex-none dark:border-line-dark dark:text-fg-dark sm:order-1"
               >
                 Baca dari awal
               </Link>
@@ -287,7 +329,8 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
           <input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            placeholder="Cari chapter…"
+            placeholder="Cari chapter..."
+            aria-label="Cari chapter"
             enterKeyHint="search"
             className="mb-2 h-12 w-full min-w-0 rounded-full border border-line bg-paper px-4 text-base text-fg outline-none focus-visible:border-accent sm:h-10 sm:max-w-xs sm:text-sm dark:border-line-dark dark:bg-ink dark:text-fg-dark"
           />

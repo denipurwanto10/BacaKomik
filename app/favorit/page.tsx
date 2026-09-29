@@ -95,7 +95,7 @@ export default function FavoritPage() {
           <p className="-mt-2 text-xs text-muted dark:text-muted-dark">
             {bookmarks.length} judul · tersimpan di perangkat ini
             {updateCount > 0 && (
-              <span className="font-semibold text-green-600 dark:text-green-400">
+              <span className="font-semibold text-fresh dark:text-fresh-dark">
                 {" "}
                 · {updateCount} update baru
               </span>
@@ -109,6 +109,7 @@ export default function FavoritPage() {
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           placeholder="Cari favorit…"
+          aria-label="Cari di daftar favorit"
           enterKeyHint="search"
           className="h-12 w-full min-w-0 rounded-full border border-line bg-paper-2 px-4 text-base text-fg outline-none placeholder:text-muted focus-visible:border-accent sm:h-10 sm:max-w-xs sm:text-sm dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark dark:placeholder:text-muted-dark"
         />
@@ -158,7 +159,7 @@ export default function FavoritPage() {
                   <Link
                     href={chapterPathToRoute(updates[b.slug].url)}
                     title={`Baca ${updates[b.slug].label} sekarang`}
-                    className="absolute bottom-1.5 left-1.5 max-w-[calc(100%-0.75rem)] truncate rounded-md bg-green-600 px-2 py-0.5 text-[10px] font-bold text-white shadow"
+                    className="absolute bottom-1.5 left-1.5 max-w-[calc(100%-0.75rem)] truncate rounded-md bg-fresh px-2 py-0.5 text-[10px] font-bold text-white shadow"
                   >
                     BARU · {updates[b.slug].label}
                   </Link>

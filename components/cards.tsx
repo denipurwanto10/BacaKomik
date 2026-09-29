@@ -1,6 +1,15 @@
 import Link from "next/link";
 import { prefetchApi } from "@/lib/client";
+import { captureCoverMorph } from "@/lib/morph";
 import type { MangaCard } from "@/lib/api/types";
+
+/** Saat cover diklik: rekam posisi + gambar untuk animasi terbang ke detail. */
+function coverMorphProps(slug: string) {
+  return {
+    onClick: (e: React.MouseEvent<HTMLAnchorElement>) =>
+      captureCoverMorph(slug, e.currentTarget.closest("article")),
+  };
+}
 
 /** Ubah path chapter Komiku "/slug-chapter-11-2/" → route internal "/baca/slug/11-2". */
 export function chapterPathToRoute(komikuPath: string): string {
@@ -43,6 +52,7 @@ export function MangaGridCard({ item }: { item: MangaCard }) {
       <Link
         href={`/komik/${item.slug}`}
         aria-label={item.title}
+        {...coverMorphProps(item.slug)}
         className="relative block aspect-[3/4] w-full shrink-0 overflow-hidden bg-paper-3 dark:bg-ink-3"
       >
         {item.thumbnail ? (
@@ -103,6 +113,7 @@ export function UpdateRow({ item }: { item: MangaCard }) {
       <Link
         href={`/komik/${item.slug}`}
         aria-label={item.title}
+        {...coverMorphProps(item.slug)}
         className="relative h-[58px] w-[88px] shrink-0 overflow-hidden rounded-lg bg-paper-3 min-[420px]:h-[68px] min-[420px]:w-[110px] dark:bg-ink-3"
       >
         {item.thumbnail ? (
@@ -172,6 +183,7 @@ export function RankRow({ item }: { item: MangaCard }) {
       <Link
         href={`/komik/${item.slug}`}
         aria-label={item.title}
+        {...coverMorphProps(item.slug)}
         className="relative h-14 w-11 shrink-0 overflow-hidden rounded-lg bg-paper-3 min-[420px]:h-16 min-[420px]:w-12 dark:bg-ink-3"
       >
         {item.thumbnail ? (

@@ -56,6 +56,8 @@ export function Header() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Cari judul komik…"
+            aria-label="Cari judul komik"
+            enterKeyHint="search"
             className="h-10 w-full min-w-0 rounded-full border border-line bg-paper pl-9 pr-4 text-sm text-fg outline-none placeholder:text-muted focus-visible:border-accent dark:border-line-dark dark:bg-ink dark:text-fg-dark dark:placeholder:text-muted-dark"
           />
         </form>

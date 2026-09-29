@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { prefetchApi } from "@/lib/client";
+import { captureCoverMorph } from "@/lib/morph";
 import type { MangaCard } from "@/lib/api/types";
 import { chapterPathToRoute, TypeBadge } from "./cards";
 
@@ -22,6 +23,7 @@ export function KomikListCard({ item }: { item: MangaCard }) {
       <Link
         href={`/komik/${item.slug}`}
         aria-label={item.title}
+        onClick={(e) => captureCoverMorph(item.slug, e.currentTarget.closest("article"))}
         className="relative h-[132px] w-[96px] shrink-0 overflow-hidden rounded-lg bg-paper-3 sm:h-[112px] sm:w-[168px] dark:bg-ink-3"
       >
         {item.thumbnail ? (
@@ -81,7 +83,7 @@ export function KomikListCard({ item }: { item: MangaCard }) {
             {item.latestChapter && (
               <Link
                 href={chapterPathToRoute(item.latestChapter.url)}
-                className="inline-flex min-h-9 min-w-0 flex-1 items-center justify-center truncate rounded-full bg-accent px-3.5 py-1 text-xs font-semibold text-white shadow-sm shadow-accent/30 transition-opacity hover:opacity-90 sm:min-h-0 sm:flex-none sm:rounded-lg sm:px-2.5 sm:py-1 sm:text-xs"
+                className="inline-flex min-h-9 min-w-0 flex-1 items-center justify-center truncate rounded-full bg-accent px-3.5 py-1 text-xs font-semibold text-white shadow-sm shadow-accent/30 transition-[opacity,transform] active:scale-[0.97] hover:opacity-90 sm:min-h-0 sm:flex-none sm:rounded-lg sm:px-2.5 sm:py-1 sm:text-xs"
               >
                 <span className="truncate">
                   <span className="sm:hidden">{item.latestChapter.label}</span>

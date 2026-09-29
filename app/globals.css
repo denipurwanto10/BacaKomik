@@ -36,6 +36,15 @@
   --color-mark-manhua: #c1892e;
 
   --color-gold: #e0a53c;
+
+  /* "Update baru" (favorit) — hijau lebih gelap dari accent teal, lolos
+     kontras 4.5:1 dengan teks putih pada badge kecil. */
+  --color-fresh: #187a3d;
+  --color-fresh-dark: #57c17f;
+
+  /* Error — merah yang aman untuk teks kecil di atas paper (>=4.5:1). */
+  --color-danger: #b23a33;
+  --color-danger-dark: #e57368;
 }
 
 :root {
@@ -110,12 +119,6 @@ div {
   scrollbar-width: thin;
 }
 
-/* Halftone dot texture — used sparingly as a single signature accent. */
-.dot-texture {
-  background-image: radial-gradient(currentColor 1px, transparent 1px);
-  background-size: 10px 10px;
-}
-
 /* Safe-area padding for the fixed mobile tab bar. */
 .pb-safe {
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0px);
@@ -128,4 +131,31 @@ div {
   textarea {
     font-size: 16px;
   }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Cover morph list → detail: setelah ghost mendarat, isi hero masuk      */
+/* berjenjang (hanya saat animasi terbang benar-benar dimainkan).         */
+/* ---------------------------------------------------------------------- */
+@keyframes morph-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.morph-play .morph-stagger-item {
+  animation: morph-rise 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.morph-play .morph-stagger > .morph-stagger-item:nth-child(2) { animation-delay: 45ms; }
+.morph-play .morph-stagger > .morph-stagger-item:nth-child(3) { animation-delay: 90ms; }
+.morph-play .morph-stagger > .morph-stagger-item:nth-child(4) { animation-delay: 135ms; }
+.morph-play .morph-stagger > .morph-stagger-item:nth-child(5) { animation-delay: 180ms; }
+.morph-play .morph-stagger > .morph-stagger-item:nth-child(n + 6) { animation-delay: 220ms; }
+/* Tanpa morph (buka langsung / data instan): artikel masuk lembut sekali. */
+.morph-in {
+  animation: morph-rise 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }

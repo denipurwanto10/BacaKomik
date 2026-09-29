@@ -37,17 +37,33 @@ function CariContent() {
     load();
   }, [load]);
 
+  // Pencarian langsung: ketik → 400 ms setelah berhenti, URL mengikuti
+  // (replace, tanpa menumpuk history) dan hasil dimuat otomatis. Tombol
+  // "Cari" / Enter tetap jalan seperti biasa (langsung, tanpa nunggu).
+  const submit = useCallback(() => {
+    if (draft.trim()) router.push(`/cari?q=${encodeURIComponent(draft.trim())}`);
+  }, [draft, router]);
+  useEffect(() => {
+    const t = draft.trim();
+    if (!t || t === q) return;
+    const id = window.setTimeout(() => router.replace(`/cari?q=${encodeURIComponent(t)}`), 400);
+    return () => window.clearTimeout(id);
+  }, [draft, q, router]);
+
   return (
     <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
       <SectionHead title="Pencarian" />
       <form
+        role="search"
         className="relative flex min-w-0 items-center"
         onSubmit={(e) => {
           e.preventDefault();
-          if (draft.trim()) router.push(`/cari?q=${encodeURIComponent(draft.trim())}`);
+          submit();
         }}
       >
+        <label htmlFor="cari-q" className="sr-only">Cari judul komik</label>
         <input
+          id="cari-q"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Cari judul komik…"
