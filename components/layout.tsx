@@ -10,6 +10,7 @@ const NAV = [
   { href: "/", label: "Beranda", icon: IconHome },
   { href: "/terbaru", label: "Terbaru", icon: IconClock },
   { href: "/populer", label: "Peringkat", icon: IconFlame },
+  { href: "/novel", label: "Novel", icon: IconBook },
   { href: "/genre", label: "Genre", icon: IconTag },
   { href: "/riwayat", label: "Riwayat", icon: IconHistory },
   { href: "/favorit", label: "Favorit", icon: IconBookmark },
@@ -145,7 +146,7 @@ export function Header() {
 /** Wrapper for page content — trims bottom padding while reading, where the tab bar is hidden. */
 export function Main({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const reading = pathname.startsWith("/baca/");
+  const reading = pathname.startsWith("/baca/") || pathname.startsWith("/baca-novel/");
   return (
     <main
       className={`mx-auto w-full max-w-6xl min-w-0 px-3 pt-3 sm:px-4 sm:pt-4 sm:py-6 ${
@@ -159,17 +160,16 @@ export function Main({ children }: { children: React.ReactNode }) {
 
 /** Fixed bottom tab bar — app-like primary nav for mobile, hidden on desktop. */
 export function MobileTabBar() {  const pathname = usePathname();
-  // Tab bar kecil: Beranda, Terbaru, Peringkat, Riwayat.
-  // Cari = tombol di header (expand inline + saran langsung).
+  // Tab bar: Beranda, Terbaru, Peringkat, Novel, Riwayat.
   // Genre & Favorit tetap di nav desktop + halaman masing-masing.
   const items = NAV.filter((n) => n.href !== "/genre" && n.href !== "/favorit");
 
-  // Sembunyikan saat membaca chapter — halaman baca butuh layar penuh.
-  if (pathname.startsWith("/baca/")) return null;
+  // Sembunyikan saat membaca (komik maupun novel) — butuh layar penuh.
+  if (pathname.startsWith("/baca/") || pathname.startsWith("/baca-novel/")) return null;
 
   return (
     <nav className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-line bg-paper-2/95 backdrop-blur-md md:hidden dark:border-line-dark dark:bg-ink-2/95">
-      <div className="mx-auto grid max-w-6xl grid-cols-4 items-stretch px-1">
+      <div className="mx-auto grid max-w-6xl grid-cols-5 items-stretch px-1">
         {items.map((n) => {
           const active = isActive(pathname, n.href);
           const Icon = n.icon;
@@ -247,7 +247,7 @@ export function BackToTop() {
     };
   }, [pathname]);
 
-  if (pathname.startsWith("/baca/")) return null;
+  if (pathname.startsWith("/baca/") || pathname.startsWith("/baca-novel/")) return null;
   if (!visible) return null;
 
   return (
@@ -353,6 +353,20 @@ function IconBookmark({ className }: IconProps) {
         d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1Z"
         stroke="currentColor"
         strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconBook({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path
+        d="M5 5.5A1.5 1.5 0 0 1 6.5 4H19v15H6.5A1.5 1.5 0 0 0 5 20.5V5.5ZM5 19a1.5 1.5 0 0 1 1.5-1.5H19"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
         strokeLinejoin="round"
       />
     </svg>
