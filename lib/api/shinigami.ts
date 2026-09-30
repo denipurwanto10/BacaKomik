@@ -434,6 +434,9 @@ function toChapterItem(mangaId: string, r: ShiniChapterRow): ChapterItem {
     title: `Chapter ${r.chapter_number}`,
     url: `/${mangaId}-chapter-${numToken(r.chapter_number)}/`,
     ...(fmtDateId(r.release_date) ? { date: fmtDateId(r.release_date) as string } : {}),
+    // chapter_id diteruskan agar reader merge bisa langsung chapter/detail
+    // tanpa me-list ulang (lihat fetchShiniChapterById).
+    ...(r.chapter_id ? { chapterId: r.chapter_id } : {}),
   };
 }
 
@@ -497,6 +500,8 @@ function isPageFile(name: string): boolean {
 
 /**
  * Ambil satu chapter Shinigami berdasarkan NOMOR chapter.
+ * Untuk flow merge (chapter_id SUDAH diketahui dari daftar gabungan),
+ * pakai fetchShiniChapterById agar TIDAK me-list ulang.
  * @param mangaId     UUID manga Shinigami
  * @param num         nomor chapter (mis. 915 / 11.2)
  * @param displaySlug slug rute /baca/<slug>/... (slug Komiku bila gabungan, UUID bila murni)
@@ -517,8 +522,21 @@ export async function fetchShiniChapter(
       404,
     );
   }
+  return fetchShiniChapterById(row.chapter_id, displaySlug, mangaTitle);
+}
+
+/**
+ * Ambil satu chapter Shinigami langsung via chapter_id — TANPA chapter-list.
+ * Dipakai jalur merge (getChapterMerged) yang chapter_id-nya sudah dibawa
+ * daftar chapter gabungan.
+ */
+export async function fetchShiniChapterById(
+  chapterId: string,
+  displaySlug: string,
+  mangaTitle: string,
+): Promise<ChapterData> {
   const { data: d } = await fetchShini<ShiniChapterDetail>(
-    `/chapter/detail/${row.chapter_id}`,
+    `/chapter/detail/${chapterId}`,
     3600,
   );
   const base = (d.base_url || "https://assets.shngm.id").replace(/\/+$/, "");
@@ -528,7 +546,7 @@ export async function fetchShiniChapter(
   if (images.length === 0) {
     throw new KomikuError(
       "Halaman chapter Shinigami tidak memuat gambar yang dikenali.",
-      `${SHINI_API}/chapter/detail/${row.chapter_id}`,
+      `${SHINI_API}/chapter/detail/${chapterId}`,
     );
   }
   const label =

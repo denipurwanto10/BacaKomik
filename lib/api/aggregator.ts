@@ -75,6 +75,8 @@ export interface ChapterSourceRef {
   source: ComicSourceId;
   /** path/url chapter di source asalnya */
   url: string;
+  /** ID chapter native (Shinigami) — bila ada, reader skip chapter-list. */
+  chapterId?: string;
 }
 
 /**
@@ -375,17 +377,22 @@ export function mergeChapters(
       const key = normalizeChapterKey(c.title);
       if (!key) continue;
       const url = s === "shinigami" ? shiniChapterUrl(displaySlug, c.url) : c.url;
+      const cid = s === "shinigami" ? c.chapterId : undefined;
       const ex = byKey.get(key);
       if (ex) {
         if (!ex.sources.some((r) => r.source === s)) {
-          ex.sources.push({ source: s, url: c.url });
+          ex.sources.push({ source: s, url: c.url, ...(cid ? { chapterId: cid } : {}) });
+        } else if (cid) {
+          // Slot source sudah ada tapi belum bawa chapterId — lengkapi.
+          const slot = ex.sources.find((r) => r.source === s)!;
+          if (!slot.chapterId) slot.chapterId = cid;
         }
       } else {
         byKey.set(key, {
           title: c.title,
           url,
           ...(c.date ? { date: c.date } : {}),
-          sources: [{ source: s, url: c.url }],
+          sources: [{ source: s, url: c.url, ...(cid ? { chapterId: cid } : {}) }],
         });
       }
     }

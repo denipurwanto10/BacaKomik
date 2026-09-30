@@ -92,6 +92,11 @@ export interface ChapterItem {
   /** tanggal rilis "14/09/2026" — absen bila tidak ada */
   date?: string;
   /**
+   * ID chapter native (hanya Shinigami: chapter_id) — opsional, non-breaking.
+   * Dipakai reader untuk langsung fetch chapter/detail tanpa me-list ulang.
+   */
+  chapterId?: string;
+  /**
    * Source penyedia chapter ini — hanya terisi pada respons gabungan.
    * Entri pertama = source utama (Shinigami bila nomor tersedia di sana,
    * Komiku hanya bila nomor tersebut tidak ada di Shinigami).

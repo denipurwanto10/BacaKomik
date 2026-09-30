@@ -5,6 +5,7 @@
 import { fetchChapter, KomikuError } from "./komiku";
 import {
   fetchShiniChapter,
+  fetchShiniChapterById,
   isShiniId,
   parseNumToken,
   resolveShiniDetailForSlug,
@@ -80,10 +81,15 @@ async function getChapterMerged(
   let lastErr: unknown = null;
   for (const src of order) {
     try {
+      // chapter_id sudah dibawa daftar gabungan → langsung chapter/detail,
+      // TANPA chapter-list kedua. Absen (tak terduga) → cari via nomor.
+      const shiniChapterId = entrySources.find((r) => r.source === "shinigami")?.chapterId;
       const data: ChapterData =
         src === "shinigami"
           ? shinigamiId
-            ? await fetchShiniChapter(shinigamiId, num, merged.slug, merged.title)
+            ? shiniChapterId
+              ? await fetchShiniChapterById(shiniChapterId, merged.slug, merged.title)
+              : await fetchShiniChapter(shinigamiId, num, merged.slug, merged.title)
             : await Promise.reject(new KomikuError("Tidak tersedia di Shinigami.", slug))
           : await fetchChapter(komikuUrl);
       return withMergedNav(data, merged, num);
