@@ -4,7 +4,7 @@ import Link from "next/link";
 import { prefetchApi } from "@/lib/client";
 import { captureCoverMorph } from "@/lib/morph";
 import type { MangaCard } from "@/lib/api/types";
-import { chapterPathToRoute, TypeBadge } from "./cards";
+import { chapterPathToRoute, SourceBadge, TypeBadge } from "./cards";
 
 /**
  * Kartu list ala Komiku: cover + badge tipe + judul + "Genre | waktu" +
@@ -56,12 +56,15 @@ export function KomikListCard({ item }: { item: MangaCard }) {
           </Link>
         </div>
         {meta && (
-          <p className="mt-1 truncate text-[11px] leading-tight text-muted sm:text-xs dark:text-muted-dark">
-            {meta}
-          </p>
+          <div className="mt-1 flex min-w-0 items-center gap-1.5">
+            <p className="min-w-0 flex-1 truncate text-[11px] leading-tight text-muted sm:text-xs dark:text-muted-dark">
+              {meta}
+            </p>
+            <SourceBadge sources={item.latestSource ? [item.latestSource] : item.sources?.slice(0, 1)} />
+          </div>
         )}
         {item.synopsis && (
-          <p className="mt-1.5 line-clamp-2 break-words text-xs leading-relaxed text-fg/75 sm:line-clamp-none sm:text-[13px] dark:text-fg-dark/70">
+          <p className="mt-1.5 line-clamp-2 break-words text-xs leading-relaxed text-fg/75 sm:text-[13px] dark:text-fg-dark/70">
             {item.synopsis}
           </p>
         )}

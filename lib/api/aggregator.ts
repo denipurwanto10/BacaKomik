@@ -1,0 +1,485 @@
+import type { ChapterItem, ChapterRef, GenreRef, MangaCard, MangaDetail } from "./types";
+// ID source terpusat di types (satu definisi, dipakai client + server).
+import type { ComicSourceId } from "./types";
+export type { ComicSourceId } from "./types";
+
+/**
+ * Aggregator multi-source: Shinigami + Komiku → satu bentuk data gabungan.
+ *
+ * Alur: fetch paralel per source (partial failure: satu gagal ≠ semua gagal)
+ * → normalisasi judul → dedupe → merge (SHINIGAMI utama, Komiku fallback
+ * PER CHAPTER).
+ *
+ * Data asli tiap source TIDAK dihapus — disimpan di field `sources` /
+ * `chapterSources` agar frontend bisa menampilkan badge & fallback.
+ */
+
+/** Tambah source baru = tambah satu nilai di types + scraper + entri priority. */
+
+/**
+ * URUTAN PRIORITAS FINAL — JANGAN DIBALIK:
+ * SHINIGAMI SELALU UTAMA, Komiku hanya fallback/pelengkap per chapter.
+ * Semua merge (kartu/detail/chapter) memakai urutan ini — data Shinigami
+ * menang bila tersedia di kedua source; Komiku hanya mengisi yang kosong.
+ */
+export const SOURCE_PRIORITY: ComicSourceId[] = ["shinigami", "komiku"];
+
+export const SOURCE_LABEL: Record<ComicSourceId, string> = {
+  komiku: "Komiku",
+  shinigami: "Shinigami",
+};
+
+/* ------------------------------------------------------------------ */
+/* Normalisasi judul                                                    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Normalisasi judul untuk matching lintas source:
+ * - lowercase + trim + multiple-spaces → satu spasi
+ * - tanda hubung/underscore/dash variants → spasi
+ * - tanda baca non-alfanumerik dihapus ("One Piece!" → "one piece")
+ * - unicode quotes/diacritics dinormalisasi ("I’m" → "im")
+ *
+ * Konservatif: TIDAK ada fuzzy/levenshtein — hanya exact match hasil
+ * normalisasi yang dianggap sama.
+ */
+export function normalizeTitle(raw: string): string {
+  return raw
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "") // diakritik
+    .replace(/[’‘`´]/g, "'")
+    .replace(/[-------_]+/g, " ") // semua varian dash/underscore → spasi
+    .replace(/[^a-z0-9\s]/g, " ") // tanda baca → spasi
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** "Chapter 224" / "Ch. 224" → "224" (kunci dedupe chapter). */
+export function normalizeChapterKey(raw: string): string {
+  const t = raw
+    .toLowerCase()
+    .replace(/[<>]/g, "") // sisa tag <chapter> literal — isi angka dipertahankan
+    .replace(/^(chapter|ch\.?|episode|eps\.?)\s*/i, "")
+    .replace(/[^a-z0-9.\-]/g, "")
+    .trim();
+  return t;
+}
+
+/* ------------------------------------------------------------------ */
+/* Tipe gabungan (extends tipe lama, non-breaking)                      */
+/* ------------------------------------------------------------------ */
+
+/** Referensi chapter dari satu source tertentu. */
+export interface ChapterSourceRef {
+  source: ComicSourceId;
+  /** path/url chapter di source asalnya */
+  url: string;
+}
+
+/**
+ * Chapter gabungan: satu label + daftar source penyedia.
+ * `url` = url source prioritas (Shinigami bila ada) — dipakai link default
+ * agar komponen lama (chapterPathToRoute) tetap jalan tanpa perubahan.
+ */
+export interface MergedChapterItem extends ChapterItem {
+  sources: ChapterSourceRef[];
+}
+
+/**
+ * Kartu gabungan: field lama (slug/title/thumbnail/...) = data source
+ * prioritas; `sources` mencatat semua source penyedia.
+ * `sourceSlug` = slug di tiap source (untuk fetch detail per source).
+ * Slug tampilan = slug Komiku bila ada (URL manusiawi), else ID Shinigami.
+ */
+export interface MergedMangaCard extends MangaCard {
+  sources: ComicSourceId[];
+  sourceSlug: Partial<Record<ComicSourceId, string>>;
+}
+
+/** Detail gabungan: chapters = MergedChapterItem[] (compatible: subtype). */
+export interface MergedMangaDetail extends Omit<MangaDetail, "chapters"> {
+  sources: ComicSourceId[];
+  sourceSlug: Partial<Record<ComicSourceId, string>>;
+  chapters: MergedChapterItem[];
+}
+
+/* ------------------------------------------------------------------ */
+/* Merge kartu                                                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Gabungkan daftar kartu dari beberapa source → kartu unik.
+ * Matching: normalizeTitle exact (TIDAK menggabungkan dua judul
+ * ternormalisasi berbeda walau mirip).
+ */
+export function mergeCards(lists: Partial<Record<ComicSourceId, MangaCard[]>>): MergedMangaCard[] {
+  const groups = new Map<string, { cards: Partial<Record<ComicSourceId, MangaCard>> }>();
+  for (const s of SOURCE_PRIORITY) {
+    for (const c of lists[s] ?? []) {
+      const key = normalizeTitle(c.title);
+      if (!key) continue;
+      const gkey = `t:${key}`;
+      let g = groups.get(gkey);
+      if (!g) {
+        g = { cards: {} };
+        groups.set(gkey, g);
+      }
+      // Satu source satu slot — duplikat dalam source yang sama dibuang.
+      if (!g.cards[s]) g.cards[s] = c;
+    }
+  }
+
+  const out: MergedMangaCard[] = [];
+  for (const [, g] of groups) {
+    const present = SOURCE_PRIORITY.filter((s) => g.cards[s]);
+    const slugs: Partial<Record<ComicSourceId, string>> = {};
+    for (const s of present) slugs[s] = g.cards[s]!.slug;
+
+    // Slug tampilan = slug Komiku bila ada (URL manusiawi, route
+    // /komik/<slug> tetap valid); else ID Shinigami (UUID).
+    const displaySlug = g.cards.komiku?.slug ?? g.cards[present[0]]!.slug;
+    const primary = present[0];
+    const p = g.cards[primary]!;
+    const getCard = <K extends keyof MangaCard>(k: K): MangaCard[K] | undefined => {
+      for (const s of SOURCE_PRIORITY) {
+        const v = g.cards[s]?.[k];
+        if (v !== undefined && v !== "" && !(Array.isArray(v) && v.length === 0)) return v;
+      }
+      return undefined;
+    };
+    // firstChapter: Komiku (dari HTML, nomor asli) menang atas tebakan
+    // "Chapter 1" kartu list Shinigami; fallback ke getCard bila Komiku absen.
+    const firstCh = g.cards.komiku?.firstChapter ?? getCard("firstChapter");
+    // updatedAt kartu gabungan = waktu TERBARU antar source.
+    let mergedUpdatedAt = getCard("updatedAt");
+    {
+      let best = updatedAtMinutes(mergedUpdatedAt);
+      for (const s of SOURCE_PRIORITY) {
+        const cand = g.cards[s]?.updatedAt;
+        const n = updatedAtMinutes(cand);
+        if (cand && n < best) {
+          best = n;
+          mergedUpdatedAt = cand;
+        }
+      }
+    }
+    // latestChapter lintas source: nomor TERTINGGI menang; nomor sama →
+    // Shinigami menang via urutan SOURCE_PRIORITY. URL chapter Shinigami
+    // ditulis ulang memakai displaySlug agar route /baca tetap valid.
+    let latestCh = getCard("latestChapter");
+    // Source penyedia latest (untuk badge di tombol Terbaru).
+    let latestSrc: ComicSourceId | undefined;
+    for (const s of SOURCE_PRIORITY) {
+      if (latestCh && g.cards[s]?.latestChapter?.url === latestCh.url) {
+        latestSrc = s;
+        break;
+      }
+    }
+    {
+      let best = chapterNum(latestCh?.label);
+      if (Number.isFinite(best)) {
+        for (const s of SOURCE_PRIORITY) {
+          const cand = g.cards[s]?.latestChapter;
+          const n = chapterNum(cand?.label);
+          // strictly lebih besar → ganti; sama → pertahankan (Shinigami lebih dulu).
+          if (cand && Number.isFinite(n) && n > best) {
+            best = n;
+            latestCh = cand;
+            latestSrc = s;
+          }
+        }
+      }
+    }
+    out.push({
+      slug: displaySlug,
+      title: (getCard("title") as string) ?? p.title,
+      thumbnail: (getCard("thumbnail") as string) ?? p.thumbnail,
+      ...(getCard("type") ? { type: getCard("type") as NonNullable<MangaCard["type"]> } : {}),
+      ...(getCard("genre") ? { genre: getCard("genre") as string } : {}),
+      ...(mergedUpdatedAt ? { updatedAt: mergedUpdatedAt } : {}),
+      ...(getCard("synopsis") ? { synopsis: getCard("synopsis") as string } : {}),
+      ...(firstCh ? { firstChapter: rewriteShiniUrl(firstCh, displaySlug) } : {}),
+      ...(latestCh ? { latestChapter: rewriteShiniUrl(latestCh, displaySlug) } : {}),
+      ...(latestSrc ? { latestSource: latestSrc } : {}),
+      ...(getCard("views") ? { views: getCard("views") as string } : {}),
+      ...(getCard("rank") !== undefined ? { rank: getCard("rank") as number } : {}),
+      sources: present,
+      sourceSlug: slugs,
+    });
+  }
+  return out;
+}
+
+/**
+ * URL chapter Shinigami memakai UUID (`/<manga_id>-chapter-N/`); bila kartu
+ * gabungan memakai slug Komiku sebagai slug tampilan, tulis ulang prefixnya
+ * agar chapterPathToRoute menghasilkan /baca/<slug-tampilan>/<N>.
+ * URL Komiku (native path) dibiarkan apa adanya.
+ */
+function rewriteShiniUrl<T extends ChapterRef>(ref: T, displaySlug: string): T {
+  const m = ref.url.match(/^\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-chapter-(.+?)\/?$/i);
+  if (!m) return ref;
+  return { ...ref, url: `/${displaySlug}-chapter-${m[1]}/` };
+}
+
+/* ------------------------------------------------------------------ */
+/* Urut terbaru lintas source                                             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * "3 menit lalu" / "2 jam lalu" / "1 hari lalu" (ID & EN) → menit.
+ * Tanpa waktu terparse → Infinity (paling belakang, tapi tetap tampil).
+ */
+export function updatedAtMinutes(raw?: string): number {
+  if (!raw) return Infinity;
+  const t = raw.toLowerCase().trim();
+  const m = t.match(/(\d+(?:[.,]\d+)?)\s*(detik|second|menit|minute|jam|hour|hari|day|minggu|week|bulan|month|tahun|year)/);
+  if (!m) return Infinity;
+  const n = parseFloat(m[1].replace(",", "."));
+  if (!Number.isFinite(n)) return Infinity;
+  const unit = m[2];
+  const per =
+    unit.startsWith("detik") || unit.startsWith("second") ? 1 / 60
+    : unit.startsWith("menit") || unit.startsWith("minute") ? 1
+    : unit.startsWith("jam") || unit.startsWith("hour") ? 60
+    : unit.startsWith("hari") || unit.startsWith("day") ? 1440
+    : unit.startsWith("minggu") || unit.startsWith("week") ? 10080
+    : unit.startsWith("bulan") || unit.startsWith("month") ? 43200
+    : 525600; // tahun
+  return n * per;
+}
+
+/**
+ * Urutkan kartu gabungan PALING BARU dulu lintas source — BUKAN urutan
+ * source. Stabil: waktu sama → urutan asal dipertahankan.
+ */
+export function sortByFresh<T extends Pick<MangaCard, "updatedAt">>(cards: T[]): T[] {
+  return cards
+    .map((c, i) => ({ c, i }))
+    .sort((a, b) => updatedAtMinutes(a.c.updatedAt) - updatedAtMinutes(b.c.updatedAt) || a.i - b.i)
+    .map(({ c }) => c);
+}
+
+/**
+ * Nomor chapter dari label ("Chapter 23" → 23, "88-1" → 88.1).
+ * NaN bila tak terparse — dipakai merge kartu & detail (satu definisi).
+ */
+export function chapterNum(label?: string): number {
+  if (!label) return NaN;
+  const k = normalizeChapterKey(label);
+  const n = parseFloat(k.replace(/-(\d+)$/, ".$1"));
+  return Number.isFinite(n) ? n : NaN;
+}
+
+/* ------------------------------------------------------------------ */
+/* Merge detail + chapter                                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Gabungkan detail dari beberapa source. Field teks = Shinigami bila ada,
+ * fallback Komiku bila kosong. Genres = gabungan unik per slug/nama.
+ * Chapters digabung per nomor chapter ternormalisasi (lihat mergeChapters).
+ * Slug tampilan = slug Komiku bila ada, else ID Shinigami.
+ */
+export function mergeDetails(details: Partial<Record<ComicSourceId, MangaDetail>>): MergedMangaDetail | null {
+  const present = SOURCE_PRIORITY.filter((s) => details[s]);
+  if (present.length === 0) return null;
+  const primary = details[present[0]]!;
+
+  const slugs: Partial<Record<ComicSourceId, string>> = {};
+  for (const s of present) slugs[s] = details[s]!.slug;
+  const displaySlug = details.komiku?.slug ?? primary.slug;
+
+  const get = <K extends keyof MangaDetail>(k: K): MangaDetail[K] | undefined => {
+    for (const s of SOURCE_PRIORITY) {
+      const v = details[s]?.[k];
+      if (v !== undefined && v !== "" && !(Array.isArray(v) && v.length === 0)) return v;
+    }
+    return undefined;
+  };
+
+  // Genres: gabung unik (kunci = slug lowercased, fallback nama).
+  const seen = new Set<string>();
+  const genres: GenreRef[] = [];
+  for (const s of SOURCE_PRIORITY) {
+    for (const g of details[s]?.genres ?? []) {
+      const key = (g.slug || g.name).toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        genres.push(g);
+      }
+    }
+  }
+
+  const chapters = mergeChapters(
+    Object.fromEntries(present.map((s) => [s, details[s]!.chapters])) as Partial<Record<ComicSourceId, ChapterItem[]>>,
+    displaySlug,
+  );
+
+  const firstCh: ChapterRef | undefined = get("firstChapter");
+  // latestChapter lintas source: nomor TERTINGGI menang — SAMA seperti
+  // mergeCards. Nomor sama → Shinigami menang (urutan SOURCE_PRIORITY).
+  let latestCh: ChapterRef | undefined = get("latestChapter");
+  {
+    let best = chapterNum(latestCh?.label);
+    if (Number.isFinite(best)) {
+      for (const s of SOURCE_PRIORITY) {
+        const cand = details[s]?.latestChapter;
+        const n = chapterNum(cand?.label);
+        if (cand && Number.isFinite(n) && n > best) {
+          best = n;
+          latestCh = cand;
+        }
+      }
+    }
+  }
+
+  return {
+    slug: displaySlug,
+    title: (get("title") as string) ?? primary.title,
+    ...(get("altTitle") ? { altTitle: get("altTitle") as string } : {}),
+    cover: (get("cover") as string) ?? primary.cover,
+    synopsis: (get("synopsis") as string) ?? "",
+    ...(get("type") ? { type: get("type") as string } : {}),
+    ...(get("theme") ? { theme: get("theme") as string } : {}),
+    genres,
+    ...(get("author") ? { author: get("author") as string } : {}),
+    ...(get("status") ? { status: get("status") as string } : {}),
+    ...(get("rating") ? { rating: get("rating") as string } : {}),
+    ...(get("readingDirection") ? { readingDirection: get("readingDirection") as string } : {}),
+    ...(firstCh ? { firstChapter: rewriteShiniUrl(firstCh, displaySlug) } : {}),
+    ...(latestCh ? { latestChapter: rewriteShiniUrl(latestCh, displaySlug) } : {}),
+    chapters,
+    sources: present,
+    sourceSlug: slugs,
+  };
+}
+
+/**
+ * Gabungkan daftar chapter lintas source. Kunci = nomor ternormalisasi
+ * ("Chapter 224" Komiku & "Chapter 224" Shinigami → "224").
+ * Aturan per chapter (Shinigami selalu menang bila nomor sama):
+ * chapter ada di Shinigami → pakai URL Shinigami; hanya nomor yang
+ * tidak ada di Shinigami yang memakai URL Komiku (fallback pelengkap).
+ * Label tampilan = dari source prioritas. Urutan = nomor chapter tertinggi
+ * dulu lintas source. Nomor tak terparse → fallback urutan daftar Shinigami.
+ */
+export function mergeChapters(
+  lists: Partial<Record<ComicSourceId, ChapterItem[]>>,
+  displaySlug: string,
+): MergedChapterItem[] {
+  const byKey = new Map<string, MergedChapterItem>();
+  for (const s of SOURCE_PRIORITY) {
+    for (const c of lists[s] ?? []) {
+      const key = normalizeChapterKey(c.title);
+      if (!key) continue;
+      const url = s === "shinigami" ? shiniChapterUrl(displaySlug, c.url) : c.url;
+      const ex = byKey.get(key);
+      if (ex) {
+        if (!ex.sources.some((r) => r.source === s)) {
+          ex.sources.push({ source: s, url: c.url });
+        }
+      } else {
+        byKey.set(key, {
+          title: c.title,
+          url,
+          ...(c.date ? { date: c.date } : {}),
+          sources: [{ source: s, url: c.url }],
+        });
+      }
+    }
+  }
+  // Urutan lintas source: nomor chapter TERTINGGI dulu. Tie → Shinigami
+  // dulu (urutan sources[0]).
+  const primaryList = lists[SOURCE_PRIORITY[0]] ?? [];
+  const primaryKeys = primaryList.map((c) => normalizeChapterKey(c.title)).filter(Boolean);
+  const order = new Map<string, number>();
+  primaryKeys.forEach((k, i) => {
+    if (!order.has(k)) order.set(k, i);
+  });
+  const numOf = (k: string) => {
+    const n = parseFloat(k.replace(/-(\d+)$/, ".$1"));
+    return Number.isFinite(n) ? n : NaN;
+  };
+  return [...byKey.values()].sort((a, b) => {
+    const ka = normalizeChapterKey(a.title);
+    const kb = normalizeChapterKey(b.title);
+    const na = numOf(ka);
+    const nb = numOf(kb);
+    // Keduanya terparse → nomor tertinggi dulu; tie → Shinigami dulu
+    // (urutan sources[0]).
+    if (Number.isFinite(na) && Number.isFinite(nb)) {
+      if ((nb as number) !== (na as number)) return (nb as number) - (na as number);
+      const sa = a.sources[0]?.source ?? "";
+      const sb = b.sources[0]?.source ?? "";
+      if (sa !== sb) return SOURCE_PRIORITY.indexOf(sa as never) - SOURCE_PRIORITY.indexOf(sb as never);
+      return ka.localeCompare(kb);
+    }
+    const oa = order.get(ka);
+    const ob = order.get(kb);
+    if (oa !== undefined && ob !== undefined) return oa - ob;
+    if (oa !== undefined) return -1;
+    if (ob !== undefined) return 1;
+    return ka.localeCompare(kb);
+  });
+}
+
+/**
+ * URL chapter Shinigami selalu ditulis ulang ke displaySlug
+ * (`/<uuid>-chapter-N/` → `/<displaySlug>-chapter-N/`) agar route /baca
+ * valid. URL non-UUID (sudah displaySlug) dibiarkan.
+ */
+function shiniChapterUrl(displaySlug: string, url: string): string {
+  const m = url.match(/^\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-chapter-(.+?)\/?$/i);
+  if (!m) return url;
+  return `/${displaySlug}-chapter-${m[1]}/`;
+}
+
+/* ------------------------------------------------------------------ */
+/* Parallel fetch dengan partial failure                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Jalankan fetch tiap source paralel; source yang gagal → [] / null +
+ * log server, source sukses tetap dipakai. TIDAK pernah throw bila
+ * minimal satu source berhasil.
+ */
+export async function fetchAllSettled<T>(
+  jobs: Partial<Record<ComicSourceId, () => Promise<T>>>,
+  label: string,
+): Promise<{ data: Partial<Record<ComicSourceId, T>>; errors: Partial<Record<ComicSourceId, string>> }> {
+  const entries = Object.entries(jobs) as [ComicSourceId, () => Promise<T>][];
+  const settled = await Promise.all(
+    entries.map(async ([source, fn]) => {
+      try {
+        return { source, value: await fn(), err: null as unknown, msg: null as string | null };
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error(`[aggregator:${label}] source=${source} gagal: ${msg}`);
+        return { source, value: null as T | null, err: e, msg };
+      }
+    }),
+  );
+  const data: Partial<Record<ComicSourceId, T>> = {};
+  const errors: Partial<Record<ComicSourceId, string>> = {};
+  for (const { source, value, msg } of settled) {
+    if (value !== null) data[source] = value;
+    else errors[source] = msg ?? "unknown";
+  }
+  if (Object.keys(data).length === 0) {
+    // Semua gagal — lempar error asli source pertama (mis. KomikuError
+    // + status HTTP) agar route mengembalikan status yang sama seperti
+    // sebelum agregator ada. Fallback bila tidak ada error asli.
+    const firstErr = settled.map((s) => s.err).find((e) => e instanceof Error);
+    throw (
+      firstErr ??
+      new Error(
+        entries.length > 1
+          ? "Semua sumber data gagal dimuat. Coba lagi."
+          : (errors[entries[0]?.[0] ?? "komiku"] ?? "Gagal memuat data."),
+      )
+    );
+  }
+  return { data, errors };
+}

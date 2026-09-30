@@ -7,6 +7,9 @@
 /** Tipe komik: Manga (JP) | Manhwa (KR) | Manhua (CN) */
 export type KomikType = "Manga" | "Manhwa" | "Manhua";
 
+/** ID source komik yang dikenal. Disatukan di sini agar types client aman diimpor. */
+export type ComicSourceId = "komiku" | "shinigami";
+
 /** Satu kartu komik dari daftar (`.bge` / `article.ls2` / search). */
 export interface MangaCard {
   /** slug dari URL /manga/<slug>/ */
@@ -26,10 +29,23 @@ export interface MangaCard {
   firstChapter?: ChapterRef;
   /** Chapter terbaru: { label, url } */
   latestChapter?: ChapterRef;
+  /**
+   * Source penyedia latestChapter di atas — terisi pada respons gabungan.
+   * Dipakai badge sumber di tombol Terbaru. Opsional (respons lama valid).
+   */
+  latestSource?: ComicSourceId;
   /** Jumlah views (hanya ranking) */
   views?: string;
   /** Peringkat (hanya ranking) */
   rank?: number;
+  /**
+   * Source penyedia kartu ini — hanya terisi pada respons gabungan
+   * multi-source (lihat lib/api/aggregator.ts). Opsional agar respons
+   * lama tetap valid tanpa perubahan.
+   */
+  sources?: ComicSourceId[];
+  /** Slug di tiap source (untuk fetch detail per source). */
+  sourceSlug?: Partial<Record<ComicSourceId, string>>;
 }
 
 /** Referensi singkat chapter (label + path URL Komiku). */
@@ -58,16 +74,29 @@ export interface MangaDetail {
   latestChapter?: ChapterRef;
   /** Daftar chapter lengkap (terbaru dulu), dari tabel #Daftar_Chapter */
   chapters: ChapterItem[];
+  /**
+   * Source penyedia detail ini — hanya terisi pada respons gabungan
+   * (lihat lib/api/aggregator.ts). Opsional agar respons lama valid.
+   */
+  sources?: ComicSourceId[];
+  /** Slug di tiap source (untuk fetch detail per source). */
+  sourceSlug?: Partial<Record<ComicSourceId, string>>;
 }
 
 /** Satu baris chapter di daftar chapter. */
 export interface ChapterItem {
   /** label mis. "Chapter 360" */
   title: string;
-  /** path Komiku mis. "/blue-lock-chapter-360/" */
+  /** path chapter source utama mis. "/blue-lock-chapter-360/" */
   url: string;
   /** tanggal rilis "14/09/2026" — absen bila tidak ada */
   date?: string;
+  /**
+   * Source penyedia chapter ini — hanya terisi pada respons gabungan.
+   * Entri pertama = source utama (Shinigami bila nomor tersedia di sana,
+   * Komiku hanya bila nomor tersebut tidak ada di Shinigami).
+   */
+  sources?: { source: ComicSourceId; url: string }[];
 }
 
 /** Satu genre dari /p/daftar-genre/. */

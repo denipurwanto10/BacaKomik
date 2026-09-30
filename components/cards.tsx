@@ -37,6 +37,44 @@ export function TypeBadge({ type, className = "" }: { type?: string; className?:
   );
 }
 
+/** Tanda sumber data — kecil seperti TypeBadge, satu warna per source. */
+const SOURCE_STYLE: Record<string, string> = {
+  shinigami: "bg-accent",
+  komiku: "bg-mark-manhwa",
+};
+
+const SOURCE_SHORT: Record<string, string> = {
+  shinigami: "Shinigami",
+  komiku: "Komiku",
+};
+
+/** Label asal data kartu (Shinigami / Komiku / keduanya). Diam bila tak ada info. */
+export function SourceBadge({
+  sources,
+  className = "",
+}: {
+  sources?: string[];
+  className?: string;
+}) {
+  if (!sources || sources.length === 0) return null;
+  return (
+    <span className={`inline-flex shrink-0 items-center gap-1 ${className}`}>
+      {sources.map((s) => {
+        const key = s.toLowerCase();
+        const color = SOURCE_STYLE[key] ?? "bg-muted";
+        return (
+          <span
+            key={s}
+            className={`inline-block shrink-0 truncate rounded px-1.5 py-0.5 text-[10px] font-bold uppercase leading-tight text-white ${color}`}
+          >
+            {SOURCE_SHORT[key] ?? s}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
 /** Kartu grid vertikal: cover + judul + chapter terbaru. */
 export function MangaGridCard({ item }: { item: MangaCard }) {
   const detailPath = `/api/manga/${encodeURIComponent(item.slug)}`;
@@ -76,12 +114,15 @@ export function MangaGridCard({ item }: { item: MangaCard }) {
         )}
       </Link>
       <div className="flex min-w-0 flex-1 flex-col p-2 sm:p-2.5">
-        <Link
-          href={`/komik/${item.slug}`}
-          className="truncate text-xs font-semibold leading-snug text-fg hover:text-accent sm:text-[13px] dark:text-fg-dark"
-        >
-          {item.title}
-        </Link>
+        <div className="flex min-w-0 items-start gap-1.5">
+          <Link
+            href={`/komik/${item.slug}`}
+            className="min-w-0 flex-1 truncate text-xs font-semibold leading-snug text-fg hover:text-accent sm:text-[13px] dark:text-fg-dark"
+          >
+            {item.title}
+          </Link>
+          <SourceBadge sources={item.latestSource ? [item.latestSource] : item.sources?.slice(0, 1)} />
+        </div>
         {item.genre && (
           <p className="mt-0.5 hidden truncate text-[11px] leading-tight text-muted min-[420px]:block dark:text-muted-dark">
             {item.genre}
@@ -134,6 +175,7 @@ export function UpdateRow({ item }: { item: MangaCard }) {
           >
             {item.title}
           </Link>
+          <SourceBadge sources={item.latestSource ? [item.latestSource] : item.sources?.slice(0, 1)} />
         </div>
         <div className="mt-0.5 flex min-w-0 items-center justify-between gap-2">
           {item.genre && (

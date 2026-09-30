@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { fetchMangaList } from "@/lib/api/komiku";
+import { getLatestPaged } from "@/lib/api/manga";
 import { guard, handle } from "../_lib";
 
 export const dynamic = "force-dynamic";
@@ -21,14 +21,12 @@ export async function GET(req: NextRequest) {
   if (blocked) return blocked;
   return handle(
     () =>
-      fetchMangaList({
-        page,
+      getLatestPaged(page, {
         ...(orderby ? { orderby } : {}),
         ...(tipe ? { tipe } : {}),
         ...(genre ? { genre } : {}),
         ...(genre2 ? { genre2 } : {}),
         ...(status ? { status } : {}),
-        fresh: true,
       }),
     // Jangan biarkan browser/CDN menyimpan daftar chapter terbaru.
     // Endpoint ini harus langsung mengikuti update dari sumber.
