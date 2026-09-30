@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { apiGet } from "@/lib/client";
 import type { CommentPage, KomikuComment, KomikuReply, ReplyPage } from "@/lib/api/types";
 
@@ -77,7 +77,7 @@ function ReplyItem({ r }: { r: KomikuReply }) {
         </p>
         {r.sticker ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={r.sticker} alt="Stiker" loading="lazy" className="mt-1 h-20 w-20 rounded-lg object-contain" />
+          <img src={r.sticker} alt="Stiker" loading="lazy" decoding="async" className="mt-1 h-20 w-20 rounded-lg object-contain" />
         ) : (
           <p className="mt-0.5 break-words text-[13px] leading-relaxed text-fg/90 dark:text-fg-dark/85">{r.body}</p>
         )}
@@ -86,8 +86,8 @@ function ReplyItem({ r }: { r: KomikuReply }) {
   );
 }
 
-/** Balasan expandable satu komentar. */
-function Replies({ hashId, total }: { hashId: string; total?: number }) {
+/** Balasan expandable satu komentar — lazy: TIDAK fetch sebelum dibuka. */
+const Replies = memo(function Replies({ hashId, total }: { hashId: string; total?: number }) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<KomikuReply[]>([]);
   const [nextPage, setNextPage] = useState<number | null>(null);
@@ -96,6 +96,7 @@ function Replies({ hashId, total }: { hashId: string; total?: number }) {
 
   const load = useCallback(
     async (p: number) => {
+      if (loading) return;
       setLoading(true);
       setError(false);
       try {
@@ -108,7 +109,7 @@ function Replies({ hashId, total }: { hashId: string; total?: number }) {
         setLoading(false);
       }
     },
-    [hashId],
+    [hashId, loading],
   );
 
   if (!open) {
@@ -119,7 +120,7 @@ function Replies({ hashId, total }: { hashId: string; total?: number }) {
           setOpen(true);
           void load(1);
         }}
-        className="mt-1.5 w-fit text-xs font-semibold text-accent hover:underline"
+        className="mt-1.5 w-fit touch-manipulation text-xs font-semibold text-accent transition-transform active:scale-95 hover:underline"
       >
         Lihat {total} balasan
       </button>
@@ -132,25 +133,35 @@ function Replies({ hashId, total }: { hashId: string; total?: number }) {
         <ReplyItem key={r.hashId} r={r} />
       ))}
       {loading && <p className="text-xs text-muted dark:text-muted-dark">Memuat balasan…</p>}
-      {error && (
-        <button onClick={() => load(1)} className="w-fit text-xs font-semibold text-mark-manga">
+      {error && !loading && (
+        <button
+          onClick={() => load(1)}
+          className="w-fit touch-manipulation text-xs font-semibold text-mark-manga transition-transform active:scale-95"
+        >
           Gagal memuat. Coba lagi.
         </button>
       )}
       {nextPage && !loading && (
-        <button onClick={() => load(nextPage)} className="w-fit text-xs font-semibold text-accent hover:underline">
+        <button
+          onClick={() => load(nextPage)}
+          className="w-fit touch-manipulation text-xs font-semibold text-accent transition-transform active:scale-95 hover:underline"
+        >
           Muat balasan lainnya
         </button>
       )}
-      <button onClick={() => setOpen(false)} className="w-fit text-[11px] text-muted hover:underline dark:text-muted-dark">
+      <button
+        onClick={() => setOpen(false)}
+        className="w-fit touch-manipulation text-[11px] text-muted transition-transform active:scale-95 hover:underline dark:text-muted-dark"
+      >
         Sembunyikan
       </button>
     </div>
   );
-}
+});
 
-/** Satu komentar penuh (avatar + isi + balasan). */
-function CommentItem({ c, kind }: { c: KomikuComment; kind: "manga" | "chapter" }) {
+/** Satu komentar penuh (avatar + isi + balasan) — memo agar daftar panjang
+ *  tidak me-render ulang semua item saat 1 item berubah / list append. */
+const CommentItem = memo(function CommentItem({ c, kind }: { c: KomikuComment; kind: "manga" | "chapter" }) {
   return (
     <article className="flex min-w-0 gap-2.5">
       <Avatar name={c.author} src={c.avatar} />
@@ -160,9 +171,12 @@ function CommentItem({ c, kind }: { c: KomikuComment; kind: "manga" | "chapter" 
       </div>
     </article>
   );
-}
+});
 
 /** Modal seluruh komentar — dibuka dari tombol "Komentar Lainnya". */
+/** Jumlah item komentar yang dirender per frame (windowing daftar modal). */
+const WINDOW_SIZE = 30;
+
 function AllCommentsModal({
   kind,
   ref,
@@ -182,17 +196,28 @@ function AllCommentsModal({
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const load = useCallback(
     async (p: number, s: CommentSortKey, append: boolean) => {
-      if (append) setLoadingMore(true);
-      else {
+      if (append) {
+        if (loadingMore) return;
+        setLoadingMore(true);
+      } else {
         setLoading(true);
         setError(null);
       }
       try {
         const qs = new URLSearchParams({ kind, ref, sort: s, page: String(p) });
         const res = await apiGet<CommentPage>(`/api/comments?${qs}`);
+        if (!mountedRef.current) return;
         setItems((prev) =>
           append
             ? [...prev, ...res.items.filter((it) => !prev.some((x) => x.hashId === it.hashId))]
@@ -201,20 +226,46 @@ function AllCommentsModal({
         setNextPage(res.nextPage);
         setTotal(res.total);
       } catch (e) {
+        if (!mountedRef.current) return;
         if (!append) setError(e instanceof Error ? e.message : "Gagal memuat komentar.");
       } finally {
+        if (!mountedRef.current) return;
         setLoading(false);
         setLoadingMore(false);
       }
     },
-    [kind, ref],
+    [kind, ref, loadingMore],
   );
+
+  // Windowing ringan: daftar modal bisa ratusan item (append per halaman).
+  // Render bertahap 30 per frame via rAF agar buka modal + "muat lainnya"
+  // tidak memblokir UI (tap terasa macet) di HP maupun laptop kentang.
+  const [visibleCount, setVisibleCount] = useState(WINDOW_SIZE);
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setItems([]);
     setNextPage(null);
+    setVisibleCount(WINDOW_SIZE);
     void load(1, sort, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sort]);
+
+  useEffect(() => {
+    if (visibleCount >= items.length) return;
+    let raf = 0;
+    const tick = () => {
+      raf = requestAnimationFrame(() => {
+        setVisibleCount((v) => Math.min(items.length, v + WINDOW_SIZE));
+      });
+    };
+    tick();
+    return () => cancelAnimationFrame(raf);
+  }, [visibleCount, items.length]);
+
+  // Scroll modal ke atas tiap ganti urutan — daftarnya benar-benar baru.
+  useEffect(() => {
+    listRef.current?.scrollTo({ top: 0 });
   }, [sort]);
 
   // Kunci scroll body + tutup via Escape selama modal terbuka.
@@ -275,7 +326,7 @@ function AllCommentsModal({
             </button>
           </div>
         </div>
-        <div className="min-w-0 flex-1 overflow-y-auto p-3 sm:p-4">
+        <div ref={listRef} className="min-w-0 flex-1 overflow-y-auto overscroll-contain p-3 sm:p-4" style={{ WebkitOverflowScrolling: "touch" as const }}>
           {loading && (
             <div className="flex min-w-0 flex-col gap-2.5">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -305,15 +356,20 @@ function AllCommentsModal({
           {!loading && !error && items.length > 0 && (
             <>
               <div className="flex min-w-0 flex-col gap-3">
-                {items.map((c) => (
+                {items.slice(0, visibleCount).map((c) => (
                   <CommentItem key={c.hashId} c={c} kind={kind} />
                 ))}
               </div>
+              {visibleCount < items.length && (
+                <p className="mt-3 text-center text-xs text-muted dark:text-muted-dark">
+                  Menampilkan {Math.min(visibleCount, items.length)} dari {items.length} komentar…
+                </p>
+              )}
               {nextPage && (
                 <button
                   onClick={() => load(nextPage, sort, true)}
                   disabled={loadingMore}
-                  className="mx-auto mt-3 flex min-h-11 items-center rounded-full border border-line px-6 py-2 text-sm font-semibold text-fg disabled:opacity-50 sm:min-h-0 dark:border-line-dark dark:text-fg-dark"
+                  className="mx-auto mt-3 flex min-h-11 touch-manipulation items-center rounded-full border border-line px-6 py-2 text-sm font-semibold text-fg transition-transform active:scale-95 disabled:opacity-50 sm:min-h-0 dark:border-line-dark dark:text-fg-dark"
                 >
                   {loadingMore ? "Memuat…" : "Muat komentar lainnya"}
                 </button>
@@ -349,6 +405,9 @@ export function Comments({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  // Tap tombol langsung terasa: tampilkan status bukaan modal sesaat
+  // (fetch halaman pertama bisa 1-2 dtk saat upstream dingin).
+  const [opening, setOpening] = useState(false);
 
   const load = useCallback(
     async (s: CommentSortKey) => {
@@ -443,10 +502,15 @@ export function Comments({
             </div>
             {hasMore && (
               <button
-                onClick={() => setModalOpen(true)}
-                className="mx-auto mt-3 flex min-h-11 items-center rounded-full border border-line px-6 py-2 text-sm font-semibold text-fg sm:min-h-0 dark:border-line-dark dark:text-fg-dark"
+                onClick={() => {
+                  setOpening(true);
+                  setModalOpen(true);
+                  window.setTimeout(() => setOpening(false), 600);
+                }}
+                disabled={opening}
+                className="mx-auto mt-3 flex min-h-11 touch-manipulation items-center rounded-full border border-line px-6 py-2 text-sm font-semibold text-fg transition-transform active:scale-95 disabled:opacity-60 sm:min-h-0 dark:border-line-dark dark:text-fg-dark"
               >
-                Komentar Lainnya
+                {opening ? "Membuka…" : "Komentar Lainnya"}
               </button>
             )}
           </>
