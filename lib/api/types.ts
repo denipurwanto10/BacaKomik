@@ -26,11 +26,28 @@ export interface MangaCard {
   firstChapter?: ChapterRef;
   /** Chapter terbaru: { label, url } */
   latestChapter?: ChapterRef;
+  /**
+   * Source penyedia latestChapter di atas — terisi pada respons gabungan
+   * (mis. "komiku" bila Komiku ch23 lebih baru dari Komikindo ch22).
+   * Dipakai badge sumber di tombol Terbaru. Opsional (respons lama valid).
+   */
+  latestSource?: ComicSourceId;
   /** Jumlah views (hanya ranking) */
   views?: string;
   /** Peringkat (hanya ranking) */
   rank?: number;
+  /**
+   * Source penyedia kartu ini — hanya terisi pada respons gabungan
+   * multi-source (lihat lib/api/aggregator.ts). Opsional agar respons
+   * lama (Komiku saja) tetap valid tanpa perubahan.
+   */
+  sources?: ComicSourceId[];
+  /** Slug di tiap source (untuk fetch detail per source). */
+  sourceSlug?: Partial<Record<ComicSourceId, string>>;
 }
+
+/** ID source komik yang dikenal. Disatukan di sini agar types client aman diimpor. */
+export type ComicSourceId = "komiku" | "komikindo";
 
 /** Referensi singkat chapter (label + path URL Komiku). */
 export interface ChapterRef {
@@ -64,10 +81,16 @@ export interface MangaDetail {
 export interface ChapterItem {
   /** label mis. "Chapter 360" */
   title: string;
-  /** path Komiku mis. "/blue-lock-chapter-360/" */
+  /** path chapter source utama mis. "/blue-lock-chapter-360/" */
   url: string;
   /** tanggal rilis "14/09/2026" — absen bila tidak ada */
   date?: string;
+  /**
+   * Source penyedia chapter ini — hanya terisi pada respons gabungan.
+   * Entri pertama = source utama (Komikindo bila nomor tersedia di sana,
+   * Komiku hanya bila nomor tersebut tidak ada di Komikindo).
+   */
+  sources?: { source: ComicSourceId; url: string }[];
 }
 
 /** Satu genre dari /p/daftar-genre/. */
