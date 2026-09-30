@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTheme } from "./theme";
+import { SearchSuggest } from "./search-suggest";
 
 const NAV = [
   { href: "/", label: "Beranda", icon: IconHome },
@@ -32,6 +33,7 @@ export function Header() {
   const router = useRouter();
   const { theme, toggle } = useTheme();
   const [q, setQ] = useState("");
+  const [mobileSearch, setMobileSearch] = useState(false);
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-paper-2/90 backdrop-blur-md dark:border-line-dark dark:bg-ink-2/90">
@@ -43,7 +45,7 @@ export function Header() {
           </span>
         </Link>
 
-        {/* Search — full width on desktop, hidden on mobile (bottom tab covers it) */}
+        {/* Search + saran langsung — full width on desktop, hidden on mobile (bottom tab covers it) */}
         <form
           className="relative hidden min-w-0 flex-1 items-center md:flex"
           onSubmit={(e) => {
@@ -51,14 +53,14 @@ export function Header() {
             if (q.trim()) router.push(`/cari?q=${encodeURIComponent(q.trim())}`);
           }}
         >
-          <IconSearch className="pointer-events-none absolute left-3 h-4 w-4 text-muted dark:text-muted-dark" />
-          <input
+          <IconSearch className="pointer-events-none absolute left-3 z-10 h-4 w-4 text-muted dark:text-muted-dark" />
+          <SearchSuggest
             value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Cari judul komik…"
-            aria-label="Cari judul komik"
-            enterKeyHint="search"
-            className="h-10 w-full min-w-0 rounded-full border border-line bg-paper pl-9 pr-4 text-sm text-fg outline-none placeholder:text-muted focus-visible:border-accent dark:border-line-dark dark:bg-ink dark:text-fg-dark dark:placeholder:text-muted-dark"
+            onChange={setQ}
+            onSubmit={() => {
+              if (q.trim()) router.push(`/cari?q=${encodeURIComponent(q.trim())}`);
+            }}
+            inputClassName="h-10 w-full min-w-0 rounded-full border border-line bg-paper pl-9 pr-4 text-sm text-fg outline-none placeholder:text-muted focus-visible:border-accent dark:border-line-dark dark:bg-ink dark:text-fg-dark dark:placeholder:text-muted-dark"
           />
         </form>
 
@@ -83,13 +85,20 @@ export function Header() {
         </nav>
 
         <div className="ml-auto flex shrink-0 items-center gap-1.5 md:ml-0">
-          <Link
-            href="/cari"
+          <button
+            onClick={() => setMobileSearch((v) => !v)}
             aria-label="Cari komik"
+            aria-expanded={mobileSearch}
             className="flex h-10 w-10 items-center justify-center rounded-full border border-line text-fg md:hidden dark:border-line-dark dark:text-fg-dark"
           >
-            <IconSearch className="h-[18px] w-[18px]" />
-          </Link>
+            {mobileSearch ? (
+              <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
+                <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <IconSearch className="h-[18px] w-[18px]" />
+            )}
+          </button>
           <button
             onClick={toggle}
             aria-label="Ganti tema"
@@ -99,6 +108,36 @@ export function Header() {
           </button>
         </div>
       </div>
+      {/* Bar pencarian mobile — expand di bawah header, hasil dropdown
+          langsung tanpa pindah halaman. */}
+      {mobileSearch && (
+        <div className="mx-auto max-w-6xl px-3 pb-3 md:hidden">
+          <form
+            className="relative flex min-w-0 items-center"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (q.trim()) {
+                setMobileSearch(false);
+                router.push(`/cari?q=${encodeURIComponent(q.trim())}`);
+              }
+            }}
+          >
+            <IconSearch className="pointer-events-none absolute left-3 z-10 h-4 w-4 text-muted dark:text-muted-dark" />
+            <SearchSuggest
+              value={q}
+              onChange={setQ}
+              onSubmit={() => {
+                if (q.trim()) {
+                  setMobileSearch(false);
+                  router.push(`/cari?q=${encodeURIComponent(q.trim())}`);
+                }
+              }}
+              autoFocus
+              inputClassName="h-11 w-full min-w-0 rounded-full border border-line bg-paper pl-9 pr-4 text-base text-fg outline-none placeholder:text-muted focus-visible:border-accent dark:border-line-dark dark:bg-ink dark:text-fg-dark dark:placeholder:text-muted-dark"
+            />
+          </form>
+        </div>
+      )}
     </header>
   );
 }
@@ -120,19 +159,17 @@ export function Main({ children }: { children: React.ReactNode }) {
 
 /** Fixed bottom tab bar — app-like primary nav for mobile, hidden on desktop. */
 export function MobileTabBar() {  const pathname = usePathname();
-  // Tab bar kecil: Beranda, Terbaru, Peringkat, Riwayat, Cari.
+  // Tab bar kecil: Beranda, Terbaru, Peringkat, Riwayat.
+  // Cari = tombol di header (expand inline + saran langsung).
   // Genre & Favorit tetap di nav desktop + halaman masing-masing.
-  const items = [
-    ...NAV.filter((n) => n.href !== "/genre" && n.href !== "/favorit"),
-    { href: "/cari", label: "Cari", icon: IconSearch },
-  ] as const;
+  const items = NAV.filter((n) => n.href !== "/genre" && n.href !== "/favorit");
 
   // Sembunyikan saat membaca chapter — halaman baca butuh layar penuh.
   if (pathname.startsWith("/baca/")) return null;
 
   return (
     <nav className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-line bg-paper-2/95 backdrop-blur-md md:hidden dark:border-line-dark dark:bg-ink-2/95">
-      <div className="mx-auto grid max-w-6xl grid-cols-5 items-stretch px-1">
+      <div className="mx-auto grid max-w-6xl grid-cols-4 items-stretch px-1">
         {items.map((n) => {
           const active = isActive(pathname, n.href);
           const Icon = n.icon;
