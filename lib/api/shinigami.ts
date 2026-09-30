@@ -391,20 +391,32 @@ function normTitle(raw: string): string {
 export async function resolveShiniDetailForSlug(slug: string): Promise<MangaDetail> {
   const clean = slug.replace(/^\/+|\/+$/g, "");
   if (isShiniId(clean)) return fetchShiniDetail(clean);
-  const q = clean.replace(/-/g, " ").replace(/\s+/g, " ").trim();
-  if (!q) {
+  const base = clean.replace(/-/g, " ").replace(/\s+/g, " ").trim();
+  if (!base) {
     throw new KomikuError("Slug kosong.", `${SHINI_API}/manga/list`);
   }
-  const queries = [q];
-  const words = q.split(" ");
-  if (words.length > 3) queries.push(words.slice(0, 3).join(" "));
-  const target = normTitle(q);
-  for (const query of queries) {
-    const params = new URLSearchParams({ page: "1", page_size: "10", q: query });
-    const { data } = await fetchShini<ShiniManga[]>(`/manga/list?${params}`);
-    if (!Array.isArray(data)) continue;
-    const hit = data.find((m) => normTitle(m.title) === target);
-    if (hit) return fetchShiniDetail(hit.manga_id);
+  // Slug Komiku kadang berekor penanda duplikat ("solo-leveling-id",
+  // "one-piece-id2") yang BUKAN bagian judul. Coba tiap kandidat sebagai
+  // target exact-match (konservatif — tanpa fuzzy), dari paling bersih dulu.
+  const cands: string[] = [];
+  for (const v of [
+    base.replace(/\s+id\s*\d*$/i, "").trim(),
+    base,
+  ]) {
+    if (v && !cands.includes(v)) cands.push(v);
+  }
+  for (const target of cands) {
+    const words = target.split(" ");
+    const queries = [target];
+    if (words.length > 3) queries.push(words.slice(0, 3).join(" "));
+    const normTarget = normTitle(target);
+    for (const query of queries) {
+      const params = new URLSearchParams({ page: "1", page_size: "10", q: query });
+      const { data } = await fetchShini<ShiniManga[]>(`/manga/list?${params}`);
+      if (!Array.isArray(data)) continue;
+      const hit = data.find((m) => normTitle(m.title) === normTarget);
+      if (hit) return fetchShiniDetail(hit.manga_id);
+    }
   }
   throw new KomikuError(
     `Tidak ditemukan di Shinigami: ${clean}.`,
