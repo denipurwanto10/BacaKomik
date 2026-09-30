@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { apiGet } from "@/lib/client";
 import type { CommentPage, KomikuComment, KomikuReply, ReplyPage } from "@/lib/api/types";
 
@@ -268,6 +269,15 @@ function AllCommentsModal({
     listRef.current?.scrollTo({ top: 0 });
   }, [sort]);
 
+  // Portal ke body: modal selalu menempel viewport, tidak lagi terjepit
+  // ancestor (transform/filter/backdrop) maupun tertutup header sticky —
+  // akar macet + posisi kepotong kemarin.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
   // Kunci scroll body + tutup via Escape selama modal terbuka.
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -282,16 +292,17 @@ function AllCommentsModal({
     };
   }, [onClose]);
 
-  return (
+  if (!mounted) return null;
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4"
+      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 sm:items-center sm:p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-label="Semua komentar"
     >
       <div
-        className="flex max-h-[92dvh] w-full min-w-0 max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-paper-2 sm:rounded-2xl dark:bg-ink-2"
+        className="flex max-h-[85dvh] w-full min-w-0 max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-paper-2 pb-[env(safe-area-inset-bottom,0px)] sm:rounded-2xl dark:bg-ink-2"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex min-w-0 shrink-0 items-center justify-between gap-2 border-b border-line px-3 py-2.5 sm:px-4 dark:border-line-dark">
@@ -378,7 +389,8 @@ function AllCommentsModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
