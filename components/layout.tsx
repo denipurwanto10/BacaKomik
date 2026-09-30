@@ -35,6 +35,21 @@ export function Header() {
   const [q, setQ] = useState("");
   const [mobileSearch, setMobileSearch] = useState(false);
 
+  // Teks pencarian lama jangan kebawa: tiap pindah halaman
+  // (masuk /cari, detail, dsb.) input dikosongkan + bar mobile ditutup.
+  useEffect(() => {
+    setQ("");
+    setMobileSearch(false);
+  }, [pathname]);
+
+  const submitSearch = () => {
+    const kw = q.trim();
+    if (!kw) return;
+    setMobileSearch(false);
+    setQ("");
+    router.push(`/cari?q=${encodeURIComponent(kw)}`);
+  };
+
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-paper-2/90 backdrop-blur-md dark:border-line-dark dark:bg-ink-2/90">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-3 sm:gap-3 sm:px-4">
@@ -50,16 +65,14 @@ export function Header() {
           className="relative hidden min-w-0 flex-1 items-center md:flex"
           onSubmit={(e) => {
             e.preventDefault();
-            if (q.trim()) router.push(`/cari?q=${encodeURIComponent(q.trim())}`);
+            submitSearch();
           }}
         >
           <IconSearch className="pointer-events-none absolute left-3 z-10 h-4 w-4 text-muted dark:text-muted-dark" />
           <SearchSuggest
             value={q}
             onChange={setQ}
-            onSubmit={() => {
-              if (q.trim()) router.push(`/cari?q=${encodeURIComponent(q.trim())}`);
-            }}
+            onSubmit={submitSearch}
             inputClassName="h-10 w-full min-w-0 rounded-full border border-line bg-paper pl-9 pr-4 text-sm text-fg outline-none placeholder:text-muted focus-visible:border-accent dark:border-line-dark dark:bg-ink dark:text-fg-dark dark:placeholder:text-muted-dark"
           />
         </form>
@@ -116,22 +129,14 @@ export function Header() {
             className="relative flex min-w-0 items-center"
             onSubmit={(e) => {
               e.preventDefault();
-              if (q.trim()) {
-                setMobileSearch(false);
-                router.push(`/cari?q=${encodeURIComponent(q.trim())}`);
-              }
+              submitSearch();
             }}
           >
             <IconSearch className="pointer-events-none absolute left-3 z-10 h-4 w-4 text-muted dark:text-muted-dark" />
             <SearchSuggest
               value={q}
               onChange={setQ}
-              onSubmit={() => {
-                if (q.trim()) {
-                  setMobileSearch(false);
-                  router.push(`/cari?q=${encodeURIComponent(q.trim())}`);
-                }
-              }}
+              onSubmit={submitSearch}
               autoFocus
               inputClassName="h-11 w-full min-w-0 rounded-full border border-line bg-paper pl-9 pr-4 text-base text-fg outline-none placeholder:text-muted focus-visible:border-accent dark:border-line-dark dark:bg-ink dark:text-fg-dark dark:placeholder:text-muted-dark"
             />
