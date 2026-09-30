@@ -27,6 +27,28 @@ const KI_BASE = "https://komikindo.ch";
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
 
+/**
+ * Header semirip browser asli untuk request HTML biasa: proteksi
+ * Komikindo memblokir request minim (terbukti: 403 dari IP
+ * datacenter/Vercel, lolos dari IP rumah). Hanya header HTTP standar
+ * yang memang dikirim browser saat navigasi biasa — tanpa proxy,
+ * tanpa cookie/session, tanpa credential. Dipakai SEMUA fetch ke
+ * Komikindo (HTML + WP REST).
+ */
+function kiHeaders(accept: string): Record<string, string> {
+  return {
+    "User-Agent": UA,
+    Accept: accept,
+    "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
+    Referer: KI_BASE + "/",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Site": "same-origin",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-User": "?1",
+  };
+}
+
 export class KomikindoError extends Error {
   source: string;
   status?: number;
@@ -44,7 +66,9 @@ async function fetchHtml(url: string): Promise<string> {
   let res: Response;
   try {
     res = await fetch(url, {
-      headers: { "User-Agent": UA, Referer: KI_BASE + "/", Accept: "text/html" },
+      headers: kiHeaders(
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      ),
       signal: ctrl.signal,
       next: { revalidate: 30 },
     });
@@ -109,7 +133,7 @@ export async function fetchKiMeta(slugs: string[]): Promise<Map<string, KiMeta>>
       const timer = setTimeout(() => ctrl.abort(), 12_000);
       try {
         res = await fetch(url, {
-          headers: { "User-Agent": UA, Referer: KI_BASE + "/", Accept: "application/json" },
+          headers: kiHeaders("application/json"),
           signal: ctrl.signal,
           next: { revalidate: 300 },
         });
