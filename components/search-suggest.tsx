@@ -29,6 +29,7 @@ export function SearchSuggest({
   id,
   autoFocus,
   placeholder = "Cari judul komik…",
+  enabled = true,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -37,6 +38,8 @@ export function SearchSuggest({
   id?: string;
   autoFocus?: boolean;
   placeholder?: string;
+  /** false = input polos tanpa dropdown (dipakai halaman /cari — hasilnya sudah tampil di bawah). */
+  enabled?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -49,7 +52,7 @@ export function SearchSuggest({
   const kw = value.trim();
 
   useEffect(() => {
-    if (kw.length < MIN_LEN) {
+    if (!enabled || kw.length < MIN_LEN) {
       setItems(null);
       setLoading(false);
       setOpen(false);
@@ -74,7 +77,7 @@ export function SearchSuggest({
         });
     }, 300);
     return () => window.clearTimeout(t);
-  }, [kw]);
+  }, [kw, enabled]);
 
   // Tutup saat klik/tap di luar.
   useEffect(() => {
@@ -90,7 +93,7 @@ export function SearchSuggest({
     router.push(`/komik/${slug}`);
   };
 
-  const showDropdown = open && kw.length >= MIN_LEN;
+  const showDropdown = enabled && open && kw.length >= MIN_LEN;
 
   return (
     <div ref={boxRef} className="relative min-w-0 flex-1">

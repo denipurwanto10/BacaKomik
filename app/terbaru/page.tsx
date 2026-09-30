@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { apiGet, invalidateApi } from "@/lib/client";
+import { apiGet, apiGetSWR } from "@/lib/client";
 import type { GenreRef, MangaCard } from "@/lib/api/types";
 import { KomikListCard, KomikListSkeleton } from "@/components/komik-list";
 import { Pagination } from "@/components/pagination";
@@ -106,42 +106,62 @@ function TerbaruContent() {
   }, []);
 
   // Muat satu halaman penuh (mengganti daftar, bukan menumpuk).
+  // Mount/back (filter sama): cache basi (<5 mnt) tampil instan +
+  // disegarkan diam-diam — kembali dari detail tidak menunggu jaringan.
+  // Filter berubah / pagination (fresh): selalu fetch baru.
   const loadPage = useCallback(
-    async (p: number) => {
+    async (p: number, fresh = false) => {
       setLoading(true);
       setError(null);
       try {
-        const res = await apiGet<LatestPayload>(`/api/latest?${buildQs(p)}`);
-        setItems(res.items);
-        setHasNext(res.hasNextPage);
-        setPage(p);
+        if (fresh) {
+          const res = await apiGet<LatestPayload>(`/api/latest?${buildQs(p)}`);
+          setItems(res.items);
+          setHasNext(res.hasNextPage);
+          setPage(p);
+          setLoading(false);
+          return;
+        }
+        const { data, stale } = await apiGetSWR<LatestPayload>(
+          `/api/latest?${buildQs(p)}`,
+          (d) => {
+            setItems(d.items);
+            setHasNext(d.hasNextPage);
+            setPage(p);
+            setLoading(false);
+          },
+        );
+        if (data) {
+          setItems(data.items);
+          setHasNext(data.hasNextPage);
+          setPage(p);
+        }
+        // stale: data basi tampil, onFresh mematikan loading saat segar tiba.
+        // !stale tapi data null = mustahil (apiGet throw bila gagal).
+        if (!stale) setLoading(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Gagal memuat data.");
-      } finally {
         setLoading(false);
       }
     },
     [buildQs],
   );
 
-  // Mount pertama: buka halaman sesuai URL.
+  // Mount pertama: buka halaman sesuai URL (cache basi tampil instan).
   useEffect(() => {
     if (bootedRef.current) return;
     bootedRef.current = true;
     appliedFiltersRef.current = filtersKey;
-    // Jangan gunakan hasil lama dari memory cache saat membuka halaman.
-    invalidateApi();
     void loadPage(parsePage(sp.get("page")));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Perubahan filter (bukan mount): kembali ke halaman 1.
+  // Perubahan filter (bukan mount): kembali ke halaman 1 (selalu fresh).
   useEffect(() => {
     if (appliedFiltersRef.current === filtersKey) return;
     appliedFiltersRef.current = filtersKey;
-    invalidateApi();
     scrollToList();
-    void loadPage(1);
+    void loadPage(1, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtersKey]);
 
