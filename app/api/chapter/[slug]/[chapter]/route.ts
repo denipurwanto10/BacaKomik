@@ -15,7 +15,7 @@ export async function GET(
   const raw = new URL(req.url).searchParams.get("source");
   const source: ComicSourceId | undefined =
     raw === "komiku" ? "komiku" : raw === "shinigami" ? "shinigami" : undefined;
-  // Chapter tidak berubah setelah terbit — simpan 1 jam.
+  // Chapter tidak berubah setelah terbit — respons boleh di-cache singkat.
   return handle(
     () => getChapter(decodeURIComponent(slug), decodeURIComponent(chapter), source),
     {

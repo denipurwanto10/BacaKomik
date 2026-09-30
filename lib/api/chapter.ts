@@ -111,11 +111,15 @@ function withMergedNav(data: ChapterData, merged: MergedMangaDetail, num: number
   if (idx < 0) return data;
   const next = idx > 0 ? merged.chapters[idx - 1] : undefined;
   const prev = idx + 1 < merged.chapters.length ? merged.chapters[idx + 1] : undefined;
-  return {
-    ...data,
-    ...(prev ? { prevUrl: prev.url } : {}),
-    ...(next ? { nextUrl: next.url } : {}),
-  };
+  // Tulis ulang PENUH dari daftar gabungan: prev/next mentah sisi pemenang
+  // (mis. prevUrl Komiku = chapter lain saat di chapter terlama) yang tidak
+  // ada di daftar harus dibuang, bukan dibiarkan bocor (prev == next).
+  const out = { ...data };
+  if (prev) out.prevUrl = prev.url;
+  else delete out.prevUrl;
+  if (next) out.nextUrl = next.url;
+  else delete out.nextUrl;
+  return out;
 }
 
 // Re-export agar route lama yang mengimpor resolve tetap jalan bila perlu.

@@ -72,17 +72,21 @@ export async function apiGetSWR<T>(
   const fresh = hit && Date.now() - hit.at < TTL_MS;
   if (fresh) return { data: hit.data as T, stale: false };
   if (hit && Date.now() - hit.at < STALE_MS) {
-    // Basi tapi layak tampil — segarkan di background, jangan dedupe
-    // dengan request lain agar onFresh selalu dipicu untuk pemanggil ini.
-    fetchJson<T>(path)
-      .then((data) => {
-        cache.set(path, { at: Date.now(), data });
-        notify(path, data);
-        onFresh(data);
-      })
-      .catch(() => {
+    // Basi tapi layak tampil — segarkan di background LEWAT apiGet agar
+    // beberapa pemanggil bersamaan (mis. 3 section beranda) hanya memicu
+    // 1 fetch (dedupe inflight); onFresh tiap pemanggil tetap dipicu.
+    apiGet<T>(path).then(
+      (data) => {
+        try {
+          onFresh(data);
+        } catch {
+          // abaikan listener rusak
+        }
+      },
+      () => {
         // Background refresh boleh gagal diam-diam — data basi tetap tampil.
-      });
+      },
+    );
     return { data: hit.data as T, stale: true };
   }
   const data = await apiGet<T>(path);
