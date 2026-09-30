@@ -4,7 +4,9 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiGet } from "@/lib/client";
 import type { MangaCard } from "@/lib/api/types";
-import { MangaGrid, SectionHead, GridSkeleton, ErrorState, EmptyState } from "@/components/states";
+import { MangaGrid, SectionHead, GridSkeleton, ErrorState, EmptyState, ListSkeleton } from "@/components/states";
+import { KomikListCard, KomikListSkeleton } from "@/components/komik-list";
+import { SearchSuggest } from "@/components/search-suggest";
 
 function CariContent() {
   const sp = useSearchParams();
@@ -62,14 +64,13 @@ function CariContent() {
         }}
       >
         <label htmlFor="cari-q" className="sr-only">Cari judul komik</label>
-        <input
-          id="cari-q"
+        <SearchSuggest
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Cari judul komik…"
+          onChange={setDraft}
+          onSubmit={submit}
+          id="cari-q"
           autoFocus
-          enterKeyHint="search"
-          className="h-12 w-full min-w-0 rounded-full border border-line bg-paper-2 px-4 pr-24 text-base text-fg outline-none placeholder:text-muted focus-visible:border-accent sm:h-11 sm:text-sm dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark dark:placeholder:text-muted-dark"
+          inputClassName="h-12 w-full min-w-0 rounded-full border border-line bg-paper-2 px-4 text-base text-fg outline-none placeholder:text-muted focus-visible:border-accent sm:h-11 sm:text-sm dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark dark:placeholder:text-muted-dark"
         />
         <button
           type="submit"
@@ -85,12 +86,18 @@ function CariContent() {
         </p>
       )}
       {!q && <EmptyState message="Ketik judul komik pada kolom pencarian di atas." />}
-      {q && !items && !error && <GridSkeleton count={9} />}
+      {q && !items && !error && <KomikListSkeleton count={8} />}
       {error && <ErrorState message={error} onRetry={load} />}
       {items && q && items.length === 0 && (
         <EmptyState message={`Tidak ada hasil dari sumber data untuk "${q}". Coba kata kunci lain.`} />
       )}
-      {items && items.length > 0 && <MangaGrid items={items} />}
+      {items && items.length > 0 && (
+        <div className="min-w-0 divide-y divide-line dark:divide-line-dark">
+          {items.map((item) => (
+            <KomikListCard key={`${item.slug}#${item.latestChapter?.url ?? ""}`} item={item} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
