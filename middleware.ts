@@ -11,17 +11,28 @@ import { COOKIE, isAuthed } from "@/lib/gate";
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Jangan gate aset statis / internal Next.
-  // robots.txt tetap diserve (isinya Disallow: / untuk semua crawler).
+  // Aset statis / internal Next — tanpa baca env/cookie sama sekali,
+  // agar failure konfigurasi tidak meruntuhkan file publik.
   if (
     pathname.startsWith("/_next/") ||
     pathname === "/favicon.ico" ||
     pathname === "/robots.txt" ||
+    pathname === "/sw.js" ||
     /\.(png|jpg|jpeg|webp|gif|svg|ico|css|js|woff2?)$/.test(pathname)
   ) {
     const res = NextResponse.next();
     res.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet");
     return res;
+  }
+
+  // Guard: ENV hilang/rusak tidak boleh meledakkan middleware menjadi 500.
+  // Tanpa SITE_PASSWORD → situs terbuka (sama seperti perilaku dev lokal),
+  // supaya kesalahan konfigurasi tidak meruntuhkan production.
+  let authed = false;
+  try {
+    authed = isAuthed(req);
+  } catch {
+    authed = process.env.SITE_PASSWORD ? false : true;
   }
 
   const res = NextResponse.next();
@@ -32,7 +43,7 @@ export function middleware(req: NextRequest) {
   // PENTING: /api/gate harus dikecualikan — kalau tidak, user yang belum
   // login tidak akan pernah bisa login karena request login-nya ikut diblokir.
   if (pathname === "/masuk" || pathname === "/api/gate") {
-    if (pathname === "/masuk" && isAuthed(req)) {
+    if (pathname === "/masuk" && authed) {
       const url = req.nextUrl.clone();
       url.pathname = "/";
       return NextResponse.redirect(url);
@@ -40,7 +51,7 @@ export function middleware(req: NextRequest) {
     return res;
   }
 
-  if (!isAuthed(req)) {
+  if (!authed) {
     // API → 401 JSON (bukan redirect HTML agar client fetch tetap waras).
     if (pathname.startsWith("/api/")) {
       return NextResponse.json(
