@@ -18,15 +18,16 @@ export type { ComicSourceId } from "./types";
 
 /**
  * URUTAN PRIORITAS FINAL — JANGAN DIBALIK:
- * SHINIGAMI SELALU UTAMA, Komiku hanya fallback/pelengkap per chapter.
+ * SHINIGAMI SELALU UTAMA, Komiku fallback kedua, Komikcast fallback ketiga.
  * Semua merge (kartu/detail/chapter) memakai urutan ini — data Shinigami
- * menang bila tersedia di kedua source; Komiku hanya mengisi yang kosong.
+ * menang bila tersedia; Komikcast hanya mengisi yang kosong di keduanya.
  */
-export const SOURCE_PRIORITY: ComicSourceId[] = ["shinigami", "komiku"];
+export const SOURCE_PRIORITY: ComicSourceId[] = ["shinigami", "komiku", "komikcast"];
 
 export const SOURCE_LABEL: Record<ComicSourceId, string> = {
   komiku: "Komiku",
   shinigami: "Shinigami",
+  komikcast: "Komikcast",
 };
 
 /* ------------------------------------------------------------------ */
@@ -113,15 +114,26 @@ export interface MergedMangaDetail extends Omit<MangaDetail, "chapters"> {
 /**
  * Gabungkan daftar kartu dari beberapa source → kartu unik.
  * Matching: normalizeTitle exact (TIDAK menggabungkan dua judul
- * ternormalisasi berbeda walau mirip).
+ * ternormalisasi berbeda walau mirip). Jembatan tambahan: dua grup
+ * yang berbagi altTitle (EN) yang SAMA PERSIS ikut digabung (exact,
+ * bukan fuzzy) — menangani upstream yang memotong judul utama
+ * ("...Desu" → "...Des") tapi menyimpan judul EN lengkap yang identik.
  */
 export function mergeCards(lists: Partial<Record<ComicSourceId, MangaCard[]>>): MergedMangaCard[] {
   const groups = new Map<string, { cards: Partial<Record<ComicSourceId, MangaCard>> }>();
+  const keyOf = (c: MangaCard): string => {
+    const t = normalizeTitle(c.title);
+    return t ? `t:${t}` : "";
+  };
+  const altKeyOf = (c: MangaCard): string => {
+    const a = c.altTitle ? normalizeTitle(c.altTitle) : "";
+    return a && a !== normalizeTitle(c.title) ? `t:${a}` : "";
+  };
+  // Pass 1: grup per judul utama.
   for (const s of SOURCE_PRIORITY) {
     for (const c of lists[s] ?? []) {
-      const key = normalizeTitle(c.title);
-      if (!key) continue;
-      const gkey = `t:${key}`;
+      const gkey = keyOf(c);
+      if (!gkey) continue;
       let g = groups.get(gkey);
       if (!g) {
         g = { cards: {} };
@@ -131,6 +143,37 @@ export function mergeCards(lists: Partial<Record<ComicSourceId, MangaCard[]>>): 
       if (!g.cards[s]) g.cards[s] = c;
     }
   }
+  // Pass 2: satukan grup-grup yang berbagi altKey SAMA PERSIS.
+  // Grup penyerap = grup yang pertama dikenal (prioritas judul Shinigami).
+  const altIndex = new Map<string, string[]>();
+  for (const [k, g] of groups) {
+    for (const s of SOURCE_PRIORITY) {
+      const c = g.cards[s];
+      if (!c) continue;
+      const ak = altKeyOf(c);
+      if (!ak) continue;
+      const arr = altIndex.get(ak);
+      if (arr && !arr.includes(k)) arr.push(k);
+      else if (!arr) altIndex.set(ak, [k]);
+    }
+  }
+  const absorbed = new Set<string>();
+  for (const [, keys] of altIndex) {
+    if (keys.length < 2) continue;
+    const target = keys[0];
+    const tg = groups.get(target);
+    if (!tg) continue;
+    for (const k of keys.slice(1)) {
+      if (k === target || absorbed.has(k)) continue;
+      const g = groups.get(k);
+      if (!g) continue;
+      for (const s of SOURCE_PRIORITY) {
+        if (g.cards[s] && !tg.cards[s]) tg.cards[s] = g.cards[s]!;
+      }
+      absorbed.add(k);
+    }
+  }
+  for (const k of absorbed) groups.delete(k);
 
   const out: MergedMangaCard[] = [];
   for (const [, g] of groups) {
@@ -138,9 +181,9 @@ export function mergeCards(lists: Partial<Record<ComicSourceId, MangaCard[]>>): 
     const slugs: Partial<Record<ComicSourceId, string>> = {};
     for (const s of present) slugs[s] = g.cards[s]!.slug;
 
-    // Slug tampilan = slug Komiku bila ada (URL manusiawi, route
-    // /komik/<slug> tetap valid); else ID Shinigami (UUID).
-    const displaySlug = g.cards.komiku?.slug ?? g.cards[present[0]]!.slug;
+    // Slug tampilan = slug manusiawi (Komiku, lalu Komikcast) bila ada agar
+    // route /komik/<slug> tetap valid; else ID Shinigami (UUID).
+    const displaySlug = g.cards.komiku?.slug ?? g.cards.komikcast?.slug ?? g.cards[present[0]]!.slug;
     const primary = present[0];
     const p = g.cards[primary]!;
     const getCard = <K extends keyof MangaCard>(k: K): MangaCard[K] | undefined => {
@@ -197,6 +240,7 @@ export function mergeCards(lists: Partial<Record<ComicSourceId, MangaCard[]>>): 
       slug: displaySlug,
       title: (getCard("title") as string) ?? p.title,
       thumbnail: (getCard("thumbnail") as string) ?? p.thumbnail,
+      ...(getCard("altTitle") ? { altTitle: getCard("altTitle") as string } : {}),
       ...(getCard("type") ? { type: getCard("type") as NonNullable<MangaCard["type"]> } : {}),
       ...(getCard("genre") ? { genre: getCard("genre") as string } : {}),
       ...(mergedUpdatedAt ? { updatedAt: mergedUpdatedAt } : {}),
@@ -291,7 +335,7 @@ export function mergeDetails(details: Partial<Record<ComicSourceId, MangaDetail>
 
   const slugs: Partial<Record<ComicSourceId, string>> = {};
   for (const s of present) slugs[s] = details[s]!.slug;
-  const displaySlug = details.komiku?.slug ?? primary.slug;
+  const displaySlug = details.komiku?.slug ?? details.komikcast?.slug ?? primary.slug;
 
   const get = <K extends keyof MangaDetail>(k: K): MangaDetail[K] | undefined => {
     for (const s of SOURCE_PRIORITY) {

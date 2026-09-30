@@ -1,8 +1,10 @@
 /**
  * lib/api/chapter.ts — service reader chapter (multi-source).
- * SHINIGAMI UTAMA; Komiku mengisi per chapter yang tidak ada di Shinigami.
+ * SHINIGAMI UTAMA; Komiku fallback kedua, Komikcast fallback ketiga
+ * per chapter yang tidak ada di source prioritas lebih tinggi.
  */
 import { fetchChapter, KomikuError } from "./komiku";
+import { fetchKomikcastChapter } from "./komikcast";
 import {
   fetchShiniChapter,
   fetchShiniChapterById,
@@ -32,6 +34,16 @@ export async function getChapter(
 
   // Override eksplisit (dipakai ?source=... saat satu sisi gagal total).
   if (source === "komiku") return fetchChapter(`/${s}-chapter-${c}/`);
+  // Komikcast: slug detail bisa beda dari slug chapter (mis. typo "shitaa"
+  // di detail vs "shita" di chapter) → resolve via daftar gabungan dulu,
+  // fallback rakit URL hanya bila daftar tidak punya entri Komikcast.
+  if (source === "komikcast") {
+    try {
+      return await getChapterMerged(s, c, num, "komikcast");
+    } catch {
+      return fetchKomikcastChapter(`/${s}-chapter-${c}-bahasa-indonesia/`);
+    }
+  }
   if (source === "shinigami") {
     if (isShiniId(s)) {
       if (!Number.isFinite(num)) throw new KomikuError("Nomor chapter tidak valid.", s);
@@ -69,14 +81,22 @@ async function getChapterMerged(
   const hasShini = shinigamiId && entrySources.some((r) => r.source === "shinigami");
   const komikuUrl =
     entrySources.find((r) => r.source === "komiku")?.url ?? `/${slug}-chapter-${token}/`;
+  const komikcastUrl =
+    entrySources.find((r) => r.source === "komikcast")?.url ??
+    `/${slug}-chapter-${token}-bahasa-indonesia/`;
 
-  // Urutan coba: prefer → pemenang merge → sisi lain.
+  // Urutan coba: prefer → pemenang merge → sisi lain (prioritas turun).
   const order: ComicSourceId[] = [];
   if (prefer) order.push(prefer);
-  const winner: ComicSourceId = hasShini ? "shinigami" : "komiku";
+  const winner: ComicSourceId = hasShini
+    ? "shinigami"
+    : entrySources.some((r) => r.source === "komiku")
+      ? "komiku"
+      : "komikcast";
   if (!order.includes(winner)) order.push(winner);
-  const other: ComicSourceId = winner === "shinigami" ? "komiku" : "shinigami";
-  if (!order.includes(other) && (other === "komiku" || shinigamiId)) order.push(other);
+  for (const s of ["shinigami", "komiku", "komikcast"] as ComicSourceId[]) {
+    if (!order.includes(s) && (s === "komiku" || s === "komikcast" || shinigamiId)) order.push(s);
+  }
 
   let lastErr: unknown = null;
   for (const src of order) {
@@ -91,7 +111,9 @@ async function getChapterMerged(
               ? await fetchShiniChapterById(shiniChapterId, merged.slug, merged.title)
               : await fetchShiniChapter(shinigamiId, num, merged.slug, merged.title)
             : await Promise.reject(new KomikuError("Tidak tersedia di Shinigami.", slug))
-          : await fetchChapter(komikuUrl);
+          : src === "komikcast"
+            ? await fetchKomikcastChapter(komikcastUrl)
+            : await fetchChapter(komikuUrl);
       return withMergedNav(data, merged, num);
     } catch (e) {
       lastErr = e;

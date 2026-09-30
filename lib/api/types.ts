@@ -8,13 +8,15 @@
 export type KomikType = "Manga" | "Manhwa" | "Manhua";
 
 /** ID source komik yang dikenal. Disatukan di sini agar types client aman diimpor. */
-export type ComicSourceId = "komiku" | "shinigami";
+export type ComicSourceId = "komiku" | "shinigami" | "komikcast";
 
 /** Satu kartu komik dari daftar (`.bge` / `article.ls2` / search). */
 export interface MangaCard {
   /** slug dari URL /manga/<slug>/ */
   slug: string;
   title: string;
+  /** Judul alternatif (EN) bila upstream menyediakannya — dipakai kunci dedupe. */
+  altTitle?: string;
   /** URL absolut thumbnail (thumbnail.komiku.to / thumbnail.komiku.org) */
   thumbnail: string;
   /** Tipe komik; absen bila sumber tidak menyebutkannya */

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { KomikuError } from "@/lib/api/komiku";
+import { KomikcastError } from "@/lib/api/komikcast";
 import { isAuthed, rateLimited } from "@/lib/gate";
 
 /**
@@ -61,7 +62,7 @@ export async function handle<T>(
         : undefined,
     );
   } catch (e) {
-    if (e instanceof KomikuError) {
+    if (e instanceof KomikuError || e instanceof KomikcastError) {
       // URL sumber lengkap hanya masuk log server — ke browser kirim
       // message saja agar domain asal tidak bocor via DevTools.
       console.error(`[api-error] ${e.source}: ${e.message}`);

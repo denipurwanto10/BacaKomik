@@ -1,11 +1,11 @@
 /**
  * lib/api/manga.ts — service daftar & detail komik (multi-source).
  *
- * SHINIGAMI UTAMA, Komiku fallback/pelengkap per chapter.
+ * SHINIGAMI UTAMA, Komiku fallback kedua, Komikcast fallback ketiga.
  * Bentuk return & signature SAMA seperti sebelumnya (MangaCard[] /
  * MangaDetail) sehingga route /api/* dan frontend tidak perlu berubah.
- * Di dalam: fetch Shinigami + Komiku paralel → mergeCards / mergeDetails
- * dengan SHINIGAMI selalu utama, Komiku hanya mengisi yang kosong.
+ * Di dalam: fetch ketiga source paralel → mergeCards / mergeDetails
+ * dengan prioritas SHINIGAMI > Komiku > Komikcast.
  */
 import {
   fetchHome,
@@ -16,9 +16,16 @@ import {
   type RankPeriod,
 } from "./komiku";
 import {
+  fetchKomikcastDetail,
+  fetchKomikcastLatest,
+  fetchKomikcastTrending,
+  resolveKomikcastDetailForTitle,
+} from "./komikcast";
+import {
   fetchShiniLatest,
   fetchShiniRecommended,
   fetchShiniTop,
+  isShiniId,
   resolveShiniDetailForSlug,
   type ShiniFormat,
   type ShiniTopFilter,
@@ -27,6 +34,7 @@ import {
   fetchAllSettled,
   mergeCards,
   mergeDetails,
+  normalizeTitle,
   sortByFresh,
   type MergedMangaDetail,
 } from "./aggregator";
@@ -55,9 +63,16 @@ export async function getLatest(page = 1): Promise<MangaCard[]> {
       const { items } = await fetchShiniLatest(page);
       return items;
     },
+    // Komikcast: /api/v1/home → latest_comic (tanpa paging upstream;
+    // hanya halaman 1 agar tidak duplikat antar halaman UI).
+    komikcast: async () => (page > 1 ? [] : fetchKomikcastLatest()),
   };
   const { data } = await fetchAllSettled(jobs, "latest");
-  const merged = mergeCards({ komiku: data.komiku ?? [], shinigami: data.shinigami ?? [] });
+  const merged = mergeCards({
+    komiku: data.komiku ?? [],
+    shinigami: data.shinigami ?? [],
+    komikcast: data.komikcast ?? [],
+  });
   // Urut PALING BARU lintas source — bukan urutan source.
   return sortByFresh(merged);
 }
@@ -95,15 +110,24 @@ export async function getLatestPaged(
           ...(opts.tipe ? { format: opts.tipe } : {}),
           ...(opts.genre ? { genre: opts.genre } : {}),
         }),
+      // Komikcast tanpa paging/filter upstream — hanya halaman 1 tanpa filter.
+      komikcast: () =>
+        p > 1 || opts.tipe || opts.genre || opts.genre2 || opts.status
+          ? Promise.resolve({ items: [], hasNextPage: false })
+          : fetchKomikcastLatest().then((items) => ({ items, hasNextPage: false })),
     },
     "latest-paged",
   );
   const items = sortByFresh(
-    mergeCards({ komiku: data.komiku?.items ?? [], shinigami: data.shinigami?.items ?? [] }),
+    mergeCards({
+      komiku: data.komiku?.items ?? [],
+      shinigami: data.shinigami?.items ?? [],
+      komikcast: data.komikcast?.items ?? [],
+    }),
   );
   return {
     items,
-    hasNextPage: Boolean(data.komiku?.hasNextPage || data.shinigami?.hasNextPage),
+    hasNextPage: Boolean(data.komiku?.hasNextPage || data.shinigami?.hasNextPage || data.komikcast?.hasNextPage),
   };
 }
 
@@ -124,12 +148,16 @@ export async function getPopular(period: RankPeriod = "harian"): Promise<MangaCa
     {
       komiku: () => fetchRanking(period),
       shinigami: () => fetchShiniTop(SHINI_TOP_BY_PERIOD[period], 1, 10),
+      // Komikcast: trending home (tanpa views → menempel belakang seperti
+      // kartu murni Shinigami; tetap berguna untuk dedupe + coverage).
+      komikcast: () => fetchKomikcastTrending(),
     },
     "popular",
   );
   const ku = data.komiku ?? [];
   const sh = data.shinigami ?? [];
-  const merged = mergeCards({ komiku: ku, shinigami: sh });
+  const kc = data.komikcast ?? [];
+  const merged = mergeCards({ komiku: ku, shinigami: sh, komikcast: kc });
   // "37,061 views" → 37061; tanpa angka (kartu murni Shinigami) → -1 (belakang).
   const viewsNum = (m: { views?: string }): number => {
     const digits = (m.views ?? "").replace(/[^0-9]/g, "");
@@ -173,10 +201,15 @@ export async function getRecommended(): Promise<MangaCard[]> {
     {
       komiku: komikuJob,
       shinigami: () => fetchShiniRecommended(),
+      komikcast: () => fetchKomikcastLatest(),
     },
     "recommended",
   );
-  const merged = mergeCards({ komiku: data.komiku ?? [], shinigami: data.shinigami ?? [] });
+  const merged = mergeCards({
+    komiku: data.komiku ?? [],
+    shinigami: data.shinigami ?? [],
+    komikcast: data.komikcast ?? [],
+  });
   return shuffle(merged);
 }
 
@@ -187,20 +220,60 @@ export async function getLatestUpdate(): Promise<MangaCard[]> {
 
 /**
  * Detail satu komik (multi-source, merge + sources info).
- * Slug UUID → murni Shinigami. Slug Komiku → Komiku + resolve Shinigami
- * via pencarian judul (exact match); tidak cocok → Komiku saja.
+ * Slug UUID → murni Shinigami. Slug manusiawi → ketiga source paralel;
+ * Komikcast selalu lewat resolve judul (exact match) karena skema slug-nya
+ * beda (tanpa "-id"). Judul diambil dari hasil Komiku/Shinigami bila ada,
+ * else dari slug.
  */
 export async function getMangaDetail(slug: string): Promise<MangaDetail> {
   const { data } = await fetchAllSettled(
     {
       komiku: () => fetchMangaDetail(slug),
       shinigami: () => resolveShiniDetailForSlug(slug),
+      // Komikcast selalu via resolve judul (skema slug beda: tanpa "-id").
+      // Judul dari hasil Komiku/Shinigami bila ada, else dari slug mentah.
+      komikcast: async () => {
+        if (isShiniId(slug)) throw new Error("Slug UUID tidak ada di Komikcast.");
+        try {
+          // Coba langsung dulu (kasus Komikcast-only, slug sudah tepat).
+          return await fetchKomikcastDetail(slug);
+        } catch {
+          // Bukan slug Komikcast → resolve via judul (tahap 2 di bawah).
+          throw new Error("Resolve Komikcast via judul.");
+        }
+      },
     },
     "detail",
   );
+  // Tahap 2: resolve Komikcast via judul (exact match, konservatif).
+  // Gagal = Komikcast absen, sisi lain tetap serve. AltTitle (EN) ikut
+  // diteruskan sebagai jembatan bila judul utama beda ejaan.
+  if (!data.komikcast && !isShiniId(slug)) {
+    const title = data.shinigami?.title ?? data.komiku?.title ?? slug;
+    const alt = data.shinigami?.altTitle ?? data.komiku?.altTitle;
+    try {
+      data.komikcast = await resolveKomikcastDetailForTitle(title, normalizeTitle, alt);
+    } catch {
+      // absen di Komikcast — normal, bukan error
+    }
+  }
+  // Tahap 2b: slug Komikcast-only → coba resolve Shinigami via judul+alt
+  // Komikcast (exact). Berhasil = halaman detail ikut dapat chapter + cover
+  // Shinigami; gagal = tetap serve Komiku+Komikcast.
+  if (!data.shinigami && data.komikcast && !isShiniId(slug)) {
+    try {
+      data.shinigami = await resolveShiniDetailForSlug(
+        data.komikcast.slug,
+        data.komikcast.altTitle,
+      );
+    } catch {
+      // absen di Shinigami — normal, bukan error
+    }
+  }
   const merged: MergedMangaDetail | null = mergeDetails({
     ...(data.komiku ? { komiku: data.komiku } : {}),
     ...(data.shinigami ? { shinigami: data.shinigami } : {}),
+    ...(data.komikcast ? { komikcast: data.komikcast } : {}),
   });
   if (!merged) throw new Error("Gagal memuat detail komik.");
   // Kembalikan sebagai MangaDetail (chapters = MergedChapterItem[] adalah

@@ -1,8 +1,9 @@
 /**
  * lib/api/search.ts — service pencarian (multi-source, berhalaman).
- * Berjalan server-side: Shinigami + Komiku paralel → dedupe per halaman.
+ * Berjalan server-side: ketiga source paralel → dedupe per halaman.
  */
 import { fetchMangaDetail, searchMangaRemote } from "./komiku";
+import { searchKomikcastRemote } from "./komikcast";
 import { searchShiniRemote } from "./shinigami";
 import { fetchAllSettled, mergeCards } from "./aggregator";
 import type { MangaCard, PagedResult } from "./types";
@@ -30,10 +31,15 @@ export async function searchManga(
     {
       komiku: () => searchMangaRemote(kw, p),
       shinigami: () => searchShiniRemote(kw, p, SHINI_PAGE_SIZE),
+      komikcast: () => searchKomikcastRemote(kw, p),
     },
     "search",
   );
-  const merged = mergeCards({ komiku: data.komiku?.items ?? [], shinigami: data.shinigami?.items ?? [] });
+  const merged = mergeCards({
+    komiku: data.komiku?.items ?? [],
+    shinigami: data.shinigami?.items ?? [],
+    komikcast: data.komikcast?.items ?? [],
+  });
   const needy = merged.filter((c) => !c.synopsis && c.sourceSlug?.komiku).slice(0, 10);
   if (needy.length > 0) {
     await Promise.all(
@@ -49,6 +55,6 @@ export async function searchManga(
   }
   return {
     items: merged,
-    hasNextPage: Boolean(data.komiku?.hasNextPage || data.shinigami?.hasNextPage),
+    hasNextPage: Boolean(data.komiku?.hasNextPage || data.shinigami?.hasNextPage || data.komikcast?.hasNextPage),
   };
 }

@@ -251,6 +251,7 @@ function toCard(m: ShiniManga): MangaCard {
     slug: m.manga_id,
     title: m.title,
     thumbnail: m.cover_image_url ?? "",
+    ...(m.alternative_title ? { altTitle: m.alternative_title } : {}),
     ...(mapType(m) ? { type: mapType(m) as KomikType } : {}),
     ...(m.taxonomy?.Genre?.[0]?.name ? { genre: m.taxonomy.Genre[0].name } : {}),
     ...(timeAgoId(m.latest_chapter_time) ? { updatedAt: timeAgoId(m.latest_chapter_time) as string } : {}),
@@ -385,10 +386,12 @@ function normTitle(raw: string): string {
 /**
  * Resolve slug Komiku (mis. "solo-leveling") → detail Shinigami.
  * Cari via ?q= lalu cocokkan normalizeTitle EXACT (konservatif, tanpa fuzzy).
+ * AltTitle (EN) opsional ikut dicoba — judul utama upstream kadang beda
+ * ejaan satu-dua huruf ("...Desu" vs "...Des") tapi judul EN-nya identik.
  * Tidak cocok → throw (aggregator menganggap source ini gagal → Komiku saja).
  * UUID langsung → fetchShiniDetail.
  */
-export async function resolveShiniDetailForSlug(slug: string): Promise<MangaDetail> {
+export async function resolveShiniDetailForSlug(slug: string, altTitle?: string): Promise<MangaDetail> {
   const clean = slug.replace(/^\/+|\/+$/g, "");
   if (isShiniId(clean)) return fetchShiniDetail(clean);
   const base = clean.replace(/-/g, " ").replace(/\s+/g, " ").trim();
@@ -410,11 +413,25 @@ export async function resolveShiniDetailForSlug(slug: string): Promise<MangaDeta
     const queries = [target];
     if (words.length > 3) queries.push(words.slice(0, 3).join(" "));
     const normTarget = normTitle(target);
+    // Kandidat target: judul + altTitle pemanggil (exact, tanpa fuzzy).
+    const normAlts: string[] = [];
+    if (altTitle) {
+      const na = normTitle(altTitle);
+      if (na && na !== normTarget) normAlts.push(na);
+    }
     for (const query of queries) {
       const params = new URLSearchParams({ page: "1", page_size: "10", q: query });
       const { data } = await fetchShini<ShiniManga[]>(`/manga/list?${params}`);
       if (!Array.isArray(data)) continue;
-      const hit = data.find((m) => normTitle(m.title) === normTarget);
+      // Judul utama ATAU judul alternatif (EN) yang cocok exact → hit.
+      // Upstream kadang memotong judul utama ("...Desu" → "...Des") tapi
+      // menyimpan judul EN lengkap di alternative_title.
+      const hit = data.find(
+        (m) =>
+          normTitle(m.title) === normTarget ||
+          (m.alternative_title && normTitle(m.alternative_title) === normTarget) ||
+          (m.alternative_title && normAlts.includes(normTitle(m.alternative_title))),
+      );
       if (hit) return fetchShiniDetail(hit.manga_id);
     }
   }

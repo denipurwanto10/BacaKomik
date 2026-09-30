@@ -10,11 +10,11 @@ export async function GET(
   const { slug, chapter } = await ctx.params;
   const blocked = await guard(req);
   if (blocked) return blocked;
-  // Source gambar opsional: ?source=komiku (fallback bila Shinigami gagal).
+  // Source gambar opsional: ?source=komiku|komikcast (fallback bila Shinigami gagal).
   // Default = otomatis per daftar chapter gabungan (Shinigami utama).
   const raw = new URL(req.url).searchParams.get("source");
   const source: ComicSourceId | undefined =
-    raw === "komiku" ? "komiku" : raw === "shinigami" ? "shinigami" : undefined;
+    raw === "komiku" ? "komiku" : raw === "shinigami" ? "shinigami" : raw === "komikcast" ? "komikcast" : undefined;
   // Chapter tidak berubah setelah terbit — respons boleh di-cache singkat.
   return handle(
     () => getChapter(decodeURIComponent(slug), decodeURIComponent(chapter), source),

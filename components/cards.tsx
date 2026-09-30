@@ -41,11 +41,13 @@ export function TypeBadge({ type, className = "" }: { type?: string; className?:
 const SOURCE_STYLE: Record<string, string> = {
   shinigami: "bg-accent",
   komiku: "bg-mark-manhwa",
+  komikcast: "bg-mark-manga",
 };
 
 const SOURCE_SHORT: Record<string, string> = {
   shinigami: "Shinigami",
   komiku: "Komiku",
+  komikcast: "Komikcast",
 };
 
 /** Label asal data kartu (Shinigami / Komiku / keduanya). Diam bila tak ada info. */
