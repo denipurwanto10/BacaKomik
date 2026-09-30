@@ -5,9 +5,13 @@ import { guard, handle } from "../_lib";
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const q = (searchParams.get("q") || "").trim();
+  const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
   const blocked = await guard(req);
   if (blocked) return blocked;
-  return handle(async () => ({ keyword: q, items: await searchManga(q) }), {
-    revalidate: 300,
-  });
+  return handle(
+    async () => ({ keyword: q, page, ...(await searchManga(q, page)) }),
+    {
+      revalidate: 300,
+    },
+  );
 }

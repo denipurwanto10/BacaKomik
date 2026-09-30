@@ -328,12 +328,19 @@ export async function fetchShiniRecommended(pageSize = 24): Promise<MangaCard[]>
 }
 
 /** Cari komik — q = kata kunci (frontend Shinigami menembak tiap ≥3 char). */
-export async function searchShiniRemote(keyword: string): Promise<MangaCard[]> {
+export async function searchShiniRemote(
+  keyword: string,
+  page = 1,
+  pageSize = 24,
+): Promise<PagedResult<MangaCard>> {
   const kw = keyword.trim();
-  if (kw.length < 2) return [];
-  const q = new URLSearchParams({ page: "1", page_size: "10", q: kw });
-  const { data } = await fetchShini<ShiniManga[]>(`/manga/list?${q}`);
-  return Array.isArray(data) ? data.map(toCard) : [];
+  if (kw.length < 2) return { items: [], hasNextPage: false };
+  const p = Math.max(1, page);
+  const q = new URLSearchParams({ page: String(p), page_size: String(pageSize), q: kw });
+  const { data, meta } = await fetchShini<ShiniManga[]>(`/manga/list?${q}`);
+  const items = Array.isArray(data) ? data.map(toCard) : [];
+  const total = meta?.total_page ?? p;
+  return { items, hasNextPage: p < total };
 }
 
 /* ------------------------------------------------------------------ */

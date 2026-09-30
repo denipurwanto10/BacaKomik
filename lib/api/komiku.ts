@@ -281,12 +281,21 @@ export async function fetchMangaByGenre(
 /* Pencarian (api.komiku.org/?post_type=manga&s=)                       */
 /* ------------------------------------------------------------------ */
 
-export async function searchMangaRemote(keyword: string): Promise<MangaCard[]> {
-  const url = `${KOMIKU_API}/?post_type=manga&s=${encodeURIComponent(keyword)}`;
+export async function searchMangaRemote(
+  keyword: string,
+  page = 1,
+): Promise<PagedResult<MangaCard>> {
+  const p = Math.max(1, page);
+  const url =
+    p > 1
+      ? `${KOMIKU_API}/page/${p}/?post_type=manga&s=${encodeURIComponent(keyword)}`
+      : `${KOMIKU_API}/?post_type=manga&s=${encodeURIComponent(keyword)}`;
   const html = await fetchHtml(url);
   const $ = cheerio.load(html);
-  // Hasil pencarian tidak memakai infinite scroll.
-  return parseBgeCards($);
+  // Hasil pencarian tidak memakai infinite scroll — halaman penuh (10 kartu)
+  // berarti kemungkinan masih ada halaman berikut.
+  const items = parseBgeCards($);
+  return { items, hasNextPage: items.length >= 10 };
 }
 
 /* ------------------------------------------------------------------ */
