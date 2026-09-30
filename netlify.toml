@@ -1,0 +1,9 @@
+# Konfigurasi deploy TEST Netlify (branch probe/netlify-test saja).
+# Tidak memengaruhi production Vercel (main). Plugin Next.js resmi
+# dari Netlify — tidak ada perubahan kode aplikasi.
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

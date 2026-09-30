@@ -56,6 +56,7 @@ export async function GET(req: NextRequest) {
 
     const summary = {
       endpoint: "/wp-json/apk/v2/latest/1",
+      runtime: "netlify-test",
       status: res.status,
       contentType,
       size: text.length,
