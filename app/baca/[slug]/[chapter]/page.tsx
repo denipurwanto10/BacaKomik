@@ -210,17 +210,11 @@ export default function ReaderPage({
     const savedPct =
       sameChapter && prev.progress > 0 && prev.progress < 1 ? prev.progress : null;
     try {
-      // Sumber utama = Komikindo (default route). Bila gagal (Komikindo
-      // ERROR + Komiku SUCCESS), fallback otomatis ke Komiku agar chapter
-      // tetap bisa dibaca — sesuai aturan error handling agregator.
-      const base = `/api/chapter/${encodeURIComponent(slug)}/${encodeURIComponent(chapter)}`;
-      let loaded: ChapterData;
-      try {
-        loaded = await apiGet<ChapterData>(base);
-      } catch {
-        loaded = await apiGet<ChapterData>(`${base}?source=komiku`);
-      }
-      setData(loaded);
+      setData(
+        await apiGet<ChapterData>(
+          `/api/chapter/${encodeURIComponent(slug)}/${encodeURIComponent(chapter)}`,
+        ),
+      );
       // Daftar chapter untuk dropdown: dari cache detail bila ada
       // (hasil hover-prefetch kartu / kunjungan halaman detail),
       // kalau tidak ada fetch ringan di background (lihat effect di bawah).

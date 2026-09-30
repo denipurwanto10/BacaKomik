@@ -4,7 +4,7 @@ import Link from "next/link";
 import { prefetchApi } from "@/lib/client";
 import { captureCoverMorph } from "@/lib/morph";
 import type { MangaCard } from "@/lib/api/types";
-import { chapterPathToRoute, LatestSourceTag, TypeBadge } from "./cards";
+import { chapterPathToRoute, TypeBadge } from "./cards";
 
 /**
  * Kartu list ala Komiku: cover + badge tipe + judul + "Genre | waktu" +
@@ -56,38 +56,39 @@ export function KomikListCard({ item }: { item: MangaCard }) {
           </Link>
         </div>
         {meta && (
-          <div className="mt-1 flex min-w-0 items-center gap-2">
-            <p className="min-w-0 flex-1 truncate text-[11px] leading-tight text-muted sm:text-xs dark:text-muted-dark">
-              {meta}
-            </p>
-            <LatestSourceTag source={item.latestSource} />
-          </div>
+          <p className="mt-1 truncate text-[11px] leading-tight text-muted sm:text-xs dark:text-muted-dark">
+            {meta}
+          </p>
         )}
         {item.synopsis && (
-          <p className="mt-1.5 line-clamp-1 break-words text-xs leading-relaxed text-fg/75 sm:text-[13px] dark:text-fg-dark/70">
+          <p className="mt-1.5 line-clamp-2 break-words text-xs leading-relaxed text-fg/75 sm:line-clamp-none sm:text-[13px] dark:text-fg-dark/70">
             {item.synopsis}
           </p>
         )}
         {(item.firstChapter || item.latestChapter) && (
-          <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5 sm:mt-2 sm:flex-nowrap sm:gap-2">
+          <div className="mt-1.5 flex min-w-0 items-center gap-1.5 sm:mt-2 sm:gap-2">
             {item.firstChapter && (
               <Link
                 href={chapterPathToRoute(item.firstChapter.url)}
-                className="inline-flex min-h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-line bg-paper px-3.5 py-1 text-xs font-semibold text-fg transition-colors hover:border-accent hover:text-accent sm:min-h-0 sm:rounded-lg sm:px-2.5 sm:py-1 sm:text-xs dark:border-line-dark dark:bg-ink dark:text-fg-dark"
+                className="inline-flex min-h-9 min-w-0 flex-1 items-center justify-center truncate rounded-full border border-line bg-paper px-3.5 py-1 text-xs font-semibold text-fg transition-colors hover:border-accent hover:text-accent sm:min-h-0 sm:flex-none sm:rounded-lg sm:px-2.5 sm:py-1 sm:text-xs dark:border-line-dark dark:bg-ink dark:text-fg-dark"
               >
-                <span className="sm:hidden">{item.firstChapter.label}</span>
-                <span className="hidden sm:inline">
-                  Awal: <span className="font-bold">{item.firstChapter.label}</span>
+                <span className="truncate">
+                  <span className="sm:hidden">{item.firstChapter.label}</span>
+                  <span className="hidden sm:inline">
+                    Awal: <span className="font-bold">{item.firstChapter.label}</span>
+                  </span>
                 </span>
               </Link>
             )}
             {item.latestChapter && (
               <Link
                 href={chapterPathToRoute(item.latestChapter.url)}
-                className="inline-flex min-h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-accent px-3.5 py-1 text-xs font-semibold text-white shadow-sm shadow-accent/30 transition-[opacity,transform] active:scale-[0.97] hover:opacity-90 sm:min-h-0 sm:rounded-lg sm:px-2.5 sm:py-1 sm:text-xs"
+                className="inline-flex min-h-9 min-w-0 flex-1 items-center justify-center truncate rounded-full bg-accent px-3.5 py-1 text-xs font-semibold text-white shadow-sm shadow-accent/30 transition-[opacity,transform] active:scale-[0.97] hover:opacity-90 sm:min-h-0 sm:flex-none sm:rounded-lg sm:px-2.5 sm:py-1 sm:text-xs"
               >
-                <span className="sm:hidden">{item.latestChapter.label}</span>
-                <span className="hidden sm:inline">Terbaru: {item.latestChapter.label}</span>
+                <span className="truncate">
+                  <span className="sm:hidden">{item.latestChapter.label}</span>
+                  <span className="hidden sm:inline">Terbaru: {item.latestChapter.label}</span>
+                </span>
               </Link>
             )}
           </div>
@@ -103,7 +104,7 @@ export function KomikListSkeleton({ count = 8 }: { count?: number }) {
     <div className="animate-pulse divide-y divide-line dark:divide-line-dark">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="flex gap-2.5 py-3 sm:gap-3.5 sm:py-3.5">
-          <div className="h-[112px] w-[80px] shrink-0 rounded-lg bg-paper-3 sm:h-[112px] sm:w-[168px] dark:bg-ink-3" />
+          <div className="h-[132px] w-[96px] shrink-0 rounded-lg bg-paper-3 sm:h-[112px] sm:w-[168px] dark:bg-ink-3" />
           <div className="min-w-0 flex-1 space-y-2 py-1">
             <div className="h-4 w-11/12 rounded bg-paper-3 dark:bg-ink-3" />
             <div className="h-3 w-1/2 rounded bg-paper-3 dark:bg-ink-3" />
