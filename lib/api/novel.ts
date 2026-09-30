@@ -72,10 +72,23 @@ export interface NovelChapterData {
 async function fetchMeio(url: string, init?: RequestInit): Promise<string> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 15_000);
+  const isPost = (init?.method || "GET").toUpperCase() === "POST";
   let res: Response;
   try {
     res = await fetch(url, {
-      headers: { "User-Agent": UA, Referer: MEIO_BASE + "/", Accept: "text/html" },
+      headers: {
+        "User-Agent": UA,
+        Referer: MEIO_BASE + "/",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "same-origin",
+        "Sec-Fetch-User": "?1",
+        // Situsnya sendiri memanggil ajax/chapters/ via XHR — samakan.
+        ...(isPost ? { "X-Requested-With": "XMLHttpRequest" } : {}),
+      },
       signal: ctrl.signal,
       next: { revalidate: 60 },
       ...init,
