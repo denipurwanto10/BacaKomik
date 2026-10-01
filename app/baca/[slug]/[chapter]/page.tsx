@@ -219,19 +219,18 @@ export default function ReaderPage({
       // (hasil hover-prefetch kartu / kunjungan halaman detail),
       // kalau tidak ada fetch ringan di background (lihat effect di bawah).
       const cached = peekApiCache<MangaDetail>(`/api/manga/${encodeURIComponent(slug)}`);
+      // Panaskan next chapter SAJA dari daftar (spek: current → next, bukan
+      // next+1/prev — hemat request). Data JSON-nya masuk cache apiGet reuse.
       if (cached) {
         setChapters(cached.chapters);
-        // Panaskan prev/next chapter dari daftar agar dropdown terasa instan.
         const idx = cached.chapters.findIndex((c) =>
           c.url.includes(`-chapter-${chapter}/`),
         );
-        for (const j of [idx - 1, idx + 1]) {
-          const tok = cached.chapters[j]?.url.match(/-chapter-(.+?)\/?$/)?.[1];
-          if (tok) {
-            prefetchApi(
-              `/api/chapter/${encodeURIComponent(slug)}/${encodeURIComponent(tok)}`,
-            );
-          }
+        const tok = cached.chapters[idx - 1]?.url.match(/-chapter-(.+?)\/?$/)?.[1];
+        if (tok) {
+          prefetchApi(
+            `/api/chapter/${encodeURIComponent(slug)}/${encodeURIComponent(tok)}`,
+          );
         }
       }
       const key = `${slug}/${chapter}`;
@@ -253,22 +252,47 @@ export default function ReaderPage({
   }, [load]);
 
   // Panaskan chapter berikutnya selagi user membaca — tombol Next terasa instan.
+  // Data JSON masuk cache apiGet (reuse saat klik Next, tanpa request ganda).
+  // Gambar pertama ikut di-preload agar render lebih cepat, kecuali koneksi
+  // hemat (saveData/2g) — di situ cukup metadata. Gagal = diam, Next normal.
   useEffect(() => {
-    if (!data) return;
-    if (data.nextUrl) {
-      prefetchApi(
-        `/api/chapter/${encodeURIComponent(data.mangaSlug)}/${encodeURIComponent(
-          chapterPathToRoute(data.nextUrl).split("/").pop() ?? "",
-        )}`,
-      );
+    if (!data?.nextUrl) {
+      if (!data) return;
+      const toNum = (c: string) => parseFloat(c.replace(/-(\d+)$/, ".$1"));
+      const cur = toNum(chapter);
+      if (!data.prevUrl && Number.isFinite(cur)) {
+        const next = String(cur + 1).replace(".", "-");
+        prefetchApi(`/api/chapter/${encodeURIComponent(data.mangaSlug)}/${encodeURIComponent(next)}`);
+      }
       return;
     }
-    const toNum = (c: string) => parseFloat(c.replace(/-(\d+)$/, ".$1"));
-    const cur = toNum(chapter);
-    if (!data.prevUrl && Number.isFinite(cur)) {
-      const next = String(cur + 1).replace(".", "-");
-      prefetchApi(`/api/chapter/${encodeURIComponent(data.mangaSlug)}/${encodeURIComponent(next)}`);
-    }
+    const tok =
+      chapterPathToRoute(data.nextUrl).split("/").pop() ?? "";
+    if (!tok) return;
+    const path = `/api/chapter/${encodeURIComponent(data.mangaSlug)}/${encodeURIComponent(tok)}`;
+    prefetchApi(path);
+    // Preload gambar pertama next chapter setelah datanya tiba (cache hit =
+    // tanpa request ganda). Hemat koneksi: lewati bila saveData/2g.
+    let cancelled = false;
+    apiGet<ChapterData>(path)
+      .then((d) => {
+        if (cancelled || !d.images[0]) return;
+        try {
+          const conn = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+          if (conn?.saveData || conn?.effectiveType === "2g" || conn?.effectiveType === "slow-2g") return;
+        } catch {
+          // abaikan — lanjut preload
+        }
+        const img = new Image();
+        img.decoding = "async";
+        img.src = d.images[0];
+      })
+      .catch(() => {
+        // prefetch boleh gagal diam-diam
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [data, chapter]);
 
   // Dropdown chapter: bila dibuka langsung (tanpa lewat detail/kartu),
