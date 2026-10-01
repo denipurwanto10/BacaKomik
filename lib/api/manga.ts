@@ -101,7 +101,7 @@ async function enrichKomikcastOnly(cards: MergedMangaCard[]): Promise<void> {
 
 /** Chapter terbaru (Shinigami is_update utama + Komiku ?orderby=modified pelengkap). */
 export async function getLatest(page = 1): Promise<MangaCard[]> {
-  const params: MangaListParams = { orderby: "modified", page, fresh: true };
+  const params: MangaListParams = { orderby: "modified", page };
   const jobs = {
     komiku: async () => {
       // Coba 2x — kegagalan fragment API sering cuma sementara (beban
@@ -165,7 +165,6 @@ export async function getLatestPaged(
           ...(opts.genre ? { genre: opts.genre } : {}),
           ...(opts.genre2 ? { genre2: opts.genre2 } : {}),
           ...(opts.status ? { status: opts.status } : {}),
-          fresh: true,
         }),
       shinigami: () =>
         fetchShiniLatest(p, {
@@ -248,7 +247,7 @@ export async function getRecommended(): Promise<MangaCard[]> {
     // Coba 2x seperti getLatest — kegagalan fragment API sering sementara.
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const { items } = await fetchMangaList({ orderby: "rand", fresh: true });
+        const { items } = await fetchMangaList({ orderby: "rand" });
         if (items.length > 0) return items;
       } catch {
         // coba lagi sebelum fallback

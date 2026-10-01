@@ -45,7 +45,7 @@ export class KomikuError extends Error {
   }
 }
 
-async function fetchHtml(url: string, fresh = false): Promise<string> {
+async function fetchHtml(url: string): Promise<string> {
   const ctrl = new AbortController();
   // Komiku kadang lambat merespons; gagal cepat (12 dtk) agar UI bisa
   // menampilkan error/retry daripada menggantung tanpa batas.
@@ -232,8 +232,6 @@ export interface MangaListParams {
   genre?: string;
   genre2?: string;
   status?: "ongoing" | "end";
-  /** Paksa ambil data terbaru dari sumber, tanpa cache Next.js. */
-  fresh?: boolean;
 }
 
 export async function fetchMangaList(
@@ -249,12 +247,9 @@ export async function fetchMangaList(
   if (params.genre2) url.searchParams.set("genre2", params.genre2);
   if (params.status) url.searchParams.set("status", params.status);
 
-  // Hanya daftar chapter terbaru yang perlu bypass cache. Filter lain tetap
-  // memakai cache singkat agar tidak membebani sumber.
-  if (params.fresh) {
-    url.searchParams.set("_fresh", String(Date.now()));
-  }
-  const html = await fetchHtml(url.toString(), !!params.fresh);
+  // Daftar memakai cache singkat (revalidate 30 di fetchHtml) agar tidak
+  // membebani sumber; key stabil per page/filter/orderby.
+  const html = await fetchHtml(url.toString());
   const $ = cheerio.load(html);
   return { items: parseBgeCards($), hasNextPage: detectNextPage($) };
 }
