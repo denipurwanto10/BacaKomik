@@ -1,4 +1,4 @@
-# BacaKomik — Platform baca Manga, Manhwa & Manhua (data nyata Komiku.org)
+# KomikFrost — Platform baca Manga, Manhwa & Manhua (data nyata Komiku.org)
 
 Seluruh data (judul, cover, genre, sinopsis, chapter, peringkat, gambar reader)
 dimuat **langsung dari Komiku.org** setiap request. Tidak ada dummy data,

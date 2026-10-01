@@ -53,10 +53,10 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-paper-2/90 backdrop-blur-md dark:border-line-dark dark:bg-ink-2/90">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-3 sm:gap-3 sm:px-4">
-        <Link href="/" className="flex min-w-0 shrink-0 items-center gap-2" aria-label="BacaKomik — Beranda">
+        <Link href="/" className="flex min-w-0 shrink-0 items-center gap-2" aria-label="KomikFrost — Beranda">
           <Mark />
           <span className="truncate font-display text-base font-extrabold tracking-tight text-fg sm:text-lg dark:text-fg-dark">
-            Baca<span className="text-accent">Komik</span>
+            Komik<span className="text-accent">Frost</span>
           </span>
         </Link>
 
@@ -203,10 +203,10 @@ export function Footer() {
   return (
     <footer className="mt-10 hidden border-t border-line py-6 md:block dark:border-line-dark">
       <div className="mx-auto max-w-6xl px-4 text-center text-xs leading-relaxed text-muted dark:text-muted-dark">
-        <p className="font-display font-bold text-fg dark:text-fg-dark">BacaKomik</p>
+        <p className="font-display font-bold text-fg dark:text-fg-dark">KomikFrost</p>
         <p className="mt-1">
           Seluruh data (judul, cover, sinopsis, chapter, peringkat) dimuat langsung dari
-          sumber eksternal. BacaKomik tidak menyimpan konten komik.
+          sumber eksternal. KomikFrost tidak menyimpan konten komik.
         </p>
       </div>
     </footer>
