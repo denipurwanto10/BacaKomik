@@ -195,7 +195,21 @@ export function mergeCards(lists: Partial<Record<ComicSourceId, MangaCard[]>>): 
     };
     // firstChapter: Komiku (dari HTML, nomor asli) menang atas tebakan
     // "Chapter 1" kartu list Shinigami; fallback ke getCard bila Komiku absen.
-    const firstCh = g.cards.komiku?.firstChapter ?? getCard("firstChapter");
+    // Koreksi: bila pemenang bernomor > 1 dari kartu Komikcast (tebakan
+    // latest − count + 1, katalog parsial) SEMENTARA kartu gabungan juga
+    // punya Komiku/Shinigami (katalog penuh) → turunkan ke Chapter 1
+    // dengan URL pola source prioritas. Kartu komikcast-only tak tersentuh.
+    let firstCh = g.cards.komiku?.firstChapter ?? getCard("firstChapter");
+    {
+      const n = chapterNum(firstCh?.label);
+      const kcFirst = g.cards.komikcast?.firstChapter;
+      const fromKcGuess =
+        !!firstCh && !!kcFirst && firstCh.url === kcFirst.url && Number.isFinite(n) && (n as number) > 1;
+      const fullSlug = g.cards.komiku?.slug ?? g.cards.shinigami?.slug;
+      if (fromKcGuess && fullSlug) {
+        firstCh = { label: "Chapter 1", url: `/${fullSlug}-chapter-1/` };
+      }
+    }
     // updatedAt kartu gabungan = waktu TERBARU antar source.
     let mergedUpdatedAt = getCard("updatedAt");
     {
