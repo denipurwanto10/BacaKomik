@@ -19,11 +19,14 @@ function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
-/** Logo mark: a notched ink panel, like a torn-off comic panel corner. */
+/** Logo mark: a notched ice panel with a snowflake, matching the Frost name. */
 function Mark() {
   return (
-    <span className="relative flex h-8 w-8 shrink-0 items-center justify-center bg-accent text-sm font-black text-white [clip-path:polygon(0_0,100%_0,100%_100%,25%_100%,0_75%)]">
-      B
+    <span className="relative flex h-8 w-8 shrink-0 items-center justify-center bg-accent text-white [clip-path:polygon(0_0,100%_0,100%_100%,25%_100%,0_75%)]">
+      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
+        <path d="M12 2v20M4 6l16 12M20 6L4 18" />
+        <path d="M12 2l-2 3m2-3l2 3M12 22l-2-3m2 3l2-3M4 6l3.4.6M4 6L4.6 9.4M20 18l-3.4-.6m3.4.6l-.6-3.4M20 6l-3.4.6M20 6l-.6 3.4M4 18l3.4-.6M4 18l.6-3.4" strokeWidth={1.6} />
+      </svg>
     </span>
   );
 }
