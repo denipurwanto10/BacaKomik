@@ -33,14 +33,19 @@ function relevanceScore(title: string, altTitle: string | undefined, tokens: str
   return Math.min(1.05, score);
 }
 
-/** Urutkan hasil merge: skor relevansi desc; stabil (urutan merge dipertahankan bila seri). */
+/** Urutkan hasil merge: skor relevansi desc; stabil (urutan merge dipertahankan bila seri).
+ * Bila ada kartu yang memuat SEMUA token (skor 1), hanya kartu-kartu itu
+ * yang ditampilkan — sisanya yang cuma cocok sebagian disembunyikan.
+ * Bila tidak ada yang cocok penuh, tampilkan semua urut relevansi
+ * (fallback agar tidak halaman kosong). */
 function rankByRelevance(cards: MergedMangaCard[], keyword: string): MergedMangaCard[] {
   const tokens = normalizeTitle(keyword).split(" ").filter(Boolean);
   if (tokens.length <= 1) return cards;
-  return cards
+  const scored = cards
     .map((c, i) => ({ c, i, s: relevanceScore(c.title, c.altTitle, tokens) }))
-    .sort((a, b) => b.s - a.s || a.i - b.i)
-    .map((x) => x.c);
+    .sort((a, b) => b.s - a.s || a.i - b.i);
+  if (scored.some((x) => x.s >= 1)) return scored.filter((x) => x.s >= 1).map((x) => x.c);
+  return scored.map((x) => x.c);
 }
 
 /**
