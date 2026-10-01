@@ -93,6 +93,7 @@ interface KcSeries {
   poster_url?: string;
   genres?: { slug: string; name: string }[];
   latest_chapter?: { slug: string; number: number; number_label: string } | null;
+  chapter_count_available?: string | number;
   updated_at?: string;
 }
 
@@ -163,14 +164,33 @@ function toCard(s: KcSeries): MangaCard {
         url: `/${s.latest_chapter.slug}/`,
       }
     : undefined;
+  // Tebakan chapter AWAL (pola sama seperti kartu Shinigami). Nomor pertama
+  // dihitung dari latest_chapter − chapter_count_available bila keduanya
+  // ada (katalog sering mulai dari tengah, mis. latest 57 dari 5 bab → 53);
+  // fallback Chapter 1. Reader tetap resolve via daftar gabungan (nomor
+  // asli dipakai; tebakan meleset = sumber itu dilewati, bukan error).
+  const first: ChapterRef | undefined = s.latest_chapter
+    ? (() => {
+        const latestNum = s.latest_chapter?.number;
+        const cnt = parseInt(String(s.chapter_count_available ?? ""), 10);
+        const firstNum =
+          Number.isFinite(latestNum) && Number.isFinite(cnt) && cnt > 0 && cnt <= latestNum
+            ? Math.max(1, latestNum - cnt + 1)
+            : 1;
+        return { label: `Chapter ${firstNum}`, url: `/${s.slug}-chapter-${firstNum}-bahasa-indonesia/` };
+      })()
+    : undefined;
+  const genreOne = (s.genres ?? []).find((g) => g?.name || g?.slug);
   return {
     slug: s.slug,
     title: s.title,
     ...(s.title_english ? { altTitle: s.title_english } : {}),
     thumbnail: s.poster_url ?? "",
     ...(normalizeType(s.type) ? { type: normalizeType(s.type)! } : {}),
+    ...(genreOne ? { genre: genreOne.name || genreOne.slug } : {}),
     ...(s.synopsis ? { synopsis: s.synopsis } : {}),
     ...(timeAgoId(s.updated_at) ? { updatedAt: timeAgoId(s.updated_at)! } : {}),
+    ...(first ? { firstChapter: first } : {}),
     ...(latest ? { latestChapter: latest } : {}),
   };
 }
