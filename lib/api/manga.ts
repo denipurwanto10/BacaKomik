@@ -12,6 +12,7 @@ import {
   fetchMangaDetail,
   fetchMangaList,
   fetchRanking,
+  searchMangaRemote,
   type MangaListParams,
   type RankPeriod,
 } from "./komiku";
@@ -36,9 +37,67 @@ import {
   mergeDetails,
   normalizeTitle,
   sortByFresh,
+  type MergedMangaCard,
   type MergedMangaDetail,
 } from "./aggregator";
 import type { MangaCard, MangaDetail, PagedResult } from "./types";
+
+/**
+ * Perkaya kartu miskin (tanpa genre & sinopsis) yang HANYA dari Komikcast.
+ * Penyebab umum: judul lolos dari halaman-1 Komiku karena beda timing
+ * update antar source, padahal judulnya ADA di Komiku (terbukti: search
+ * exact-match menemukan + punya genre/sinopsis).
+ * Resolve exact-match Komiku saja (tanpa fuzzy, tanpa fallback Shinigami
+ * agar beban tetap ringan), paralel max 5, gagal = biarin kosong.
+ * Hasil enrich ditempel + source badge dilengkapi (komiku ikut).
+ */
+async function enrichKomikcastOnly(cards: MergedMangaCard[]): Promise<void> {
+  const needy = cards
+    .filter(
+      (c) =>
+        c.sources.length === 1 &&
+        c.sources[0] === "komikcast" &&
+        !c.genre &&
+        !c.synopsis &&
+        c.sourceSlug?.komikcast,
+    )
+    .slice(0, 5);
+  if (needy.length === 0) return;
+  await Promise.all(
+    needy.map(async (c) => {
+      const norm = normalizeTitle(c.title);
+      if (!norm) return;
+      try {
+        const { items } = await searchMangaRemote(c.title, 1);
+        const hit = items.find((k) => normalizeTitle(k.title) === norm);
+        if (!hit) return;
+        if (hit.genre) c.genre = hit.genre;
+        if (hit.synopsis) c.synopsis = hit.synopsis;
+        if (hit.type && !c.type) c.type = hit.type;
+        if (hit.firstChapter && !c.firstChapter) c.firstChapter = hit.firstChapter;
+        if (!c.sources.includes("komiku")) {
+          c.sources.push("komiku");
+          c.sourceSlug = { ...c.sourceSlug, komiku: hit.slug };
+        }
+        // Kartu search Komiku tidak bawa sinopsis ("Update X lalu." bukan
+        // narasi) → ambil dari halaman detailnya (1 request, gagal = biarin).
+        // Tolak teks placeholder upstream ("Belum ada isi.") agar kartu tidak
+        // menampilkan teks sampah.
+        if (!c.synopsis) {
+          try {
+            const d = await fetchMangaDetail(hit.slug);
+            const s = (d.synopsis ?? "").trim();
+            if (s && !/^belum ada (isi|sinopsis|deskripsi)/i.test(s.replace(/\s+/g, " "))) c.synopsis = d.synopsis;
+          } catch {
+            // biarin kosong
+          }
+        }
+      } catch {
+        // biarin kosong — kartu tetap tampil apa adanya
+      }
+    }),
+  );
+}
 
 /** Chapter terbaru (Shinigami is_update utama + Komiku ?orderby=modified pelengkap). */
 export async function getLatest(page = 1): Promise<MangaCard[]> {
@@ -73,6 +132,9 @@ export async function getLatest(page = 1): Promise<MangaCard[]> {
     shinigami: data.shinigami ?? [],
     komikcast: data.komikcast ?? [],
   });
+  // Kartu komikcast-only yang miskin (timing lolos dari halaman-1 source
+  // lain) diperkaya via search exact-match — pola sama seperti search.
+  await enrichKomikcastOnly(merged);
   // Urut PALING BARU lintas source — bukan urutan source.
   return sortByFresh(merged);
 }
@@ -125,6 +187,8 @@ export async function getLatestPaged(
       komikcast: data.komikcast?.items ?? [],
     }),
   );
+  // Sama seperti getLatest: perkaya kartu komikcast-only yang miskin.
+  await enrichKomikcastOnly(items);
   return {
     items,
     hasNextPage: Boolean(data.komiku?.hasNextPage || data.shinigami?.hasNextPage || data.komikcast?.hasNextPage),
