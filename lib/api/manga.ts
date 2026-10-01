@@ -298,6 +298,10 @@ export async function getMangaDetail(slug: string): Promise<MangaDetail> {
       // Judul dari hasil Komiku/Shinigami bila ada, else dari slug mentah.
       komikcast: async () => {
         if (isShiniId(slug)) throw new Error("Slug UUID tidak ada di Komikcast.");
+        // Slug pola Komiku ("...-id" / "...-id-N") → pasti 404 bila
+        // ditebak ke /series/<slug>; langsung resolve via judul (tahap 2),
+        // hemat 1 request spekulatif. Slug lain tetap direct dulu.
+        if (/-id(-\d+)?$/i.test(slug)) throw new Error("Slug Komiku, resolve Komikcast via judul.");
         try {
           // Coba langsung dulu (kasus Komikcast-only, slug sudah tepat).
           return await fetchKomikcastDetail(slug);
