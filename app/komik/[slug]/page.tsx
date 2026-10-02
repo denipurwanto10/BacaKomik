@@ -163,7 +163,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
         <div data-cover-slot className="mx-auto w-32 shrink-0 overflow-hidden rounded-xl bg-paper-3 min-[420px]:w-40 sm:mx-0 sm:w-44 dark:bg-ink-3">
           {detail.cover ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={detail.cover} alt={detail.title} loading="eager" fetchPriority="high" decoding="sync" className="aspect-[3/4] w-full object-cover" />
+            <img src={detail.cover} alt={detail.title} loading="eager" fetchPriority="high" decoding="sync" className="block aspect-[3/4] w-full object-cover" />
           ) : (
             <div className="flex aspect-[3/4] items-center justify-center p-2 text-center text-xs text-muted dark:text-muted-dark">
               Cover tidak tersedia
@@ -171,10 +171,12 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
           )}
         </div>
         <div className="min-w-0 flex-1">
+          {/* Badge di atas judul (bukan inline) agar tidak mengambang
+              di samping H1 besar; bookmark menempel di kanan judul. */}
           <div className="flex min-w-0 items-start gap-2">
-            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+            <div className="min-w-0 flex-1">
               <TypeBadge type={detail.type} />
-              <h1 className="min-w-0 flex-1 break-words font-display text-lg font-extrabold leading-tight text-fg min-[420px]:text-xl sm:text-2xl dark:text-fg-dark">
+              <h1 className="mt-1.5 min-w-0 break-words font-display text-lg font-extrabold leading-tight text-fg min-[420px]:text-xl sm:text-2xl dark:text-fg-dark">
                 {detail.title}
               </h1>
             </div>
@@ -207,7 +209,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
               aria-label={saved ? "Hapus dari favorit" : "Simpan ke favorit"}
               aria-pressed={saved}
               title={saved ? "Hapus dari favorit" : "Simpan ke favorit"}
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors active:scale-95 ${
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors active:scale-95 ${
                 saved
                   ? "border-accent bg-accent-soft text-accent dark:bg-accent-soft-dark"
                   : "border-line text-muted hover:border-accent hover:text-accent dark:border-line-dark dark:text-muted-dark"
@@ -242,16 +244,16 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
             </div>
           )}
           {meta.length > 0 && (
-            <dl className="morph-stagger mt-3 grid min-w-0 grid-cols-1 gap-x-4 gap-y-1.5 text-[13px] min-[420px]:grid-cols-2 sm:max-w-md sm:text-sm">
+            <dl className="morph-stagger mt-3 grid min-w-0 grid-cols-1 gap-x-6 gap-y-1.5 text-[13px] min-[420px]:grid-cols-2 sm:text-sm">
               {meta.map(([k, v]) => (
-                <div key={k} className="morph-stagger-item flex min-w-0 gap-1.5">
-                  <dt className="shrink-0 text-muted dark:text-muted-dark">{k}:</dt>
+                <div key={k} className="morph-stagger-item flex min-w-0 items-start gap-2">
+                  <dt className="w-[74px] shrink-0 text-muted dark:text-muted-dark">{k}:</dt>
                   <dd className="min-w-0 flex-1 break-words font-medium text-fg dark:text-fg-dark">{v}</dd>
                 </div>
               ))}
             </dl>
           )}
-          <div className="morph-stagger mt-4 flex min-w-0 flex-col gap-2 min-[420px]:flex-row min-[420px]:flex-wrap">
+          <div className="morph-stagger mt-5 flex min-w-0 flex-col gap-2 min-[420px]:flex-row min-[420px]:flex-wrap">
             {history && (
               <Link
                 href={history.route}
