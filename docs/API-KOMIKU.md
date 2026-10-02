@@ -1,5 +1,10 @@
 # Sumber Data Komiku.org — Hasil Analisis (14 Sep 2026)
 
+> Komiku = source FALLBACK kedua KomikFrost (prioritas: Shinigami >
+> Komiku > Komikcast). Dokumen ini hanya mendeskripsikan adapter Komiku;
+> adapter Shinigami & Komikcast (JSON API) didokumentasikan via kode di
+> `lib/api/shinigami.ts` dan `lib/api/komikcast.ts`.
+
 Komiku.org **tidak memiliki public JSON API**. Semua data diambil dari HTML
 server-rendered + satu fragment-HTML API resmi yang dipakai situsnya sendiri via htmx.
 

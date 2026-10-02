@@ -154,7 +154,16 @@ function CariContent() {
       {q && loading && <KomikListSkeleton count={8} />}
       {error && <ErrorState message={error} onRetry={() => loadPage(q, page)} />}
       {!loading && !error && items && q && items.length === 0 && (
-        <EmptyState message={`Tidak ada hasil dari sumber data untuk "${q}". Coba kata kunci lain.`} />
+        <div className="flex min-w-0 flex-col items-center gap-2 py-10 text-center">
+          <p className="text-sm font-semibold text-fg dark:text-fg-dark">
+            Tidak ada hasil untuk &quot;{q}&quot;.
+          </p>
+          <ul className="max-w-xs list-none space-y-1 text-xs leading-relaxed text-muted dark:text-muted-dark">
+            <li>Coba 1 kata saja (mis. judul tanpa angka).</li>
+            <li>Periksa ejaan — beda 1 huruf bisa nihil hasil.</li>
+            <li>Coba judul Inggris/alternatifnya.</li>
+          </ul>
+        </div>
       )}
       {!loading && !error && items && items.length > 0 && (
         <>
