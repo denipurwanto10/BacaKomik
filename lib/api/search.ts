@@ -68,11 +68,15 @@ export async function searchManga(
   const kw = keyword.trim();
   if (!kw) return { items: [], hasNextPage: false };
   const p = Math.max(1, page);
+  // Komikcast hanya di-fetch pada halaman 1: API search-nya tidak punya meta
+  // paginator dan terbukti mengulang item yang sama di page>1 (page 1 = page 2
+  // untuk query sempit) — fetch lanjutan cuma menambah duplikat lintas-halaman
+  // + 1 upstream sia-sia. Shinigami + Komiku (pagination nyata) tetap jalan.
   const { data } = await fetchAllSettled(
     {
       komiku: () => searchMangaRemote(kw, p),
       shinigami: () => searchShiniRemote(kw, p, SHINI_PAGE_SIZE),
-      komikcast: () => searchKomikcastRemote(kw, p),
+      ...(p === 1 ? { komikcast: () => searchKomikcastRemote(kw, p) } : {}),
     },
     "search",
   );

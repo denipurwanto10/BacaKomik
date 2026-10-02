@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { apiGet } from "@/lib/client";
+import { apiGet, titleKey } from "@/lib/client";
 import type { MangaCard } from "@/lib/api/types";
 import { SectionHead, GridSkeleton, ErrorState, EmptyState } from "@/components/states";
 import { KomikListCard, KomikListSkeleton } from "@/components/komik-list";
@@ -35,6 +35,37 @@ function CariContent() {
   const bootedRef = useRef(false);
   const appliedQRef = useRef(q);
   const listTopRef = useRef<HTMLDivElement>(null);
+  // Judul yang sudah tampil per kata kunci — untuk membuang duplikat
+  // lintas-halaman (merge server hanya per-page; judul yang sama bisa muncul
+  // di p1 dari satu source dan p2 dari source lain karena beda timing).
+  // Reset tiap kata kunci berubah. Murni client-side, tanpa request tambahan.
+  const seenRef = useRef(new Map<string, Set<string>>());
+
+  // Saring item yang judulnya sudah tampil di halaman sebelumnya
+  // (kata kunci aktif), lalu catat sisanya. Urutan + prioritas server utuh.
+  const dedupePage = useCallback(
+    (kw: string, list: MangaCard[]): MangaCard[] => {
+      let seen = seenRef.current.get(kw);
+      if (!seen) {
+        // Cap memori: maksimal 20 kata kunci tersimpan, hapus yang terlama.
+        if (seenRef.current.size >= 20) {
+          const oldest = seenRef.current.keys().next().value;
+          if (oldest !== undefined) seenRef.current.delete(oldest);
+        }
+        seen = new Set<string>();
+        seenRef.current.set(kw, seen);
+      }
+      const out: MangaCard[] = [];
+      for (const item of list) {
+        const k = titleKey(item.title);
+        if (k && seen.has(k)) continue;
+        if (k) seen.add(k);
+        out.push(item);
+      }
+      return out;
+    },
+    [],
+  );
 
   useEffect(() => setDraft(q), [q]);
 
@@ -45,12 +76,14 @@ function CariContent() {
   }, []);
 
   // Muat satu halaman penuh (mengganti daftar, bukan menumpuk).
+  // Duplikat lintas-halaman dibuang via seenRef per kata kunci.
   const loadPage = useCallback(async (kw: string, p: number) => {
     if (!kw) {
       setItems([]);
       setHasNext(false);
       return;
     }
+    if (p === 1) seenRef.current.delete(kw);
     setLoading(true);
     setError(null);
     setItems(null);
@@ -58,7 +91,7 @@ function CariContent() {
       const res = await apiGet<SearchPayload>(
         `/api/search?q=${encodeURIComponent(kw)}&page=${p}`,
       );
-      setItems(res.items);
+      setItems(dedupePage(kw, res.items));
       setHasNext(res.hasNextPage);
       setPage(p);
     } catch (e) {
@@ -66,7 +99,7 @@ function CariContent() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [dedupePage]);
 
   // Mount pertama: buka halaman sesuai URL.
   useEffect(() => {
