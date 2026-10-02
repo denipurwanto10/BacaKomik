@@ -450,6 +450,15 @@ export default function ReaderPage({
 
   const { prevHref, nextHref } = navHrefs(data, data.mangaSlug, chapter);
   const scrollTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+  // Tombol "Chapter berikut" mengambang — tampil saat hampir tamat agar
+  // tidak perlu scroll ke nav bawah: scroll ≥95% (belum mentok, karena
+  // nav permanen sudah terlihat di 100%) atau halaman terakhir mode page.
+  // Disembunyikan saat overlay tap-nav tampil (slot bawah yang sama).
+  const showNextFloat =
+    Boolean(nextHref) &&
+    (mode === "page"
+      ? pageIdx >= data.images.length - 1
+      : progress >= 0.95 && progress < 1 && !showTapNav);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-2.5 sm:gap-3">
@@ -627,6 +636,21 @@ export default function ReaderPage({
         </div>
       )}
 
+      {/* Tombol "Chapter berikut" mengambang — muncul saat hampir tamat
+          agar tidak perlu scroll balik ke nav bawah. Link biasa (bukan
+          auto-pindah): tetap user yang memutuskan. */}
+      {showNextFloat && nextHref && (
+        <div className="fixed inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-40 sm:bottom-24">
+          <Link
+            href={nextHref}
+            className="mx-auto flex w-full max-w-3xl touch-manipulation items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-br from-accent to-accent-strong px-4 py-3.5 text-sm font-bold text-white shadow-xl active:scale-[0.99]"
+          >
+            Chapter berikut
+            <IconChevron dir="right" className="h-4 w-4 shrink-0" />
+          </Link>
+        </div>
+      )}
+
       {/* Tombol kembali-ke-atas — digantung cukup tinggi agar tidak
           menabrak menu Prev/Isi/Next permanen di dasar konten maupun
           overlay tap-nav (mobile + desktop). */}
@@ -635,7 +659,7 @@ export default function ReaderPage({
           onClick={scrollTop}
           aria-label="Kembali ke atas"
           className={`fixed right-3 z-40 flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border border-line-dark bg-ink-2/95 text-fg-dark shadow-xl backdrop-blur transition-all active:scale-95 sm:right-6 dark:border-line-dark ${
-            mode === "scroll" && showTapNav
+            (mode === "scroll" && showTapNav) || showNextFloat
               ? "bottom-[calc(8.5rem+env(safe-area-inset-bottom,0px))] sm:bottom-36"
               : "bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] sm:bottom-24"
           }`}
