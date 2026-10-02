@@ -142,3 +142,21 @@ export function invalidateApi(path?: string): void {
   if (path) cache.delete(path);
   else cache.clear();
 }
+
+/**
+ * Kunci dedupe judul lintas-halaman (mirror `normalizeTitle` server di
+ * lib/api/aggregator.ts — duplikat di sini agar komponen client tidak
+ * membundel modul server). Lowercase + NFKD + strip diakritik +
+ * dash/underscore → spasi + tanda baca → spasi.
+ */
+export function titleKey(raw: string): string {
+  return (raw || "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[’‘`´]/g, "'")
+    .replace(/[-------_]+/g, " ")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}

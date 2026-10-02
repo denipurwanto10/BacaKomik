@@ -2,7 +2,7 @@
 
 import { Suspense, use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { apiGet, invalidateApi } from "@/lib/client";
+import { apiGet, invalidateApi, titleKey } from "@/lib/client";
 import type { MangaCard } from "@/lib/api/types";
 import { KomikListCard, KomikListSkeleton } from "@/components/komik-list";
 import { Pagination } from "@/components/pagination";
@@ -78,6 +78,30 @@ function GenreDetailContent({ slug }: { slug: string }) {
   // memicu reset ke halaman 1. Perbandingan nilai, aman dari
   // double-effect StrictMode.
   const appliedFiltersRef = useRef(filtersKey);
+  // Judul yang sudah tampil per kombinasi filter — buang duplikat
+  // lintas-halaman (merge server hanya per-page). Murni client-side.
+  const seenRef = useRef(new Map<string, Set<string>>());
+
+  // Saring item yang judulnya sudah tampil di halaman sebelumnya
+  // (filter aktif), lalu catat sisanya. Urutan + prioritas server utuh.
+  const dedupePage = useCallback(
+    (list: MangaCard[]): MangaCard[] => {
+      let seen = seenRef.current.get(filtersKey);
+      if (!seen) {
+        seen = new Set<string>();
+        seenRef.current.set(filtersKey, seen);
+      }
+      const out: MangaCard[] = [];
+      for (const item of list) {
+        const k = titleKey(item.title);
+        if (k && seen.has(k)) continue;
+        if (k) seen.add(k);
+        out.push(item);
+      }
+      return out;
+    },
+    [filtersKey],
+  );
   const listTopRef = useRef<HTMLDivElement>(null);
 
   const buildQs = useCallback(
@@ -108,7 +132,7 @@ function GenreDetailContent({ slug }: { slug: string }) {
       setError(null);
       try {
         const res = await apiGet<LatestPayload>(`/api/latest?${buildQs(p)}`);
-        setItems(res.items);
+        setItems(dedupePage(res.items));
         setHasNext(res.hasNextPage);
         setPage(p);
       } catch (e) {
@@ -117,7 +141,7 @@ function GenreDetailContent({ slug }: { slug: string }) {
         setLoading(false);
       }
     },
-    [buildQs],
+    [buildQs, dedupePage],
   );
 
   // Mount pertama: buka halaman sesuai URL.
@@ -134,6 +158,8 @@ function GenreDetailContent({ slug }: { slug: string }) {
   useEffect(() => {
     if (appliedFiltersRef.current === filtersKey) return;
     appliedFiltersRef.current = filtersKey;
+    // Batasi memori dedupe lintas-halaman: buang riwayat filter lama.
+    if (seenRef.current.size > 20) seenRef.current.clear();
     invalidateApi();
     scrollToList();
     void loadPage(1);

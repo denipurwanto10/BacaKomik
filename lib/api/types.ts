@@ -46,6 +46,12 @@ export interface MangaCard {
    * lama tetap valid tanpa perubahan.
    */
   sources?: ComicSourceId[];
+  /**
+   * Hasil pencarian: true bila judul memuat SEMUA token kata kunci.
+   * False/undefined = "hasil mirip" (fallback saat tak ada yang cocok
+   * penuh). Opsional agar respons lama tetap valid.
+   */
+  exactMatch?: boolean;
   /** Slug di tiap source (untuk fetch detail per source). */
   sourceSlug?: Partial<Record<ComicSourceId, string>>;
 }

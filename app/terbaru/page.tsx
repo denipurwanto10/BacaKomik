@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { apiGet, apiGetSWR } from "@/lib/client";
+import { apiGet, apiGetSWR, titleKey } from "@/lib/client";
 import type { GenreRef, MangaCard } from "@/lib/api/types";
 import { KomikListCard, KomikListSkeleton } from "@/components/komik-list";
 import { Pagination } from "@/components/pagination";
@@ -86,6 +86,42 @@ function TerbaruContent() {
   // double-effect StrictMode.
   const appliedFiltersRef = useRef(filtersKey);
   const listTopRef = useRef<HTMLDivElement>(null);
+  // Judul yang sudah tampil per kombinasi filter — untuk membuang duplikat
+  // lintas-halaman (merge server hanya per-page; judul yang sama bisa muncul
+  // di p1 dari satu source dan p2 dari source lain karena beda timing).
+  // Reset tiap filter berubah. Murni client-side, tanpa request tambahan.
+  const seenRef = useRef(new Map<string, Set<string>>());
+
+  // Saring item yang judulnya sudah tampil di halaman sebelumnya
+  // (filter aktif), lalu catat sisanya. Urutan + prioritas server utuh.
+  const dedupePage = useCallback(
+    (list: MangaCard[]): MangaCard[] => {
+      let seen = seenRef.current.get(filtersKey);
+      if (!seen) {
+        seen = new Set<string>();
+        seenRef.current.set(filtersKey, seen);
+      }
+      const out: MangaCard[] = [];
+      for (const item of list) {
+        const k = titleKey(item.title);
+        if (k && seen.has(k)) continue;
+        if (k) seen.add(k);
+        out.push(item);
+      }
+      return out;
+    },
+    [filtersKey],
+  );
+
+  // Terapkan hasil halaman: dedupe lintas-halaman + set state sekaligus.
+  const applyItems = useCallback(
+    (list: MangaCard[], next: boolean, p: number) => {
+      setItems(dedupePage(list));
+      setHasNext(next);
+      setPage(p);
+    },
+    [dedupePage],
+  );
 
   const buildQs = useCallback(
     (p: number) => {
@@ -116,25 +152,19 @@ function TerbaruContent() {
       try {
         if (fresh) {
           const res = await apiGet<LatestPayload>(`/api/latest?${buildQs(p)}`);
-          setItems(res.items);
-          setHasNext(res.hasNextPage);
-          setPage(p);
+          applyItems(res.items, res.hasNextPage, p);
           setLoading(false);
           return;
         }
         const { data, stale } = await apiGetSWR<LatestPayload>(
           `/api/latest?${buildQs(p)}`,
           (d) => {
-            setItems(d.items);
-            setHasNext(d.hasNextPage);
-            setPage(p);
+            applyItems(d.items, d.hasNextPage, p);
             setLoading(false);
           },
         );
         if (data) {
-          setItems(data.items);
-          setHasNext(data.hasNextPage);
-          setPage(p);
+          applyItems(data.items, data.hasNextPage, p);
         }
         // stale: data basi tampil, onFresh mematikan loading saat segar tiba.
         // !stale tapi data null = mustahil (apiGet throw bila gagal).
@@ -144,7 +174,7 @@ function TerbaruContent() {
         setLoading(false);
       }
     },
-    [buildQs],
+    [buildQs, applyItems],
   );
 
   // Mount pertama: buka halaman sesuai URL (cache basi tampil instan).
@@ -160,6 +190,8 @@ function TerbaruContent() {
   useEffect(() => {
     if (appliedFiltersRef.current === filtersKey) return;
     appliedFiltersRef.current = filtersKey;
+    // Batasi memori dedupe lintas-halaman: buang riwayat filter lama.
+    if (seenRef.current.size > 20) seenRef.current.clear();
     scrollToList();
     void loadPage(1, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps

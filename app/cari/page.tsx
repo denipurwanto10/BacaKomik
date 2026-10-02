@@ -159,8 +159,16 @@ function CariContent() {
       {!loading && !error && items && items.length > 0 && (
         <>
           <div className="min-w-0 divide-y divide-line dark:divide-line-dark">
-            {items.map((item) => (
-              <KomikListCard key={`${item.slug}#${item.latestChapter?.url ?? ""}`} item={item} />
+            {items.map((item, idx) => (
+              <div key={`${item.slug}#${item.latestChapter?.url ?? ""}`}>
+                {item.exactMatch === false &&
+                  (idx === 0 || items[idx - 1]?.exactMatch !== false) && (
+                    <p className="px-1 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-muted dark:text-muted-dark">
+                      Hasil mirip — tidak ada judul yang memuat semua kata kunci
+                    </p>
+                  )}
+                <KomikListCard item={item} />
+              </div>
             ))}
           </div>
           <div className="mt-3 sm:mt-4">

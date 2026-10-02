@@ -37,15 +37,18 @@ function relevanceScore(title: string, altTitle: string | undefined, tokens: str
  * Bila ada kartu yang memuat SEMUA token (skor 1), hanya kartu-kartu itu
  * yang ditampilkan — sisanya yang cuma cocok sebagian disembunyikan.
  * Bila tidak ada yang cocok penuh, tampilkan semua urut relevansi
- * (fallback agar tidak halaman kosong). */
+ * (fallback agar tidak halaman kosong) — kartu-kartu ini ditandai
+ * `exactMatch: false` ("hasil mirip"). Satu token: semua exact. */
 function rankByRelevance(cards: MergedMangaCard[], keyword: string): MergedMangaCard[] {
   const tokens = normalizeTitle(keyword).split(" ").filter(Boolean);
-  if (tokens.length <= 1) return cards;
+  if (tokens.length === 0) return cards;
   const scored = cards
     .map((c, i) => ({ c, i, s: relevanceScore(c.title, c.altTitle, tokens) }))
     .sort((a, b) => b.s - a.s || a.i - b.i);
-  if (scored.some((x) => x.s >= 1)) return scored.filter((x) => x.s >= 1).map((x) => x.c);
-  return scored.map((x) => x.c);
+  if (tokens.length === 1) return scored.map((x) => ({ ...x.c, exactMatch: true as const }));
+  if (scored.some((x) => x.s >= 1))
+    return scored.filter((x) => x.s >= 1).map((x) => ({ ...x.c, exactMatch: true as const }));
+  return scored.map((x) => ({ ...x.c, exactMatch: false as const }));
 }
 
 /**
