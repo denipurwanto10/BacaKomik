@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { apiGet, apiGetSWR, invalidateApi, prefetchApi } from "@/lib/client";
 import { timeAgo, useHistory } from "@/lib/history";
 import type { MangaCard } from "@/lib/api/types";
@@ -28,21 +28,30 @@ interface HomePayload {
  * Section beranda: tampil instan dari cache (basi < 5 mnt) lalu segarkan
  * diam-diam — layar tidak pernah kosong menunggu jaringan.
  */
-function useHomeSection<K extends keyof HomePayload>(key: K) {
+function useHomeSection<K extends keyof HomePayload>(key: K, shuffleData = false) {
   const [data, setData] = useState<MangaCard[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  // Cermin `data !== null` tanpa ikut ke deps `load` — membaca `data`
+  // langsung di dalam useCallback menangkap nilai basi (stale closure)
+  // sehingga spinner `refreshing` tidak pernah menyala saat muat ulang.
+  const hasDataRef = useRef(false);
   const load = useCallback(
     async (fresh = false) => {
       setError(null);
-      if (data) setRefreshing(true);
+      if (hasDataRef.current) setRefreshing(true);
+      const pick = (home: HomePayload | null | undefined) => {
+        const list = home ? home[key] : null;
+        if (list) hasDataRef.current = true;
+        return list && shuffleData ? shuffle(list) : list;
+      };
       try {
         if (fresh) invalidateApi("/api/home");
         const res = await apiGetSWR<HomePayload>("/api/home", (home) => {
-          setData(home[key]);
+          setData(pick(home));
           setRefreshing(false);
         });
-        setData(res.data ? res.data[key] : null);
+        setData(pick(res.data));
         // Kalau data basi, onFresh di atas yang mematikan spinner.
         if (!res.stale) setRefreshing(false);
       } catch (e) {
@@ -51,7 +60,7 @@ function useHomeSection<K extends keyof HomePayload>(key: K) {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [key],
+    [key, shuffleData],
   );
   useEffect(() => {
     load();
@@ -65,34 +74,7 @@ function useHomeSection<K extends keyof HomePayload>(key: K) {
  * setiap dibuka, walau data server sempat kena cache.
  */
 function useRecommended() {
-  const [data, setData] = useState<MangaCard[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const load = useCallback(
-    async (fresh = false) => {
-      setError(null);
-      if (data) setRefreshing(true);
-      try {
-        if (fresh) invalidateApi("/api/home");
-        const res = await apiGetSWR<HomePayload>("/api/home", (home) => {
-          setData(home.recommended ? shuffle(home.recommended) : null);
-          setRefreshing(false);
-        });
-        setData(res.data?.recommended ? shuffle(res.data.recommended) : null);
-        // Kalau data basi, onFresh di atas yang mematikan spinner.
-        if (!res.stale) setRefreshing(false);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Gagal memuat data.");
-        setRefreshing(false);
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-  useEffect(() => {
-    load();
-  }, [load]);
-  return { data, error, load, refreshing };
+  return useHomeSection("recommended", true);
 }
 
 export default function HomePage() {
@@ -214,7 +196,7 @@ export default function HomePage() {
           </button>
         </div>
         {!popular.data && !popular.error && <ListSkeleton count={5} />}
-        {popular.error && <ErrorState message={popular.error} onRetry={popular.load} />}
+        {popular.error && <ErrorState message={popular.error} onRetry={() => popular.load(true)} />}
         {popular.data && popular.data.length === 0 && (
           <EmptyState message="Belum ada data peringkat dari sumber data." />
         )}
@@ -231,6 +213,7 @@ export default function HomePage() {
       <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
         <SectionHead title="Update Terbaru" href="/terbaru" />
         {!latest.data && !latest.error && <ListSkeleton count={8} />}
+        {latest.error && <ErrorState message={latest.error} onRetry={() => latest.load(true)} />}
         {latest.data && latest.data.length === 0 && !latest.error && (
           <EmptyState message="Belum ada update dari sumber data." />
         )}
@@ -248,6 +231,7 @@ export default function HomePage() {
       <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
         <SectionHead title="Rekomendasi" href="/terbaru?orderby=rand" />
         {!recommended.data && !recommended.error && <ListSkeleton count={8} />}
+        {recommended.error && <ErrorState message={recommended.error} onRetry={() => recommended.load(true)} />}
         {recommended.data && recommended.data.length === 0 && !recommended.error && (
           <EmptyState message="Belum ada rekomendasi dari sumber data." />
         )}
