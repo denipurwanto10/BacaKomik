@@ -67,6 +67,7 @@ export async function apiGet<T>(path: string, opts?: { signal?: AbortSignal }): 
 export async function apiGetSWR<T>(
   path: string,
   onFresh: (data: T) => void,
+  onError?: (err: unknown) => void,
 ): Promise<{ data: T | null; stale: boolean }> {
   const hit = cache.get(path);
   const fresh = hit && Date.now() - hit.at < TTL_MS;
@@ -83,8 +84,10 @@ export async function apiGetSWR<T>(
           // abaikan listener rusak
         }
       },
-      () => {
-        // Background refresh boleh gagal diam-diam — data basi tetap tampil.
+      (err) => {
+        // Background refresh boleh gagal diam-diam — data basi tetap tampil —
+        // tapi pemanggil diberitahu agar spinner ikut mati, bukan muter terus.
+        onError?.(err);
       },
     );
     return { data: hit.data as T, stale: true };

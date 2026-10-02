@@ -40,17 +40,24 @@ function useHomeSection<K extends keyof HomePayload>(key: K, shuffleData = false
     async (fresh = false) => {
       setError(null);
       if (hasDataRef.current) setRefreshing(true);
-      const pick = (home: HomePayload | null | undefined) => {
+      const pick = (home: HomePayload | null | undefined, allowShuffle = true) => {
         const list = home ? home[key] : null;
         if (list) hasDataRef.current = true;
-        return list && shuffleData ? shuffle(list) : list;
+        // Refresh diam-diam (stale-while-revalidate) TIDAK mengocok ulang:
+        // rekomendasi yang dikocok ulang di background bikin daftar lompat
+        // sendiri saat user sedang membaca. Kocok hanya saat muat foreground.
+        return list && shuffleData && allowShuffle ? shuffle(list) : list;
       };
       try {
         if (fresh) invalidateApi("/api/home");
-        const res = await apiGetSWR<HomePayload>("/api/home", (home) => {
-          setData(pick(home));
-          setRefreshing(false);
-        });
+        const res = await apiGetSWR<HomePayload>(
+          "/api/home",
+          (home) => {
+            setData(pick(home, false));
+            setRefreshing(false);
+          },
+          () => setRefreshing(false),
+        );
         setData(pick(res.data));
         // Kalau data basi, onFresh di atas yang mematikan spinner.
         if (!res.stale) setRefreshing(false);
