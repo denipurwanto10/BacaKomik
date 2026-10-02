@@ -38,18 +38,14 @@ function relevanceScore(title: string, altTitle: string | undefined, tokens: str
  * yang ditampilkan — sisanya yang cuma cocok sebagian disembunyikan.
  * Bila tidak ada yang cocok penuh, tampilkan semua urut relevansi
  * (fallback agar tidak halaman kosong) — kartu-kartu ini ditandai
- * `exactMatch: false` ("hasil mirip"). Satu token: semua exact.
- * Mode strict (halaman >1): tanpa fallback — hanya cocok-penuh yang lolos,
- * agar halaman lanjutan tidak penuh "hasil mirip" saat halaman 1 sudah
- * punya jawaban exact. */
-function rankByRelevance(cards: MergedMangaCard[], keyword: string, strict = false): MergedMangaCard[] {
+ * `exactMatch: false` ("hasil mirip"). Satu token: semua exact. */
+function rankByRelevance(cards: MergedMangaCard[], keyword: string): MergedMangaCard[] {
   const tokens = normalizeTitle(keyword).split(" ").filter(Boolean);
   if (tokens.length === 0) return cards;
   const scored = cards
     .map((c, i) => ({ c, i, s: relevanceScore(c.title, c.altTitle, tokens) }))
     .sort((a, b) => b.s - a.s || a.i - b.i);
   if (tokens.length === 1) return scored.map((x) => ({ ...x.c, exactMatch: true as const }));
-  if (strict) return scored.filter((x) => x.s >= 1).map((x) => ({ ...x.c, exactMatch: true as const }));
   if (scored.some((x) => x.s >= 1))
     return scored.filter((x) => x.s >= 1).map((x) => ({ ...x.c, exactMatch: true as const }));
   return scored.map((x) => ({ ...x.c, exactMatch: false as const }));
@@ -91,10 +87,7 @@ export async function searchManga(
   });
   // Relevansi: judul yang memuat SEMUA token kata kunci naik ke atas;
   // yang cuma cocok sebagian tenggelam. Tanpa membuang hasil.
-  // Halaman >1 strict: tanpa fallback "hasil mirip" (halaman 1 sudah punya
-  // jawaban exact) — halaman lanjutan yang nihil exact jadi kosong dan
-  // pagination berhenti, bukan penuh kartu tak nyambung.
-  const ranked = rankByRelevance(merged, kw, p > 1);
+  const ranked = rankByRelevance(merged, kw);
   const needy = ranked.filter((c) => !c.synopsis && c.sourceSlug?.komiku).slice(0, 10);
   if (needy.length > 0) {
     await Promise.all(

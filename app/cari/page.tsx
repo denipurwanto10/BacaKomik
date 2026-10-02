@@ -40,6 +40,9 @@ function CariContent() {
   // di p1 dari satu source dan p2 dari source lain karena beda timing).
   // Reset tiap kata kunci berubah. Murni client-side, tanpa request tambahan.
   const seenRef = useRef(new Map<string, Set<string>>());
+  // Apakah halaman 1 kata kunci ini punya jawaban exact (bukan "hasil mirip").
+  // Menentukan apakah halaman lanjutan diminta strict (tanpa fallback mirip).
+  const p1ExactRef = useRef(new Map<string, boolean>());
 
   // Saring item yang judulnya sudah tampil di halaman sebelumnya
   // (kata kunci aktif), lalu catat sisanya. Urutan + prioritas server utuh.
@@ -83,7 +86,10 @@ function CariContent() {
       setHasNext(false);
       return;
     }
-    if (p === 1) seenRef.current.delete(kw);
+    if (p === 1) {
+      seenRef.current.delete(kw);
+      p1ExactRef.current.delete(kw);
+    }
     setLoading(true);
     setError(null);
     setItems(null);
@@ -94,17 +100,30 @@ function CariContent() {
       const fresh = dedupePage(kw, res.items);
       setItems(fresh);
       setPage(p);
-      // Hasil halaman 1 sedikit (≤3) tapi server klaim ada lanjutannya:
-      // cek diam-diam halaman 2 — bila nihil exact, pagination dimatikan
-      // agar tidak ada tombol sesat ke halaman kosong. Hanya untuk kasus
-      // langka ini (+1 request), hasil banyak tidak terpengaruh.
-      if (p === 1 && fresh.length > 0 && fresh.length <= 3 && res.hasNextPage) {
+      if (p === 1) {
+        // Halaman 1 exact = ada kartu bukan "hasil mirip".
+        p1ExactRef.current.set(kw, res.items.some((c) => c.exactMatch !== false));
+      }
+      // Halaman 1 punya jawaban exact tapi server klaim ada lanjutannya:
+      // cek diam-diam halaman 2 — bila tidak ada judul exact BARU (belum
+      // tampil di halaman 1), pagination dimatikan agar tidak ada tombol
+      // sesat ke halaman tanpa jawaban. Pengecekan hanya mengintip (tanpa
+      // mencatat ke seenRef) agar halaman 2 asli tetap utuh saat user
+      // benar-benar membukanya. P1 murni "hasil mirip" tidak dicek
+      // (pilihannya memang berlanjut). +1 request diam-diam.
+      if (p === 1 && p1ExactRef.current.get(kw) === true && res.hasNextPage) {
         setHasNext(true);
         try {
           const next = await apiGet<SearchPayload>(
             `/api/search?q=${encodeURIComponent(kw)}&page=2`,
           );
-          if (dedupePage(kw, next.items).length === 0) setHasNext(false);
+          const seen = seenRef.current.get(kw);
+          const unseenExact = next.items.filter((c) => {
+            if (c.exactMatch === false) return false;
+            const k = titleKey(c.title);
+            return !k || !seen?.has(k);
+          });
+          if (unseenExact.length === 0) setHasNext(false);
         } catch {
           // Cek gagal = biarkan pagination apa adanya.
         }
