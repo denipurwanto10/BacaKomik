@@ -168,6 +168,7 @@ export async function getLatestPaged(
         }),
       shinigami: () =>
         fetchShiniLatest(p, {
+          pageSize: 10,
           ...(opts.tipe ? { format: opts.tipe } : {}),
           ...(opts.genre ? { genre: opts.genre } : {}),
         }),
@@ -179,18 +180,23 @@ export async function getLatestPaged(
     },
     "latest-paged",
   );
-  const items = sortByFresh(
+  const merged = sortByFresh(
     mergeCards({
       komiku: data.komiku?.items ?? [],
       shinigami: data.shinigami?.items ?? [],
       komikcast: data.komikcast?.items ?? [],
     }),
   );
+  // 10 kartu per halaman UI — potong dulu baru perkaya agar enrich detail
+  // hanya mengejar kartu yang benar-benar tampil (lebih hemat upstream).
+  const items = merged.slice(0, 10);
   // Sama seperti getLatest: perkaya kartu komikcast-only yang miskin.
   await enrichKomikcastOnly(items);
   return {
     items,
-    hasNextPage: Boolean(data.komiku?.hasNextPage || data.shinigami?.hasNextPage || data.komikcast?.hasNextPage),
+    hasNextPage:
+      merged.length > 10 ||
+      Boolean(data.komiku?.hasNextPage || data.shinigami?.hasNextPage || data.komikcast?.hasNextPage),
   };
 }
 

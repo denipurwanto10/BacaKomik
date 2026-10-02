@@ -6,7 +6,7 @@ import { apiGet, apiGetSWR, invalidateApi, prefetchApi } from "@/lib/client";
 import { timeAgo, useHistory } from "@/lib/history";
 import type { MangaCard } from "@/lib/api/types";
 import { SectionHead, ListSkeleton, ErrorState, EmptyState } from "@/components/states";
-import { RankRow, UpdateRow, chapterPathToRoute } from "@/components/cards";
+import { RankRow, UpdateRow } from "@/components/cards";
 
 /** Acak array (Fisher-Yates) — rekomendasi tampil beda tiap kunjungan. */
 function shuffle<T>(arr: T[]): T[] {
@@ -95,92 +95,6 @@ function useRecommended() {
   return { data, error, load, refreshing };
 }
 
-/**
- * Sorotan peringkat #1 — panel lebar di atas beranda. Nol request tambahan
- * (pakai data /api/home yang sudah ada): cover jadi LCP eager, sisanya lazy.
- */
-function HeroSpotlight({ item }: { item: MangaCard }) {
-  const detailHref = `/komik/${item.slug}`;
-  const readHref = item.latestChapter ? chapterPathToRoute(item.latestChapter.url) : detailHref;
-  const warm = () => prefetchApi(`/api/manga/${encodeURIComponent(item.slug)}`);
-  return (
-    <section
-      onMouseEnter={warm}
-      onTouchStart={warm}
-      className="relative min-w-0 overflow-hidden rounded-2xl border border-line dark:border-line-dark"
-    >
-      {/* Latar: cover blur + gradasi gelap agar teks selalu terbaca. */}
-      <div aria-hidden="true" className="absolute inset-0 bg-ink">
-        {item.thumbnail && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={item.thumbnail}
-            alt=""
-            loading="eager"
-            fetchPriority="high"
-            decoding="sync"
-            className="h-full w-full scale-105 object-cover opacity-40 blur-2xl"
-          />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-accent-strong/60" />
-      </div>
-      <div className="relative flex min-w-0 items-center gap-3 p-3 sm:gap-4 sm:p-5">
-        {item.thumbnail && (
-          <Link
-            href={detailHref}
-            aria-label={item.title}
-            className="w-20 shrink-0 overflow-hidden rounded-xl sm:w-28"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={item.thumbnail}
-              alt={item.title}
-              loading="eager"
-              fetchPriority="high"
-              decoding="sync"
-              className="aspect-[3/4] w-full object-cover"
-            />
-          </Link>
-        )}
-        <div className="min-w-0 flex-1">
-          <p className="inline-flex items-center gap-1 rounded-full bg-gradient-to-br from-accent to-accent-strong px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white sm:text-[11px]">
-            ★ #1 Peringkat harian
-          </p>
-          <h2 className="mt-1.5 truncate font-display text-lg font-extrabold leading-tight text-white sm:text-2xl">
-            <Link href={detailHref} className="hover:underline">
-              {item.title}
-            </Link>
-          </h2>
-          {(item.genre || item.views) && (
-            <p className="mt-0.5 truncate text-[11px] text-white/70 sm:text-xs">
-              {[item.genre, item.views].filter(Boolean).join(" · ")}
-            </p>
-          )}
-          {item.latestChapter && (
-            <p className="mt-0.5 truncate text-xs font-semibold text-white sm:text-sm">
-              {item.latestChapter.label}
-            </p>
-          )}
-          <div className="mt-2.5 flex flex-wrap gap-2">
-            <Link
-              href={readHref}
-              className="rounded-full bg-gradient-to-br from-accent to-accent-strong px-4 py-1.5 text-xs font-bold text-white transition-opacity hover:opacity-90 sm:text-sm"
-            >
-              Baca sekarang
-            </Link>
-            <Link
-              href={detailHref}
-              className="rounded-full border border-white/40 px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:border-white hover:bg-white/10 sm:text-sm"
-            >
-              Detail
-            </Link>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 export default function HomePage() {
   const { entries: history } = useHistory();
   // 1 request gabungan untuk 3 section (hemat handshake, ramah rate limit).
@@ -221,9 +135,6 @@ export default function HomePage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-3 sm:gap-5">
-      {/* Sorotan #1 — hanya bila data peringkat sudah ada, nol request baru. */}
-      {popular.data && popular.data.length > 0 && <HeroSpotlight item={popular.data[0]} />}
-
       {/* Terakhir dibaca — hanya tampil bila ada riwayat di perangkat ini */}
       {history.length > 0 && (
         <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">

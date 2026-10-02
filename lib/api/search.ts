@@ -9,8 +9,8 @@ import { fetchAllSettled, mergeCards, normalizeTitle } from "./aggregator";
 import type { MangaCard, PagedResult } from "./types";
 import type { MergedMangaCard } from "./aggregator";
 
-/** Ukuran halaman Shinigami per halaman UI (Komiku tetap 10/halaman upstream). */
-const SHINI_PAGE_SIZE = 20;
+/** Ukuran halaman per halaman UI: 10 kartu (Komiku 10/halaman upstream, Shinigami page_size 10). */
+const SHINI_PAGE_SIZE = 10;
 
 /**
  * Skor relevansi judul terhadap kata kunci (0..1).
@@ -55,7 +55,8 @@ function rankByRelevance(cards: MergedMangaCard[], keyword: string): MergedManga
  * Cari komik di ketiga source, gabung + dedupe per halaman
  * (satu judul = satu item), lalu urutkan berdasar relevansi kata kunci.
  * Tiap source di-fetch sesuai halaman UI:
- * Komiku 10/halaman (pola /page/N/), Shinigami 20/halaman (?page=).
+ * Komiku 10/halaman (pola /page/N/), Shinigami 10/halaman (?page=).
+ * Tampil 10 kartu per halaman UI (gabungan dipotong di sini).
  * hasNextPage = salah satu source masih punya halaman berikut.
  * Hasil yang sinopsisnya kosong (judul murni Komiku — HTML search
  * Komiku tidak memuat sinopsis) di-enrich dari halaman detailnya:
@@ -88,7 +89,10 @@ export async function searchManga(
   // Relevansi: judul yang memuat SEMUA token kata kunci naik ke atas;
   // yang cuma cocok sebagian tenggelam. Tanpa membuang hasil.
   const ranked = rankByRelevance(merged, kw);
-  const needy = ranked.filter((c) => !c.synopsis && c.sourceSlug?.komiku).slice(0, 10);
+  // 10 kartu per halaman UI — potong dulu baru perkaya agar enrich detail
+  // hanya mengejar kartu yang benar-benar tampil (lebih hemat upstream).
+  const items = ranked.slice(0, 10);
+  const needy = items.filter((c) => !c.synopsis && c.sourceSlug?.komiku);
   if (needy.length > 0) {
     await Promise.all(
       needy.map(async (c) => {
@@ -102,9 +106,11 @@ export async function searchManga(
     );
   }
   return {
-    items: ranked,
+    items,
     // Satu judul = akhir hasil (tanpa pagination): tidak ada halaman lanjutan
     // yang bisa dijanjikan. Halaman strict yang nihil exact juga berhenti.
-    hasNextPage: ranked.length > 1 && Boolean(data.komiku?.hasNextPage || data.shinigami?.hasNextPage || data.komikcast?.hasNextPage),
+    hasNextPage:
+      ranked.length > 10 ||
+      (items.length > 1 && Boolean(data.komiku?.hasNextPage || data.shinigami?.hasNextPage || data.komikcast?.hasNextPage)),
   };
 }

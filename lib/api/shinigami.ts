@@ -282,12 +282,12 @@ export type ShiniFormat = "manga" | "manhwa" | "manhua";
 
 export async function fetchShiniLatest(
   page = 1,
-  opts: { format?: ShiniFormat; genre?: string } = {},
+  opts: { format?: ShiniFormat; genre?: string; pageSize?: number } = {},
 ): Promise<PagedResult<MangaCard>> {
   const p = Math.max(1, page);
   const q = new URLSearchParams({
     page: String(p),
-    page_size: "24",
+    page_size: String(opts.pageSize ?? 24),
     is_update: "true",
     sort: "latest",
     sort_order: "desc",
