@@ -18,7 +18,7 @@ export function KomikListCard({ item }: { item: MangaCard }) {
     <article
       onMouseEnter={warm}
       onTouchStart={warm}
-      className="flex min-w-0 gap-2.5 border-b border-line py-3 last:border-0 sm:gap-3.5 sm:py-3.5 dark:border-line-dark"
+      className="cv-auto flex min-w-0 gap-2.5 border-b border-line py-3 last:border-0 sm:gap-3.5 sm:py-3.5 dark:border-line-dark"
     >
       <Link
         href={`/komik/${item.slug}`}
@@ -28,7 +28,7 @@ export function KomikListCard({ item }: { item: MangaCard }) {
       >
         {item.thumbnail ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.thumbnail} alt="" loading="lazy" decoding="async" fetchPriority="low" className="h-full w-full object-cover" />
+          <img src={item.thumbnail} alt="" loading="lazy" decoding="async" fetchPriority="low" onLoad={(e) => e.currentTarget.classList.add("blur-done")} className="blur-up h-full w-full object-cover" />
         ) : (
           <span className="flex h-full w-full items-center justify-center p-1 text-center text-[11px] text-muted dark:text-muted-dark">
             Tanpa cover

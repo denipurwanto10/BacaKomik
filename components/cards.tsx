@@ -87,7 +87,7 @@ export function MangaGridCard({ item }: { item: MangaCard }) {
     <article
       onMouseEnter={warm}
       onTouchStart={warm}
-      className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-paper-2 transition-[border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-accent dark:border-line-dark dark:bg-ink-2"
+      className="cv-auto group flex min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-paper-2 transition-[border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-accent dark:border-line-dark dark:bg-ink-2"
     >
       <Link
         href={`/komik/${item.slug}`}
@@ -103,7 +103,8 @@ export function MangaGridCard({ item }: { item: MangaCard }) {
             loading="lazy"
             decoding="async"
             fetchPriority="low"
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+            onLoad={(e) => e.currentTarget.classList.add("blur-done")}
+            className="blur-up h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center p-2 text-center text-xs text-muted dark:text-muted-dark">
@@ -153,7 +154,7 @@ export function UpdateRow({ item }: { item: MangaCard }) {
     <article
       onMouseEnter={warm}
       onTouchStart={warm}
-      className="flex min-w-0 gap-2.5 border-b border-line py-2.5 last:border-0 sm:gap-3 sm:py-3 dark:border-line-dark"
+      className="cv-row flex min-w-0 gap-2.5 border-b border-line py-2.5 last:border-0 sm:gap-3 sm:py-3 dark:border-line-dark"
     >
       <Link
         href={`/komik/${item.slug}`}
@@ -163,7 +164,7 @@ export function UpdateRow({ item }: { item: MangaCard }) {
       >
         {item.thumbnail ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.thumbnail} alt="" loading="lazy" decoding="async" fetchPriority="low" className="h-full w-full object-cover" />
+          <img src={item.thumbnail} alt="" loading="lazy" decoding="async" fetchPriority="low" onLoad={(e) => e.currentTarget.classList.add("blur-done")} className="blur-up h-full w-full object-cover" />
         ) : null}
         {item.type && (
           <div className="absolute right-1 top-1">
@@ -215,7 +216,7 @@ export function RankRow({ item }: { item: MangaCard }) {
     <article
       onMouseEnter={warm}
       onTouchStart={warm}
-      className="flex min-w-0 items-center gap-2 border-b border-line py-2 last:border-0 sm:gap-3 sm:py-2.5 dark:border-line-dark"
+      className="cv-row flex min-w-0 items-center gap-2 border-b border-line py-2 last:border-0 sm:gap-3 sm:py-2.5 dark:border-line-dark"
     >
       {typeof item.rank === "number" && (
         <span
@@ -234,7 +235,7 @@ export function RankRow({ item }: { item: MangaCard }) {
       >
         {item.thumbnail ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.thumbnail} alt="" loading="lazy" decoding="async" fetchPriority="low" className="h-full w-full object-cover" />
+          <img src={item.thumbnail} alt="" loading="lazy" decoding="async" fetchPriority="low" onLoad={(e) => e.currentTarget.classList.add("blur-done")} className="blur-up h-full w-full object-cover" />
         ) : null}
       </Link>
       <div className="flex min-w-0 flex-1 flex-col">

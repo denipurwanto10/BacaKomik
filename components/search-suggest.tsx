@@ -172,7 +172,8 @@ export function SearchSuggest({
                         loading="lazy"
                         decoding="async"
                         fetchPriority="low"
-                        className="h-14 w-10 shrink-0 rounded-md bg-paper-3 object-cover dark:bg-ink-3"
+                        onLoad={(e) => e.currentTarget.classList.add("blur-done")}
+                        className="blur-up h-14 w-10 shrink-0 rounded-md bg-paper-3 object-cover dark:bg-ink-3"
                       />
                     ) : (
                       <span className="flex h-14 w-10 shrink-0 items-center justify-center rounded-md bg-paper-3 text-[9px] text-muted dark:bg-ink-3 dark:text-muted-dark">

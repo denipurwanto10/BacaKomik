@@ -93,7 +93,7 @@ export default function RiwayatPage() {
               >
                 {h.cover ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={h.cover} alt="" loading="lazy" decoding="async" fetchPriority="low" className="h-full w-full object-cover" />
+                  <img src={h.cover} alt="" loading="lazy" decoding="async" fetchPriority="low" onLoad={(e) => e.currentTarget.classList.add("blur-done")} className="blur-up h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center p-1 text-center text-[10px] text-muted dark:text-muted-dark">
                     Tanpa cover

@@ -153,6 +153,52 @@ div {
 }
 
 /* ---------------------------------------------------------------------- */
+/* Performa + kesan modern (CSS-only, nol JS, nol bundle):                  */
+/* - .cv-auto: browser skip render kartu di luar layar (list panjang).      */
+/* - .shimmer: skeleton gradient geser (pengganti pulse flat).              */
+/* - .blur-up: cover tampil blur dulu lalu tajam saat loaded.               */
+/* ---------------------------------------------------------------------- */
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 220px;
+}
+.cv-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 76px;
+}
+@keyframes shimmer-sweep {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+.shimmer {
+  background-image: linear-gradient(
+    100deg,
+    var(--color-paper-3) 30%,
+    color-mix(in srgb, var(--color-paper-3) 55%, white 45%) 50%,
+    var(--color-paper-3) 70%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-sweep 1.6s linear infinite;
+}
+.dark .shimmer {
+  background-image: linear-gradient(
+    100deg,
+    var(--color-ink-3) 30%,
+    color-mix(in srgb, var(--color-ink-3) 60%, white 8%) 50%,
+    var(--color-ink-3) 70%
+  );
+}
+.blur-up {
+  filter: blur(10px);
+  transform: scale(1.03);
+  transition: filter 0.45s ease, transform 0.45s ease;
+}
+.blur-up.blur-done {
+  filter: none;
+  transform: none;
+}
+
+/* ---------------------------------------------------------------------- */
 /* Cover morph list → detail: setelah ghost mendarat, isi hero masuk      */
 /* berjenjang (hanya saat animasi terbang benar-benar dimainkan).         */
 /* ---------------------------------------------------------------------- */

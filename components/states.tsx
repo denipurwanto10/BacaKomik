@@ -7,11 +7,11 @@ export function GridSkeleton({ count = 10 }: { count?: number }) {
   return (
     <div aria-hidden="true" className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-3 min-[420px]:gap-2.5 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 lg:grid-cols-6">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="animate-pulse overflow-hidden rounded-xl border border-line dark:border-line-dark">
-          <div className="aspect-[3/4] bg-paper-3 dark:bg-ink-3" />
+        <div key={i} className="overflow-hidden rounded-xl border border-line dark:border-line-dark">
+          <div className="shimmer aspect-[3/4]" />
           <div className="space-y-1.5 p-2 sm:p-2.5">
-            <div className="h-3 w-11/12 rounded bg-paper-3 dark:bg-ink-3" />
-            <div className="h-2.5 w-2/3 rounded bg-paper-3 dark:bg-ink-3" />
+            <div className="shimmer h-3 w-11/12 rounded" />
+            <div className="shimmer h-2.5 w-2/3 rounded" />
           </div>
         </div>
       ))}
@@ -22,13 +22,13 @@ export function GridSkeleton({ count = 10 }: { count?: number }) {
 /** Skeleton loading untuk daftar baris. */
 export function ListSkeleton({ count = 8 }: { count?: number }) {
   return (
-    <div aria-hidden="true" className="animate-pulse divide-y divide-line dark:divide-line-dark">
+    <div aria-hidden="true" className="divide-y divide-line dark:divide-line-dark">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="flex gap-2.5 py-3 sm:gap-3">
-          <div className="h-[60px] w-[92px] shrink-0 rounded-lg bg-paper-3 sm:h-[68px] sm:w-[110px] dark:bg-ink-3" />
+          <div className="shimmer h-[60px] w-[92px] shrink-0 rounded-lg sm:h-[68px] sm:w-[110px]" />
           <div className="min-w-0 flex-1 space-y-2 py-1">
-            <div className="h-3.5 w-3/4 rounded bg-paper-3 dark:bg-ink-3" />
-            <div className="h-3 w-1/2 rounded bg-paper-3 dark:bg-ink-3" />
+            <div className="shimmer h-3.5 w-3/4 rounded" />
+            <div className="shimmer h-3 w-1/2 rounded" />
           </div>
         </div>
       ))}
@@ -82,7 +82,7 @@ export function SectionHead({
       {href && (
         <Link
           href={href}
-          className="shrink-0 rounded-full px-2 py-1 text-xs font-semibold text-accent hover:underline"
+          className="shrink-0 rounded-full border border-line px-2.5 py-1 text-xs font-semibold text-accent transition-colors hover:border-accent hover:bg-accent-soft dark:border-line-dark dark:hover:bg-accent-soft-dark"
         >
           {linkLabel}
         </Link>

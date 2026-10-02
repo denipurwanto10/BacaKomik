@@ -144,7 +144,8 @@ export default function FavoritPage() {
                       loading="lazy"
                       decoding="async"
                       fetchPriority="low"
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+                      onLoad={(e) => e.currentTarget.classList.add("blur-done")}
+                      className="blur-up h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
                     />
                   ) : (
                     <span className="flex h-full w-full items-center justify-center p-2 text-center text-xs text-muted dark:text-muted-dark">
