@@ -91,9 +91,26 @@ function CariContent() {
       const res = await apiGet<SearchPayload>(
         `/api/search?q=${encodeURIComponent(kw)}&page=${p}`,
       );
-      setItems(dedupePage(kw, res.items));
-      setHasNext(res.hasNextPage);
+      const fresh = dedupePage(kw, res.items);
+      setItems(fresh);
       setPage(p);
+      // Hasil halaman 1 sedikit (≤3) tapi server klaim ada lanjutannya:
+      // cek diam-diam halaman 2 — bila nihil exact, pagination dimatikan
+      // agar tidak ada tombol sesat ke halaman kosong. Hanya untuk kasus
+      // langka ini (+1 request), hasil banyak tidak terpengaruh.
+      if (p === 1 && fresh.length > 0 && fresh.length <= 3 && res.hasNextPage) {
+        setHasNext(true);
+        try {
+          const next = await apiGet<SearchPayload>(
+            `/api/search?q=${encodeURIComponent(kw)}&page=2`,
+          );
+          if (dedupePage(kw, next.items).length === 0) setHasNext(false);
+        } catch {
+          // Cek gagal = biarkan pagination apa adanya.
+        }
+      } else {
+        setHasNext(res.hasNextPage);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Gagal memuat data.");
     } finally {
