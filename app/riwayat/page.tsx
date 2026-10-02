@@ -93,7 +93,7 @@ export default function RiwayatPage() {
               >
                 {h.cover ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={h.cover} alt="" loading="lazy" className="h-full w-full object-cover" />
+                  <img src={h.cover} alt="" loading="lazy" decoding="async" fetchPriority="low" className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center p-1 text-center text-[10px] text-muted dark:text-muted-dark">
                     Tanpa cover
@@ -119,7 +119,7 @@ export default function RiwayatPage() {
                 </div>
                 <Link
                   href={h.route}
-                  className="mt-1.5 w-fit rounded-full bg-accent px-3.5 py-1.5 text-[11px] font-semibold text-white sm:text-xs"
+                  className="mt-1.5 w-fit rounded-full bg-gradient-to-br from-accent to-accent-strong px-3.5 py-1.5 text-[11px] font-semibold text-white sm:text-xs"
                 >
                   Lanjutkan
                 </Link>

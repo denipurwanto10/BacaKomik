@@ -128,7 +128,7 @@ export default function FavoritPage() {
           {filtered.map((b) => (
             <article
               key={b.slug}
-              className="group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-paper-2 transition-shadow hover:shadow-lg hover:shadow-black/5 dark:border-line-dark dark:bg-ink-2 dark:hover:shadow-black/30"
+              className="group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-paper-2 transition-[border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-accent dark:border-line-dark dark:bg-ink-2"
             >
               <div className="relative aspect-[3/4] w-full shrink-0 overflow-hidden bg-paper-3 dark:bg-ink-3">
                 <Link
@@ -142,6 +142,8 @@ export default function FavoritPage() {
                       src={b.cover}
                       alt={b.title}
                       loading="lazy"
+                      decoding="async"
+                      fetchPriority="low"
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
                     />
                   ) : (

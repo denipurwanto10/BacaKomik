@@ -22,7 +22,7 @@ function isActive(pathname: string, href: string) {
 /** Logo mark: a notched ice panel with a snowflake, matching the Frost name. */
 function Mark() {
   return (
-    <span className="relative flex h-8 w-8 shrink-0 items-center justify-center bg-accent text-white [clip-path:polygon(0_0,100%_0,100%_100%,25%_100%,0_75%)]">
+    <span className="relative flex h-8 w-8 shrink-0 items-center justify-center bg-gradient-to-br from-accent to-accent-strong text-white [clip-path:polygon(0_0,100%_0,100%_100%,25%_100%,0_75%)]">
       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
         <path d="M12 2v20M4 6l16 12M20 6L4 18" />
         <path d="M12 2l-2 3m2-3l2 3M12 22l-2-3m2 3l2-3M4 6l3.4.6M4 6L4.6 9.4M20 18l-3.4-.6m3.4.6l-.6-3.4M20 6l-3.4.6M20 6l-.6 3.4M4 18l3.4-.6M4 18l.6-3.4" strokeWidth={1.6} />
@@ -90,7 +90,7 @@ export function Header() {
                 href={n.href}
                 className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
                   active
-                    ? "bg-accent-soft text-accent-strong dark:bg-accent-soft-dark dark:text-accent"
+                    ? "bg-gradient-to-br from-accent to-accent-strong text-white"
                     : "text-muted hover:bg-paper hover:text-fg dark:text-muted-dark dark:hover:bg-ink dark:hover:text-fg-dark"
                 }`}
               >
@@ -188,9 +188,13 @@ export function MobileTabBar() {  const pathname = usePathname();
               aria-current={active ? "page" : undefined}
               className="flex min-w-0 flex-col items-center gap-0.5 px-1 py-2 text-[11px] font-medium"
             >
+              <span
+                className={`flex h-[38px] w-[52px] shrink-0 items-center justify-center rounded-full transition-colors ${active ? "bg-accent-soft dark:bg-accent-soft-dark" : ""}`}
+              >
               <Icon
                 className={`h-[22px] w-[22px] shrink-0 ${active ? "text-accent" : "text-muted dark:text-muted-dark"}`}
               />
+              </span>
               <span className={`truncate ${active ? "font-semibold text-accent" : "text-muted dark:text-muted-dark"}`}>
                 {n.label}
               </span>
@@ -262,7 +266,7 @@ export function BackToTop() {
     <button
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       aria-label="Kembali ke atas"
-      className="pb-safe fixed bottom-20 right-3 z-40 flex h-11 w-11 touch-manipulation items-center justify-center rounded-full bg-accent text-white shadow-xl transition-transform active:scale-95 md:bottom-6 md:right-6"
+      className="pb-safe fixed bottom-20 right-3 z-40 flex h-11 w-11 touch-manipulation items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent-strong text-white transition-transform active:scale-95 md:bottom-6 md:right-6"
     >
       <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
         <path

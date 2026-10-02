@@ -28,7 +28,7 @@ export function KomikListCard({ item }: { item: MangaCard }) {
       >
         {item.thumbnail ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.thumbnail} alt="" loading="lazy" className="h-full w-full object-cover" />
+          <img src={item.thumbnail} alt="" loading="lazy" decoding="async" fetchPriority="low" className="h-full w-full object-cover" />
         ) : (
           <span className="flex h-full w-full items-center justify-center p-1 text-center text-[11px] text-muted dark:text-muted-dark">
             Tanpa cover
@@ -86,7 +86,7 @@ export function KomikListCard({ item }: { item: MangaCard }) {
             {item.latestChapter && (
               <Link
                 href={chapterPathToRoute(item.latestChapter.url)}
-                className="inline-flex min-h-9 min-w-0 flex-1 items-center justify-center truncate rounded-full bg-accent px-3.5 py-1 text-xs font-semibold text-white shadow-sm shadow-accent/30 transition-[opacity,transform] active:scale-[0.97] hover:opacity-90 sm:min-h-0 sm:flex-none sm:rounded-lg sm:px-2.5 sm:py-1 sm:text-xs"
+                className="inline-flex min-h-9 min-w-0 flex-1 items-center justify-center truncate rounded-full bg-gradient-to-br from-accent to-accent-strong px-3.5 py-1 text-xs font-semibold text-white transition-[opacity,transform] active:scale-[0.97] hover:opacity-90 sm:min-h-0 sm:flex-none sm:rounded-lg sm:px-2.5 sm:py-1 sm:text-xs"
               >
                 <span className="truncate">
                   <span className="sm:hidden">{item.latestChapter.label}</span>

@@ -49,18 +49,37 @@
 
 :root {
   color-scheme: light dark;
+  --radius-card: 1rem;
+  --radius-pill: 999px;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: #fff;
 }
 
 html {
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
   text-rendering: optimizeLegibility;
   font-feature-settings: "ss01" 1;
   overflow-x: clip;
+  /* Latar modern: semburat hijau sangat halus di atas paper/ink.
+     Light & dark ikut adaptif via color-mix — tanpa gambar, nol request. */
+  background-image:
+    radial-gradient(720px 280px at 12% -80px, color-mix(in srgb, var(--color-accent) 9%, transparent), transparent 70%),
+    radial-gradient(640px 260px at 88% -60px, color-mix(in srgb, var(--color-accent) 6%, transparent), transparent 70%);
+  background-attachment: fixed;
+}
+.dark body {
+  background-image:
+    radial-gradient(720px 280px at 12% -80px, color-mix(in srgb, var(--color-accent) 16%, transparent), transparent 70%),
+    radial-gradient(640px 260px at 88% -60px, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 70%);
 }
 
 /* Media tidak boleh melebar melewati viewport kecil (320px). */

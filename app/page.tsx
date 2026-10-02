@@ -102,14 +102,35 @@ export default function HomePage() {
   const latest = useHomeSection("latest");
   const recommended = useRecommended();
 
-  // Prefetch agresif: selagi user di beranda, panaskan genre + halaman 2
-  // terbaru di background agar navigasi berikutnya terasa instan.
+  // Prefetch hemat: hanya daftar genre + hanya saat browser idle, agar
+  // tidak berebut bandwidth/CPU dengan gambar + section beranda.
+  // Halaman 2 terbaru TIDAK dipanaskan (mubazir bila user tidak ke sana).
+  // Mode hemat-data (saveData) = tanpa prefetch sama sekali.
   useEffect(() => {
-    const t = window.setTimeout(() => {
+    const warm = () => {
+      try {
+        const conn = navigator as Navigator & { connection?: { saveData?: boolean } };
+        if (conn.connection?.saveData) return;
+      } catch {
+        // abaikan — lanjut prefetch
+      }
       prefetchApi("/api/genres");
-      prefetchApi("/api/latest?page=2&orderby=modified");
-    }, 2500);
-    return () => window.clearTimeout(t);
+    };
+    const w = window as unknown as {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    let idleId = 0;
+    let timer = 0;
+    if (typeof w.requestIdleCallback === "function") {
+      idleId = w.requestIdleCallback(warm, { timeout: 6000 });
+    } else {
+      timer = window.setTimeout(warm, 3000);
+    }
+    return () => {
+      if (idleId) w.cancelIdleCallback?.(idleId);
+      if (timer) window.clearTimeout(timer);
+    };
   }, []);
 
   return (
@@ -123,7 +144,7 @@ export default function HomePage() {
               <Link
                 key={h.slug}
                 href={h.route}
-                className="group w-[104px] shrink-0 snap-start overflow-hidden rounded-xl border border-line bg-paper transition-shadow hover:shadow-md sm:w-[120px] dark:border-line-dark dark:bg-ink"
+                className="group w-[104px] shrink-0 snap-start overflow-hidden rounded-xl border border-line bg-paper transition-[border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-accent sm:w-[120px] dark:border-line-dark dark:bg-ink"
               >
                 <div className="relative aspect-[3/4] w-full overflow-hidden bg-paper-3 dark:bg-ink-3">
                   {h.cover ? (
@@ -132,6 +153,8 @@ export default function HomePage() {
                       src={h.cover}
                       alt={h.title}
                       loading="lazy"
+                      decoding="async"
+                      fetchPriority="low"
                       className="h-full w-full object-cover"
                     />
                   ) : (

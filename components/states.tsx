@@ -76,7 +76,7 @@ export function SectionHead({
   return (
     <div className="mb-3 flex min-w-0 items-center justify-between gap-2 sm:gap-3">
       <h2 className="flex min-w-0 flex-1 items-center gap-2 font-display text-base font-extrabold text-fg sm:text-xl dark:text-fg-dark">
-        <span className="h-4 w-1.5 shrink-0 rounded-full bg-accent" />
+        <span className="h-4 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-accent to-accent-strong" />
         <span className="truncate">{title}</span>
       </h2>
       {href && (

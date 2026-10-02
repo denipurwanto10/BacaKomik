@@ -205,7 +205,7 @@ function CariContent() {
         />
         <button
           type="submit"
-          className="absolute right-1.5 h-9 shrink-0 rounded-full bg-accent px-5 text-sm font-semibold text-white sm:h-8 sm:text-xs"
+          className="absolute right-1.5 h-9 shrink-0 rounded-full bg-gradient-to-br from-accent to-accent-strong px-5 text-sm font-semibold text-white sm:h-8 sm:text-xs"
         >
           Cari
         </button>

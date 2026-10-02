@@ -139,7 +139,7 @@ export function SearchSuggest({
       {showDropdown && (
         <div
           role="listbox"
-          className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-line bg-paper shadow-lg shadow-black/10 dark:border-line-dark dark:bg-ink dark:shadow-black/40"
+          className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-line bg-paper-2 dark:border-line-dark dark:bg-ink-2"
         >
           {loading && (!items || items.length === 0) && (
             <p className="px-4 py-3 text-sm text-muted dark:text-muted-dark">Mencari…</p>
@@ -170,6 +170,8 @@ export function SearchSuggest({
                         src={it.thumbnail}
                         alt=""
                         loading="lazy"
+                        decoding="async"
+                        fetchPriority="low"
                         className="h-14 w-10 shrink-0 rounded-md bg-paper-3 object-cover dark:bg-ink-3"
                       />
                     ) : (

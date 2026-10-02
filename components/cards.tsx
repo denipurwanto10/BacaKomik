@@ -87,7 +87,7 @@ export function MangaGridCard({ item }: { item: MangaCard }) {
     <article
       onMouseEnter={warm}
       onTouchStart={warm}
-      className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-paper-2 transition-shadow hover:shadow-lg hover:shadow-black/5 dark:border-line-dark dark:bg-ink-2 dark:hover:shadow-black/30"
+      className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-paper-2 transition-[border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-accent dark:border-line-dark dark:bg-ink-2"
     >
       <Link
         href={`/komik/${item.slug}`}
@@ -101,6 +101,8 @@ export function MangaGridCard({ item }: { item: MangaCard }) {
             src={item.thumbnail}
             alt={item.title}
             loading="lazy"
+            decoding="async"
+            fetchPriority="low"
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
           />
         ) : (
@@ -161,7 +163,7 @@ export function UpdateRow({ item }: { item: MangaCard }) {
       >
         {item.thumbnail ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.thumbnail} alt="" loading="lazy" className="h-full w-full object-cover" />
+          <img src={item.thumbnail} alt="" loading="lazy" decoding="async" fetchPriority="low" className="h-full w-full object-cover" />
         ) : null}
         {item.type && (
           <div className="absolute right-1 top-1">
@@ -232,7 +234,7 @@ export function RankRow({ item }: { item: MangaCard }) {
       >
         {item.thumbnail ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.thumbnail} alt="" loading="lazy" className="h-full w-full object-cover" />
+          <img src={item.thumbnail} alt="" loading="lazy" decoding="async" fetchPriority="low" className="h-full w-full object-cover" />
         ) : null}
       </Link>
       <div className="flex min-w-0 flex-1 flex-col">

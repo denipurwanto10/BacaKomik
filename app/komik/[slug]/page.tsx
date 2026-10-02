@@ -158,7 +158,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
         <div data-cover-slot className="mx-auto w-32 shrink-0 overflow-hidden rounded-xl bg-paper-3 min-[420px]:w-40 sm:mx-0 sm:w-44 dark:bg-ink-3">
           {detail.cover ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={detail.cover} alt={detail.title} className="aspect-[3/4] w-full object-cover" />
+            <img src={detail.cover} alt={detail.title} loading="eager" fetchPriority="high" decoding="sync" className="aspect-[3/4] w-full object-cover" />
           ) : (
             <div className="flex aspect-[3/4] items-center justify-center p-2 text-center text-xs text-muted dark:text-muted-dark">
               Cover tidak tersedia
@@ -250,7 +250,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
             {history && (
               <Link
                 href={history.route}
-                className="morph-stagger-item min-w-0 flex-1 truncate rounded-full bg-accent px-5 py-2.5 text-center text-sm font-semibold text-white shadow-sm shadow-accent/30 transition-transform active:scale-[0.98] min-[420px]:flex-none sm:order-2"
+                className="morph-stagger-item min-w-0 flex-1 truncate rounded-full bg-gradient-to-br from-accent to-accent-strong px-5 py-2.5 text-center text-sm font-semibold text-white transition-transform active:scale-[0.98] min-[420px]:flex-none sm:order-2"
               >
                 Lanjutkan · {history.chapterLabel}
                 {history.progress > 0 ? ` (${Math.round(history.progress * 100)}%)` : ""}
@@ -259,7 +259,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
             {detail.latestChapter && !history && (
               <Link
                 href={chapterPathToRoute(detail.latestChapter.url)}
-                className="morph-stagger-item min-w-0 flex-1 truncate rounded-full bg-accent px-5 py-2.5 text-center text-sm font-semibold text-white shadow-sm shadow-accent/30 transition-transform active:scale-[0.98] min-[420px]:flex-none sm:order-2"
+                className="morph-stagger-item min-w-0 flex-1 truncate rounded-full bg-gradient-to-br from-accent to-accent-strong px-5 py-2.5 text-center text-sm font-semibold text-white transition-transform active:scale-[0.98] min-[420px]:flex-none sm:order-2"
               >
                 Lanjut · {detail.latestChapter.label}
               </Link>
@@ -288,7 +288,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
       {detail.synopsis && (
         <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
           <h2 className="mb-2 flex items-center gap-2 font-display text-base font-bold text-fg dark:text-fg-dark">
-            <span className="h-4 w-1.5 shrink-0 rounded-full bg-accent" />
+            <span className="h-4 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-accent to-accent-strong" />
             Sinopsis
           </h2>
           <p className="whitespace-pre-line break-words text-[13px] leading-relaxed text-fg/85 sm:text-sm dark:text-fg-dark/80">
@@ -301,7 +301,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
       <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
         <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
           <h2 className="flex min-w-0 flex-1 items-center gap-2 font-display text-base font-bold text-fg dark:text-fg-dark">
-            <span className="h-4 w-1.5 shrink-0 rounded-full bg-accent" />
+            <span className="h-4 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-accent to-accent-strong" />
             <span className="truncate">Daftar Chapter ({detail.chapters.length})</span>
           </h2>
           {detail.chapters.length > 1 && (
@@ -369,7 +369,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
         <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
           <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
             <h2 className="flex min-w-0 flex-1 items-center gap-2 font-display text-base font-bold text-fg dark:text-fg-dark">
-              <span className="h-4 w-1.5 shrink-0 rounded-full bg-accent" />
+              <span className="h-4 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-accent to-accent-strong" />
               <span className="truncate">Serupa: {detail.genres[0].name}</span>
             </h2>
             <Link

@@ -91,7 +91,7 @@ function ChapterNav({
       {prevHref ? (
         <Link
           href={prevHref}
-          className="flex min-w-0 flex-1 items-center justify-center gap-1 rounded-xl bg-accent px-2 py-2 text-[13px] font-semibold text-white sm:flex-none sm:rounded-full sm:px-4"
+          className="flex min-w-0 flex-1 items-center justify-center gap-1 rounded-xl bg-gradient-to-br from-accent to-accent-strong px-2 py-2 text-[13px] font-semibold text-white sm:flex-none sm:rounded-full sm:px-4"
         >
           <IconChevron dir="left" className="h-4 w-4 shrink-0" />
           <span className="truncate">Prev</span>
@@ -452,7 +452,7 @@ export default function ReaderPage({
       <div className="sticky top-14 z-30 -mx-3 h-1 bg-line sm:top-[57px] sm:-mx-4 dark:bg-line-dark">
         <div
           ref={progressRef}
-          className="h-full bg-accent transition-[width] duration-150"
+          className="h-full bg-gradient-to-r from-accent to-accent-strong transition-[width] duration-150"
           style={{ width: `${progress * 100}%` }}
         />
       </div>
@@ -481,7 +481,7 @@ export default function ReaderPage({
                 aria-pressed={mode === m}
                 className={`rounded-full px-2.5 py-1.5 transition-colors ${
                   mode === m
-                    ? "bg-accent text-white"
+                    ? "bg-gradient-to-br from-accent to-accent-strong text-white"
                     : "text-muted hover:text-fg dark:text-muted-dark dark:hover:text-fg-dark"
                 }`}
               >
@@ -586,7 +586,7 @@ export default function ReaderPage({
             {prevHref ? (
               <Link
                 href={prevHref}
-                className="flex min-w-0 flex-1 items-center justify-center gap-1 rounded-xl bg-accent px-2 py-2.5 text-[13px] font-semibold text-white"
+                className="flex min-w-0 flex-1 items-center justify-center gap-1 rounded-xl bg-gradient-to-br from-accent to-accent-strong px-2 py-2.5 text-[13px] font-semibold text-white"
               >
                 <IconChevron dir="left" className="h-4 w-4 shrink-0" />
                 <span className="truncate">Prev</span>
@@ -749,7 +749,7 @@ function PageMode({
         <button
           onClick={() => go(1)}
           disabled={cur === total - 1}
-          className="min-h-11 flex-1 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+          className="min-h-11 flex-1 rounded-full bg-gradient-to-br from-accent to-accent-strong px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
         >
           Berikutnya →
         </button>
