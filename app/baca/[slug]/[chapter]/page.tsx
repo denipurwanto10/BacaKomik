@@ -5,6 +5,7 @@ import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiGet, peekApiCache, prefetchApi } from "@/lib/client";
 import { getHistoryEntry, saveHistory } from "@/lib/history";
+import { usePageTitle } from "@/lib/page-title";
 import type { ChapterData, MangaDetail } from "@/lib/api/types";
 import { chapterPathToRoute } from "@/components/cards";
 import { ErrorState } from "@/components/states";
@@ -247,8 +248,11 @@ export default function ReaderPage({
   }, [slug, chapter]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+      load();
+    }, [load]);
+
+    // Judul tab: judul chapter apa adanya (sudah memuat nama komik + nomor).
+    usePageTitle(data ? data.title : null);
 
   // Panaskan chapter berikutnya selagi user membaca — tombol Next terasa instan.
   // Data JSON masuk cache apiGet (reuse saat klik Next, tanpa request ganda).

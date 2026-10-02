@@ -5,6 +5,7 @@ import { apiGet } from "@/lib/client";
 import { isBookmarked, setLatestSeen, toggleBookmark } from "@/lib/bookmarks";
 import { getHistoryEntry, type HistoryEntry } from "@/lib/history";
 import { consumeCoverMorph, flyCover, prefersReducedMotion } from "@/lib/morph";
+import { usePageTitle } from "@/lib/page-title";
 import type { MangaCard, MangaDetail } from "@/lib/api/types";
 import { chapterPathToRoute, TypeBadge, UpdateRow } from "@/components/cards";
 import { ErrorState, EmptyState } from "@/components/states";
@@ -67,6 +68,10 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
   // Posisi baca tersimpan untuk komik ini (bila pernah dibaca di perangkat ini).
   const [history, setHistory] = useState<HistoryEntry | null>(null);
   const [saved, setSaved] = useState(false);
+
+  // Judul tab mengikuti judul komik (+ genre bila ada). Data sudah ada,
+  // jadi nol request tambahan.
+  usePageTitle(detail ? [detail.title, detail.genres[0]?.name].filter(Boolean).join(" · ") : null);
 
   useEffect(() => {
     setHistory(getHistoryEntry(slug));

@@ -17,7 +17,6 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/_next/") ||
     pathname === "/favicon.ico" ||
     pathname === "/robots.txt" ||
-    pathname === "/sw.js" ||
     /\.(png|jpg|jpeg|webp|gif|svg|ico|css|js|woff2?)$/.test(pathname)
   ) {
     const res = NextResponse.next();
