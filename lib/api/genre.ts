@@ -36,20 +36,20 @@ export async function getMangaByGenre(
   const { data } = await fetchAllSettled(
     {
       komiku: () => fetchMangaByGenre(genre, page),
-      shinigami: () => fetchShiniLatest(page, { genre, pageSize: 10 }),
+      shinigami: () => fetchShiniLatest(page, { genre, pageSize: 15 }),
     },
     "genre",
   );
   const ku = data.komiku;
   const sh = data.shinigami;
-  // 10 kartu per halaman UI — gabungan dua source dipotong di sini.
+  // 15 kartu per halaman UI — gabungan dua source dipotong di sini.
   const merged = mergeCards({ komiku: ku?.items ?? [], shinigami: sh?.items ?? [] });
-  const items = merged.slice(0, 10);
+  const items = merged.slice(0, 15);
   // hasNextPage true bila ada sisa potongan atau salah satu source masih
   // punya halaman berikut.
   return {
     items,
-    hasNextPage: merged.length > 10 || Boolean(ku?.hasNextPage || sh?.hasNextPage),
+    hasNextPage: merged.length > 15 || Boolean(ku?.hasNextPage || sh?.hasNextPage),
   };
 }
 

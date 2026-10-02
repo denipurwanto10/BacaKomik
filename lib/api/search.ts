@@ -9,8 +9,8 @@ import { fetchAllSettled, mergeCards, normalizeTitle } from "./aggregator";
 import type { MangaCard, PagedResult } from "./types";
 import type { MergedMangaCard } from "./aggregator";
 
-/** Ukuran halaman per halaman UI: 10 kartu (Komiku 10/halaman upstream, Shinigami page_size 10). */
-const SHINI_PAGE_SIZE = 10;
+/** Ukuran halaman per halaman UI: 15 kartu (Komiku ±15-20/halaman upstream, Shinigami page_size 15). */
+const SHINI_PAGE_SIZE = 15;
 
 /**
  * Skor relevansi judul terhadap kata kunci (0..1).
@@ -55,12 +55,12 @@ function rankByRelevance(cards: MergedMangaCard[], keyword: string): MergedManga
  * Cari komik di ketiga source, gabung + dedupe per halaman
  * (satu judul = satu item), lalu urutkan berdasar relevansi kata kunci.
  * Tiap source di-fetch sesuai halaman UI:
- * Komiku 10/halaman (pola /page/N/), Shinigami 10/halaman (?page=).
- * Tampil 10 kartu per halaman UI (gabungan dipotong di sini).
+ * Komiku ±15-20/halaman (pola /page/N/), Shinigami 15/halaman (?page=).
+ * Tampil 15 kartu per halaman UI (gabungan dipotong di sini).
  * hasNextPage = salah satu source masih punya halaman berikut.
  * Hasil yang sinopsisnya kosong (judul murni Komiku — HTML search
  * Komiku tidak memuat sinopsis) di-enrich dari halaman detailnya:
- * paralel, max 10, gagal = biarin kosong (tetap tampil).
+ * paralel, max 15, gagal = biarin kosong (tetap tampil).
  */
 export async function searchManga(
   keyword: string,
@@ -89,9 +89,9 @@ export async function searchManga(
   // Relevansi: judul yang memuat SEMUA token kata kunci naik ke atas;
   // yang cuma cocok sebagian tenggelam. Tanpa membuang hasil.
   const ranked = rankByRelevance(merged, kw);
-  // 10 kartu per halaman UI — potong dulu baru perkaya agar enrich detail
+  // 15 kartu per halaman UI — potong dulu baru perkaya agar enrich detail
   // hanya mengejar kartu yang benar-benar tampil (lebih hemat upstream).
-  const items = ranked.slice(0, 10);
+  const items = ranked.slice(0, 15);
   const needy = items.filter((c) => !c.synopsis && c.sourceSlug?.komiku);
   if (needy.length > 0) {
     await Promise.all(
@@ -110,7 +110,7 @@ export async function searchManga(
     // Satu judul = akhir hasil (tanpa pagination): tidak ada halaman lanjutan
     // yang bisa dijanjikan. Halaman strict yang nihil exact juga berhenti.
     hasNextPage:
-      ranked.length > 10 ||
+      ranked.length > 15 ||
       (items.length > 1 && Boolean(data.komiku?.hasNextPage || data.shinigami?.hasNextPage || data.komikcast?.hasNextPage)),
   };
 }
