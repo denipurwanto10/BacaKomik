@@ -157,7 +157,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
   ];
 
   return (
-    <article className="morph-in flex min-w-0 flex-col gap-4 sm:gap-6">
+    <article className="morph-in mx-auto flex w-full min-w-0 flex-col gap-4 sm:gap-6 lg:max-w-4xl">
       {/* Header: cover + info */}
       <div className="flex min-w-0 flex-col gap-3 rounded-2xl border border-line bg-paper-2 p-3 min-[420px]:p-4 sm:flex-row sm:gap-5 dark:border-line-dark dark:bg-ink-2">
         <div data-cover-slot className="mx-auto aspect-[3/4] w-32 shrink-0 overflow-hidden rounded-xl bg-paper-3 min-[420px]:w-40 sm:mx-0 sm:w-44 sm:self-start dark:bg-ink-3">
