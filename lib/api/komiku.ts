@@ -47,9 +47,12 @@ export class KomikuError extends Error {
 
 async function fetchHtml(url: string): Promise<string> {
   const ctrl = new AbortController();
-  // Komiku kadang lambat merespons; gagal cepat (12 dtk) agar UI bisa
+  // Komiku kadang lambat merespons; gagal cepat (8 dtk) agar UI bisa
   // menampilkan error/retry daripada menggantung tanpa batas.
-  const timer = setTimeout(() => ctrl.abort(), 12_000);
+  // 8 dtk (dulu 12): fetchAllSettled menunggu source TERLAMBAT, jadi satu
+  // source lemot menahan seluruh merge — homepage yang scrape 3 source
+  // berlapis sangat sensitif terhadap ekor lambat ini.
+  const timer = setTimeout(() => ctrl.abort(), 8_000);
   let res: Response;
   try {
     res = await fetch(url, {

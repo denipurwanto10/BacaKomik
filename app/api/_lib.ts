@@ -45,7 +45,7 @@ export async function guard(req: NextRequest): Promise<NextResponse | null> {
 
 export async function handle<T>(
   fn: () => Promise<T>,
-  opts?: { revalidate?: number },
+  opts?: { revalidate?: number; scope?: "public" | "private" },
 ) {
   try {
     const data = await fn();
@@ -54,9 +54,9 @@ export async function handle<T>(
       opts?.revalidate
         ? {
             headers: {
-              // Browser + CDN boleh menyimpan respons — isinya memang di-cache
-              // singkat di sisi server (revalidate 30s di fetchHtml).
-              "Cache-Control": `public, s-maxage=${opts.revalidate}, stale-while-revalidate=${opts.revalidate * 2}`,
+              // Route ber-gate (mis. /api/home) wajib scope "private" agar
+              // CDN tidak menyajikan konten ke request yang belum autentik.
+              "Cache-Control": `${opts.scope ?? "public"}, ${opts.scope === "private" ? `max-age=${opts.revalidate}` : `s-maxage=${opts.revalidate}`}, stale-while-revalidate=${opts.revalidate * 2}`,
             },
           }
         : undefined,

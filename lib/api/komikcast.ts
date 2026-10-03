@@ -48,7 +48,8 @@ export class KomikcastError extends Error {
 
 async function fetchJson<T>(url: string): Promise<T> {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 12_000);
+  // Gagal cepat (8 dtk, dulu 12): merge menunggu source terlambat.
+  const timer = setTimeout(() => ctrl.abort(), 8_000);
   let res: Response;
   try {
     res = await fetch(url, {

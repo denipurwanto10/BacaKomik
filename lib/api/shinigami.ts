@@ -111,7 +111,8 @@ interface ShiniChapterDetail {
 async function fetchShini<T>(path: string, revalidate = 30): Promise<{ data: T; meta?: ShiniMeta }> {
   const url = `${SHINI_API}${path}`;
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 12_000);
+  // Gagal cepat (8 dtk, dulu 12): merge menunggu source terlambat.
+  const timer = setTimeout(() => ctrl.abort(), 8_000);
   let res: Response;
   try {
     res = await fetch(url, {
