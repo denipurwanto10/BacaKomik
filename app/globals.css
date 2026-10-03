@@ -190,12 +190,10 @@ div {
 }
 .blur-up {
   filter: blur(10px);
-  transform: scale(1.03);
-  transition: filter 0.45s ease, transform 0.45s ease;
+  transition: filter 0.45s ease;
 }
 .blur-up.blur-done {
   filter: none;
-  transform: none;
 }
 
 /* ---------------------------------------------------------------------- */

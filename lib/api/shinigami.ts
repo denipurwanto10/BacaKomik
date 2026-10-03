@@ -245,13 +245,18 @@ function authorNames(m: ShiniManga): string | undefined {
   return names.length > 0 ? names.join(", ") : undefined;
 }
 
+/** Cover portrait untuk kartu/detail (rasio slot 3:4); fallback landscape. */
+function coverUrl(m: ShiniManga): string {
+  return m.cover_portrait_url || m.cover_image_url || "";
+}
+
 /** Kartu daftar dari satu item manga/list. Slug = manga_id (UUID). */
 function toCard(m: ShiniManga): MangaCard {
   const n = m.latest_chapter_number;
   return {
     slug: m.manga_id,
     title: m.title,
-    thumbnail: m.cover_image_url ?? "",
+    thumbnail: coverUrl(m),
     ...(m.alternative_title ? { altTitle: m.alternative_title } : {}),
     ...(mapType(m) ? { type: mapType(m) as KomikType } : {}),
     ...(m.taxonomy?.Genre?.[0]?.name ? { genre: m.taxonomy.Genre[0].name } : {}),
@@ -493,7 +498,7 @@ export async function fetchShiniDetail(mangaId: string): Promise<MangaDetail> {
     slug: id,
     title: m.title,
     ...(m.alternative_title ? { altTitle: m.alternative_title } : {}),
-    cover: m.cover_image_url ?? "",
+    cover: coverUrl(m),
     synopsis: m.description ?? "",
     ...(type ? { type } : {}),
     genres: genreNames(m),
