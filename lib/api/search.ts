@@ -92,7 +92,9 @@ export async function searchManga(
   // 15 kartu per halaman UI — potong dulu baru perkaya agar enrich detail
   // hanya mengejar kartu yang benar-benar tampil (lebih hemat upstream).
   const items = ranked.slice(0, 15);
-  const needy = items.filter((c) => !c.synopsis && c.sourceSlug?.komiku);
+  // Cap 5 seperti enrichKomikcastOnly di manga.ts — tiap kartu 1 request
+  // detail berantai, tanpa cap jadi hambatan ekor respons search.
+  const needy = items.filter((c) => !c.synopsis && c.sourceSlug?.komiku).slice(0, 5);
   if (needy.length > 0) {
     await Promise.all(
       needy.map(async (c) => {

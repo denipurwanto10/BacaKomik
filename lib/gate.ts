@@ -33,7 +33,7 @@ const hits = new Map<string, { n: number; reset: number }>();
 const WINDOW_MS = 60_000;
 const LIMIT = 60; // 60 req/menit/IP untuk /api/*
 
-export function rateLimited(req: NextRequest): boolean {
+export function rateLimited(req: Request): boolean {
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-real-ip") ||

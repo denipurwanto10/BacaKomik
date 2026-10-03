@@ -28,8 +28,8 @@ export async function GET(req: NextRequest) {
         ...(genre2 ? { genre2 } : {}),
         ...(status ? { status } : {}),
       }),
-    // Jangan biarkan browser/CDN menyimpan daftar chapter terbaru.
-    // Endpoint ini harus langsung mengikuti update dari sumber.
-    undefined,
+    // Cache browser 30 dtk (private, bukan CDN) — klik pagination
+    // bolak-balik tidak bakar scrape 3 source berulang.
+    { revalidate: 30, scope: "private" },
   );
 }

@@ -15,11 +15,11 @@ export async function GET(
   const raw = new URL(req.url).searchParams.get("source");
   const source: ComicSourceId | undefined =
     raw === "komiku" ? "komiku" : raw === "shinigami" ? "shinigami" : raw === "komikcast" ? "komikcast" : undefined;
-  // Chapter tidak berubah setelah terbit — respons boleh di-cache singkat.
+  // Chapter tidak berubah setelah terbit — cache browser 1 jam (private).
   return handle(
     () => getChapter(decodeURIComponent(slug), decodeURIComponent(chapter), source),
     {
-      revalidate: 30,
+      revalidate: 3600,
       scope: "private",
     },
   );

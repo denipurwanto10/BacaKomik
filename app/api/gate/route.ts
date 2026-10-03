@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
-import { checkPassword, gateCookie } from "@/lib/gate";
+import { checkPassword, gateCookie, rateLimited } from "@/lib/gate";
 
 /** Verifikasi password → set cookie sesi HttpOnly (30 hari). */
 export async function POST(req: Request) {
+  // Rate limit dulu — tanpa ini delay 600ms bisa diparalel attacker
+  // untuk brute-force password gate tanpa batas dari satu IP.
+  if (rateLimited(req)) {
+    return NextResponse.json(
+      { error: { message: "Terlalu banyak percobaan. Coba lagi sebentar.", source: "gate" } },
+      { status: 429 },
+    );
+  }
   let input = "";
   try {
     const body = (await req.json()) as unknown;
