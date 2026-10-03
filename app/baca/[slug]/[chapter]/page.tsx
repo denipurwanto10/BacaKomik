@@ -12,10 +12,10 @@ import { ErrorState } from "@/components/states";
 
 function ReaderSkeleton() {
   return (
-    <div className="mx-auto max-w-3xl animate-pulse space-y-2">
-      <div className="h-6 w-2/3 rounded bg-paper-3 dark:bg-ink-3" />
+    <div className="mx-auto max-w-3xl space-y-2">
+      <div className="shimmer h-6 w-2/3 rounded" />
       {[70, 55, 80].map((h, i) => (
-        <div key={i} className="w-full rounded bg-paper-3 dark:bg-ink-3" style={{ height: h * 6 }} />
+        <div key={i} className="shimmer w-full rounded" style={{ height: h * 6 }} />
       ))}
     </div>
   );
@@ -400,12 +400,13 @@ export default function ReaderPage({
       const total = rect.height - window.innerHeight;
       const scrolled = -rect.top;
       const pct = total <= 0 ? 1 : Math.min(1, Math.max(0, scrolled / total));
-      // Update progress bar via ref + state — ref update is immediate (no
-      // re-render delay), state sync ensures React sees it.
+      // Update progress bar via ref (tanpa re-render tiap frame) — state
+      // hanya di-sync bila berubah ≥0.5% agar render hemat; React bail-out
+      // bila nilai sama sehingga daftar gambar tidak dirender ulang.
       if (progressRef.current) {
         progressRef.current.style.width = `${pct * 100}%`;
       }
-      setProgress(pct);
+      setProgress((prev) => (Math.abs(prev - pct) < 0.005 ? prev : pct));
       // Indeks gambar paling atas yang terlihat — untuk "lanjutkan di posisi sama".
       const imgs = el.querySelectorAll("img[data-pg]");
       let cur = 0;

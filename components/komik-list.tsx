@@ -104,15 +104,15 @@ export function KomikListCard({ item }: { item: MangaCard }) {
 /** Skeleton loading untuk daftar list kartu. */
 export function KomikListSkeleton({ count = 8 }: { count?: number }) {
   return (
-    <div className="animate-pulse divide-y divide-line dark:divide-line-dark">
+    <div className="divide-y divide-line dark:divide-line-dark">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="flex gap-2.5 py-3 sm:gap-3.5 sm:py-3.5">
-          <div className="h-[132px] w-[96px] shrink-0 rounded-lg bg-paper-3 sm:h-[112px] sm:w-[168px] dark:bg-ink-3" />
+          <div className="shimmer h-[132px] w-[96px] shrink-0 rounded-lg sm:h-[112px] sm:w-[168px]" />
           <div className="min-w-0 flex-1 space-y-2 py-1">
-            <div className="h-4 w-11/12 rounded bg-paper-3 dark:bg-ink-3" />
-            <div className="h-3 w-1/2 rounded bg-paper-3 dark:bg-ink-3" />
-            <div className="h-3 w-full rounded bg-paper-3 dark:bg-ink-3" />
-            <div className="h-3 w-2/3 rounded bg-paper-3 dark:bg-ink-3" />
+            <div className="shimmer h-4 w-11/12 rounded" />
+            <div className="shimmer h-3 w-1/2 rounded" />
+            <div className="shimmer h-3 w-full rounded" />
+            <div className="shimmer h-3 w-2/3 rounded" />
           </div>
         </div>
       ))}

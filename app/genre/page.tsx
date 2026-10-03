@@ -3,20 +3,22 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { apiGet } from "@/lib/client";
+import { usePageTitle } from "@/lib/page-title";
 import type { GenreRef } from "@/lib/api/types";
 import { SectionHead, ErrorState, EmptyState } from "@/components/states";
 
 function GenreSkeleton() {
   return (
-    <div className="grid animate-pulse grid-cols-2 gap-1.5 min-[420px]:gap-2 sm:grid-cols-3 md:grid-cols-4">
+    <div className="grid grid-cols-2 gap-1.5 min-[420px]:gap-2 sm:grid-cols-3 md:grid-cols-4">
       {Array.from({ length: 24 }).map((_, i) => (
-        <div key={i} className="h-12 rounded-xl bg-paper-3 dark:bg-ink-3" />
+        <div key={i} className="shimmer h-12 rounded-xl" />
       ))}
     </div>
   );
 }
 
 export default function GenreListPage() {
+  usePageTitle("Daftar Genre");
   const [genres, setGenres] = useState<GenreRef[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");

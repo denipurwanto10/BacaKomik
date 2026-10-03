@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiGet, apiGetSWR, titleKey } from "@/lib/client";
+import { usePageTitle } from "@/lib/page-title";
 import type { GenreRef, MangaCard } from "@/lib/api/types";
 import { KomikListCard, KomikListSkeleton } from "@/components/komik-list";
 import { Pagination } from "@/components/pagination";
@@ -57,6 +58,7 @@ function initParam(sp: URLSearchParams, key: string): string {
 function TerbaruContent() {
   const router = useRouter();
   const sp = useSearchParams();
+  usePageTitle("Komik Terbaru");
 
   const [orderby, setOrderby] = useState<Orderby>(() => parseOrderby(sp.get("orderby")));
   const [tipe, setTipe] = useState(() => initParam(sp, "tipe"));

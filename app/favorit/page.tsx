@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { apiGet } from "@/lib/client";
+import { usePageTitle } from "@/lib/page-title";
 import { chapterTokenFromKomikuUrl, useBookmarks } from "@/lib/bookmarks";
 import { useHistory } from "@/lib/history";
 import type { MangaDetail } from "@/lib/api/types";
@@ -27,6 +28,7 @@ function IconTrash({ className }: { className?: string }) {
 type UpdateMap = Record<string, { label: string; url: string }>;
 
 export default function FavoritPage() {
+  usePageTitle("Favorit");
   const { bookmarks, remove } = useBookmarks();
   const { entries: history } = useHistory();
   const [filter, setFilter] = useState("");

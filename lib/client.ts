@@ -49,7 +49,6 @@ export async function apiGet<T>(path: string, opts?: { signal?: AbortSignal }): 
   const p = fetchJson<T>(path, opts?.signal)
     .then((data) => {
       cache.set(path, { at: Date.now(), data });
-      notify(path, data);
       return data;
     })
     .finally(() => {
@@ -94,34 +93,6 @@ export async function apiGetSWR<T>(
   }
   const data = await apiGet<T>(path);
   return { data, stale: false };
-}
-
-// Subscriber per-path untuk update reaktif (dipakai prefetch agresif).
-type Listener = (data: unknown) => void;
-const listeners = new Map<string, Set<Listener>>();
-
-function notify(path: string, data: unknown) {
-  listeners.get(path)?.forEach((fn) => {
-    try {
-      fn(data);
-    } catch {
-      // abaikan listener rusak
-    }
-  });
-}
-
-/** Berlangganan data path — dipanggil tiap ada data baru (fetch/prefetch). */
-export function subscribeApi<T>(path: string, fn: (data: T) => void): () => void {
-  let set = listeners.get(path);
-  if (!set) {
-    set = new Set();
-    listeners.set(path, set);
-  }
-  const wrapped = fn as Listener;
-  set.add(wrapped);
-  return () => {
-    set!.delete(wrapped);
-  };
 }
 
 /** Intip cache tanpa fetch — untuk melengkapi data tanpa request tambahan. */

@@ -2,8 +2,10 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { usePageTitle } from "@/lib/page-title";
 
 function MasukForm() {
+  usePageTitle("Masuk");
   const router = useRouter();
   const sp = useSearchParams();
   const next = sp.get("next") || "/";

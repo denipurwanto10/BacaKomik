@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { timeAgo, useHistory } from "@/lib/history";
+import { usePageTitle } from "@/lib/page-title";
 import { SectionHead, EmptyState } from "@/components/states";
 
 function IconTrash({ className }: { className?: string }) {
@@ -20,6 +21,7 @@ function IconTrash({ className }: { className?: string }) {
 }
 
 export default function RiwayatPage() {
+  usePageTitle("Riwayat Baca");
   const { entries, remove, clear } = useHistory();
   const [confirmClear, setConfirmClear] = useState(false);
 

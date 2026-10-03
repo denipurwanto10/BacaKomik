@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { apiGet } from "@/lib/client";
+import { usePageTitle } from "@/lib/page-title";
 import type { MangaCard } from "@/lib/api/types";
 import { SectionHead, ListSkeleton, ErrorState, EmptyState } from "@/components/states";
 import { RankRow } from "@/components/cards";
@@ -19,6 +20,9 @@ function PopulerContent() {
   const sp = useSearchParams();
   const raw = sp.get("period") || "harian";
   const period = PERIODS.some((p) => p.v === raw) ? raw : "harian";
+  usePageTitle(
+    `Peringkat ${PERIODS.find((p) => p.v === period)?.label ?? "Harian"}`,
+  );
   const [items, setItems] = useState<MangaCard[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 

@@ -3,6 +3,7 @@
 import { Suspense, use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiGet, invalidateApi, titleKey } from "@/lib/client";
+import { usePageTitle } from "@/lib/page-title";
 import type { MangaCard } from "@/lib/api/types";
 import { KomikListCard, KomikListSkeleton } from "@/components/komik-list";
 import { Pagination } from "@/components/pagination";
@@ -198,6 +199,7 @@ function GenreDetailContent({ slug }: { slug: string }) {
   }, [filtersKey, page]);
 
   const title = slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  usePageTitle(`Genre: ${title}`);
 
   return (
     <div ref={listTopRef} className="flex min-w-0 scroll-mt-16 flex-col gap-3 sm:gap-4">

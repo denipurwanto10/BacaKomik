@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiGet, titleKey } from "@/lib/client";
+import { usePageTitle } from "@/lib/page-title";
 import type { MangaCard } from "@/lib/api/types";
 import { SectionHead, GridSkeleton, ErrorState, EmptyState } from "@/components/states";
 import { KomikListCard, KomikListSkeleton } from "@/components/komik-list";
@@ -26,6 +27,7 @@ function CariContent() {
   const sp = useSearchParams();
   const router = useRouter();
   const q = (sp.get("q") || "").trim();
+  usePageTitle(q ? `Cari: ${q}` : "Pencarian");
   const [draft, setDraft] = useState(q);
   const [page, setPage] = useState<number>(() => parsePage(sp.get("page")));
   const [items, setItems] = useState<MangaCard[] | null>(null);
