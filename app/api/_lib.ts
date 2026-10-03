@@ -17,7 +17,7 @@ export async function guard(req: NextRequest): Promise<NextResponse | null> {
       { status: 429 },
     );
   }
-  if (!isAuthed(req)) {
+  if (!(await isAuthed(req))) {
     return NextResponse.json(
       { error: { message: "Akses terkunci.", source: "gate" } },
       { status: 401 },

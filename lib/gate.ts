@@ -15,14 +15,33 @@ function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-export function isAuthed(req: NextRequest): boolean {
+/** Token sesi stateless: HMAC-SHA256 password via Web Crypto (edge-safe).
+ *  Cookie tidak pernah berisi password mentah. */
+async function hmacHex(key: string, msg: string): Promise<string> {
+  const enc = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(key),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", cryptoKey, enc.encode(msg));
+  return [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+export async function sessionToken(): Promise<string> {
+  return hmacHex(getPassword(), "komikfrost-gate-v1");
+}
+
+export async function isAuthed(req: NextRequest): Promise<boolean> {
   const pw = getPassword();
   if (!pw) return true; // ENV belum dipasang (dev lokal) → terbuka.
   const raw = req.cookies.get(COOKIE)?.value ?? "";
-  // Cookie berisi password mentah yang dibandingkan constant-time.
+  const expected = await sessionToken();
   try {
     const v = decodeURIComponent(raw);
-    return v.length === pw.length && safeEqual(v, pw);
+    return v.length === expected.length && safeEqual(v, expected);
   } catch {
     return false;
   }
@@ -59,9 +78,9 @@ export function getSitePassword(): string {
   return getPassword();
 }
 
-export function gateCookie(pw: string): string {
+export async function gateCookie(): Promise<string> {
   const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
-  return `${COOKIE}=${encodeURIComponent(pw)}; Path=/; Max-Age=${MAX_AGE}; HttpOnly; SameSite=Lax${secure}`;
+  return `${COOKIE}=${await sessionToken()}; Path=/; Max-Age=${MAX_AGE}; HttpOnly; SameSite=Lax${secure}`;
 }
 
 export function clearGateCookie(): string {

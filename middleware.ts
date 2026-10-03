@@ -8,7 +8,7 @@ import { COOKIE, isAuthed } from "@/lib/gate";
  *    kecuali /masuk, file statis, dan _next internal.
  * 2. Header anti-index global (backup dari metadata robots).
  */
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Aset statis / internal Next — tanpa baca env/cookie sama sekali,
@@ -29,7 +29,7 @@ export function middleware(req: NextRequest) {
   // supaya kesalahan konfigurasi tidak meruntuhkan production.
   let authed = false;
   try {
-    authed = isAuthed(req);
+    authed = await isAuthed(req);
   } catch {
     authed = process.env.SITE_PASSWORD ? false : true;
   }

@@ -8,7 +8,10 @@ function MasukForm() {
   usePageTitle("Masuk");
   const router = useRouter();
   const sp = useSearchParams();
-  const next = sp.get("next") || "/";
+  // Hanya path internal yang diizinkan — tolak URL absolut ("https://…")
+  // dan protocol-relative ("//evil") agar ?next= tidak jadi open-redirect.
+  const rawNext = sp.get("next") || "/";
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/";
   const [pw, setPw] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

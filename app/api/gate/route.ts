@@ -33,6 +33,6 @@ export async function POST(req: Request) {
   }
   return NextResponse.json(
     { data: { ok: true } },
-    { headers: { "Set-Cookie": gateCookie(input || "dev-open") } },
+    { headers: { "Set-Cookie": await gateCookie() } },
   );
 }
