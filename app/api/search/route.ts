@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
     async () => ({ keyword: q, page, ...(await searchManga(q, page)) }),
     {
       revalidate: 300,
+      scope: "private",
     },
   );
 }

@@ -20,6 +20,7 @@ export async function GET(
     () => getChapter(decodeURIComponent(slug), decodeURIComponent(chapter), source),
     {
       revalidate: 30,
+      scope: "private",
     },
   );
 }

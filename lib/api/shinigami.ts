@@ -118,7 +118,10 @@ async function fetchShini<T>(path: string, revalidate = 30): Promise<{ data: T; 
     res = await fetch(url, {
       headers: { "User-Agent": UA, Accept: "application/json" },
       signal: ctrl.signal,
-      cache: "no-store",
+      // Tanpa `cache: no-store`: `next.revalidate` di bawah yang mengatur
+      // umur cache (30 dtk list, 1 jam chapter detail). `no-store` membuat
+      // revalidate diabaikan sehingga SEMUA request Shinigami selalu hit
+      // network — sumber utama jadi paling lambat.
       next: { revalidate },
     });
   } catch (e) {

@@ -15,5 +15,6 @@ export async function GET(req: NextRequest) {
   if (blocked) return blocked;
   return handle(async () => ({ period, items: await getPopular(period) }), {
     revalidate: 30,
+    scope: "private",
   });
 }
