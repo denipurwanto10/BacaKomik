@@ -197,7 +197,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
         <div data-cover-slot className="mx-auto aspect-[3/4] w-32 shrink-0 overflow-hidden rounded-xl bg-paper-3 min-[420px]:w-40 sm:mx-0 sm:w-44 sm:self-start dark:bg-ink-3">
           {detail.cover ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={detail.cover} alt={detail.title} loading="eager" fetchPriority="high" decoding="sync" className="block h-full w-full object-cover" />
+            <img src={detail.cover} alt={detail.title} loading="eager" fetchPriority="high" decoding="sync" onLoad={(e) => e.currentTarget.classList.add("blur-done")} className="blur-up block h-full w-full object-cover" />
           ) : (
             <div className="flex aspect-[3/4] items-center justify-center p-2 text-center text-xs text-muted dark:text-muted-dark">
               Cover tidak tersedia
