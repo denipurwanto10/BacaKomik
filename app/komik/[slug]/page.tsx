@@ -3,7 +3,6 @@
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import { apiGet } from "@/lib/client";
 import { isBookmarked, setLatestSeen, toggleBookmark } from "@/lib/bookmarks";
-import { getHistoryEntry, type HistoryEntry } from "@/lib/history";
 import { consumeCoverMorph, flyCover, prefersReducedMotion } from "@/lib/morph";
 import { usePageTitle } from "@/lib/page-title";
 import type { MangaCard, MangaDetail } from "@/lib/api/types";
@@ -99,8 +98,6 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
   const [filter, setFilter] = useState("");
   // Urutan daftar chapter: terbaru dulu (bawaan Komiku) atau terlama dulu.
   const [asc, setAsc] = useState(false);
-  // Posisi baca tersimpan untuk komik ini (bila pernah dibaca di perangkat ini).
-  const [history, setHistory] = useState<HistoryEntry | null>(null);
   const [saved, setSaved] = useState(false);
 
   // Judul tab mengikuti judul komik (+ genre bila ada). Data sudah ada,
@@ -108,10 +105,8 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
   usePageTitle(detail ? [detail.title, detail.genres[0]?.name].filter(Boolean).join(" · ") : null);
 
   useEffect(() => {
-    setHistory(getHistoryEntry(slug));
     setSaved(isBookmarked(slug));
     const onChange = () => {
-      setHistory(getHistoryEntry(slug));
       setSaved(isBookmarked(slug));
     };
     window.addEventListener("bk-history-changed", onChange);
@@ -288,29 +283,12 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
             </dl>
           )}
           <div className="morph-stagger mt-5 flex min-w-0 flex-col gap-2 min-[420px]:flex-row min-[420px]:flex-wrap">
-            {history && (
-              <Link
-                href={history.route}
-                className="morph-stagger-item min-w-0 flex-1 truncate rounded-full bg-gradient-to-br from-accent to-accent-strong px-5 py-2.5 text-center text-sm font-semibold text-white transition-transform active:scale-[0.98] min-[420px]:flex-none sm:order-2"
-              >
-                Lanjutkan · {history.chapterLabel}
-                {history.progress > 0 ? ` (${Math.round(history.progress * 100)}%)` : ""}
-              </Link>
-            )}
-            {detail.latestChapter && !history && (
+            {detail.latestChapter && (
               <Link
                 href={chapterPathToRoute(detail.latestChapter.url)}
                 className="morph-stagger-item min-w-0 flex-1 truncate rounded-full bg-gradient-to-br from-accent to-accent-strong px-5 py-2.5 text-center text-sm font-semibold text-white transition-transform active:scale-[0.98] min-[420px]:flex-none sm:order-2"
               >
                 Lanjut · {detail.latestChapter.label}
-              </Link>
-            )}
-            {detail.latestChapter && history && (
-              <Link
-                href={chapterPathToRoute(detail.latestChapter.url)}
-                className="morph-stagger-item min-w-0 flex-1 truncate rounded-full border border-line px-5 py-2.5 text-center text-sm font-semibold text-fg min-[420px]:flex-none dark:border-line-dark dark:text-fg-dark sm:order-3"
-              >
-                Terbaru · {detail.latestChapter.label}
               </Link>
             )}
             {detail.firstChapter && (
@@ -383,17 +361,13 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
         )}
         <div className="chapter-scroll max-h-[480px] min-w-0 divide-y divide-line overflow-y-auto rounded-xl border border-line bg-paper dark:divide-line-dark dark:border-line-dark dark:bg-ink">
           {ordered.map((c) => {
-            const isRead = !!history && c.url.includes(`-chapter-${history.chapter}/`);
             return (
               <Link
                 key={c.url}
                 href={chapterPathToRoute(c.url)}
                 className="flex min-w-0 items-center justify-between gap-2 bg-paper px-3 py-3 text-sm min-[420px]:px-4 hover:bg-paper-3 dark:bg-ink dark:hover:bg-ink-3"
               >
-                <span
-                  className={`min-w-0 flex-1 truncate font-semibold ${isRead ? "text-muted dark:text-muted-dark" : "text-accent"}`}
-                >
-                  {isRead ? "✓ " : ""}
+                <span className="min-w-0 flex-1 truncate font-semibold text-accent">
                   {c.title}
                 </span>
                 {c.date && <span className="shrink-0 text-[11px] tabular-nums text-muted sm:text-xs dark:text-muted-dark">{c.date}</span>}
