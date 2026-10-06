@@ -168,6 +168,10 @@ export default function ReaderPage({
   // Overlay navigasi chapter (Prev / Daftar isi / Next) — muncul saat gambar
   // di-tap (mobile) atau tombol daftar ditekan. Auto-sembunyi 6 detik.
   const [showTapNav, setShowTapNav] = useState(false);
+  // Timer auto-sembunyi overlay — disimpan di ref agar tap beruntun
+  // me-reset timer lama (tidak menumpuk) dan dibersihkan saat unmount
+  // agar tidak ada setState ke komponen yang sudah dilepas.
+  const tapNavTimerRef = useRef(0);
   // Tombol kembali-ke-atas — muncul setelah user scroll cukup jauh.
   const [showTop, setShowTop] = useState(false);
 
@@ -443,11 +447,25 @@ export default function ReaderPage({
     if (atTop || atBottom) return;
     setShowTapNav((v) => {
       if (!v) {
-        window.setTimeout(() => setShowTapNav(false), 6000);
+        // Reset timer lama agar tap beruntun tidak menumpuk timeout
+        // yang saling berlomba menyembunyikan overlay prematur.
+        if (tapNavTimerRef.current) window.clearTimeout(tapNavTimerRef.current);
+        tapNavTimerRef.current = window.setTimeout(() => setShowTapNav(false), 6000);
+      } else if (tapNavTimerRef.current) {
+        window.clearTimeout(tapNavTimerRef.current);
+        tapNavTimerRef.current = 0;
       }
       return !v;
     });
   };
+
+  // Timer overlay wajib dibersihkan saat pindah/unmount chapter — tanpa ini
+  // timeout 6 detik bisa memicu setState ke komponen yang sudah dilepas.
+  useEffect(() => {
+    return () => {
+      if (tapNavTimerRef.current) window.clearTimeout(tapNavTimerRef.current);
+    };
+  }, []);
 
   const { prevHref, nextHref } = navHrefs(data, data.mangaSlug, chapter);
   const scrollTop = () => window.scrollTo({ top: 0, behavior: "smooth" });

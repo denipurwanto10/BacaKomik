@@ -109,10 +109,8 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
     const onChange = () => {
       setSaved(isBookmarked(slug));
     };
-    window.addEventListener("bk-history-changed", onChange);
     window.addEventListener("bk-bookmarks-changed", onChange);
     return () => {
-      window.removeEventListener("bk-history-changed", onChange);
       window.removeEventListener("bk-bookmarks-changed", onChange);
     };
   }, [slug]);

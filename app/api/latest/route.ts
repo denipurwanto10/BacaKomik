@@ -4,19 +4,30 @@ import { guard, handle } from "../_lib";
 
 export const dynamic = "force-dynamic";
 
+const ORDERBYS = ["modified", "date", "popular", "rand"] as const;
+type Orderby = (typeof ORDERBYS)[number];
+const TIPES = ["manga", "manhwa", "manhua"] as const;
+type Tipe = (typeof TIPES)[number];
+const STATUSES = ["ongoing", "end"] as const;
+type Status = (typeof STATUSES)[number];
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const page = Math.min(50, Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1));
-  const orderby = searchParams.get("orderby") as
-    | "modified"
-    | "date"
-    | "popular"
-    | "rand"
-    | null;
-  const tipe = searchParams.get("tipe") as "manga" | "manhwa" | "manhua" | null;
+  // Allowlist nilai enum — string arbitrer tidak diteruskan ke upstream.
+  // Nilai tak dikenal diabaikan (fallback default), seperti /api/popular.
+  const rawOrderby = searchParams.get("orderby");
+  const orderby: Orderby | null = ORDERBYS.includes(rawOrderby as Orderby)
+    ? (rawOrderby as Orderby)
+    : null;
+  const rawTipe = searchParams.get("tipe");
+  const tipe: Tipe | null = TIPES.includes(rawTipe as Tipe) ? (rawTipe as Tipe) : null;
   const genre = searchParams.get("genre");
   const genre2 = searchParams.get("genre2");
-  const status = searchParams.get("status") as "ongoing" | "end" | null;
+  const rawStatus = searchParams.get("status");
+  const status: Status | null = STATUSES.includes(rawStatus as Status)
+    ? (rawStatus as Status)
+    : null;
   const blocked = await guard(req);
   if (blocked) return blocked;
   return handle(

@@ -74,10 +74,6 @@ export function checkPassword(input: string): boolean {
   return input.length === pw.length && safeEqual(input, pw);
 }
 
-export function getSitePassword(): string {
-  return getPassword();
-}
-
 export async function gateCookie(): Promise<string> {
   const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
   return `${COOKIE}=${await sessionToken()}; Path=/; Max-Age=${MAX_AGE}; HttpOnly; SameSite=Lax${secure}`;
