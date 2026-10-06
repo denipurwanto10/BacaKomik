@@ -5,9 +5,9 @@ import { RouteMemory } from "@/components/route-memory";
 import { BackToTop, Footer, Header, Main, MobileTabBar } from "@/components/layout";
 import "./globals.css";
 
-// Semua halaman memuat data live dari Komiku.org saat request —
-// tidak ada prerender statis.
-export const dynamic = "force-dynamic";
+// Halaman bersifat statis (shell dari CDN) — data komik tetap live karena
+// semua halaman fetch client-side via apiGet/apiGetSWR setelah mount.
+// API route (/api/*) tetap dinamis via force-dynamic masing-masing.
 
 const display = Bricolage_Grotesque({
   subsets: ["latin"],
