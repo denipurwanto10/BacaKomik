@@ -434,6 +434,16 @@ export default function ReaderPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, mode, pageIdx]);
 
+  // Timer overlay wajib dibersihkan saat pindah/unmount chapter — tanpa ini
+  // timeout 6 detik bisa memicu setState ke komponen yang sudah dilepas.
+  // HARUS di atas return kondisional: hook setelah early return bikin
+  // React error #310 (jumlah hook berubah antar render).
+  useEffect(() => {
+    return () => {
+      if (tapNavTimerRef.current) window.clearTimeout(tapNavTimerRef.current);
+    };
+  }, []);
+
   if (error) return <ErrorState message={error} onRetry={load} />;
   if (!data) return <ReaderSkeleton />;
 
@@ -458,14 +468,6 @@ export default function ReaderPage({
       return !v;
     });
   };
-
-  // Timer overlay wajib dibersihkan saat pindah/unmount chapter — tanpa ini
-  // timeout 6 detik bisa memicu setState ke komponen yang sudah dilepas.
-  useEffect(() => {
-    return () => {
-      if (tapNavTimerRef.current) window.clearTimeout(tapNavTimerRef.current);
-    };
-  }, []);
 
   const { prevHref, nextHref } = navHrefs(data, data.mangaSlug, chapter);
   const scrollTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
