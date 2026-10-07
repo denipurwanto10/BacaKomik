@@ -251,6 +251,11 @@ div {
 /* ---------------------------------------------------------------------- */
 .boot-splash {
   display: none;
+  transition: opacity 0.65s ease;
+}
+.boot-splash-hide {
+  opacity: 0 !important;
+  pointer-events: none;
 }
 @media (display-mode: standalone), (display-mode: fullscreen) {
   .boot-splash {
