@@ -176,7 +176,7 @@ export function MobileTabBar() {  const pathname = usePathname();
   if (pathname.startsWith("/baca/")) return null;
 
   return (
-    <nav className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-line bg-paper-2/95 backdrop-blur-md md:hidden dark:border-line-dark dark:bg-ink-2/95">
+    <nav className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-line bg-paper-2 md:hidden dark:border-line-dark dark:bg-ink-2">
       <div className="mx-auto grid max-w-6xl grid-cols-4 items-stretch px-1">
         {items.map((n) => {
           const active = isActive(pathname, n.href);
