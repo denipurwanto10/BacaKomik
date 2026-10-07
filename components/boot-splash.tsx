@@ -3,16 +3,29 @@
 import { useEffect, useState } from "react";
 
 /**
- * Boot splash — tampil sekali setiap aplikasi dibuka (full document load).
- * Logo Rupture Panel di atas brand ink, lalu memudar setelah siap.
- * Komponen ini tidak pernah unmount saat navigasi client-side, jadi
- * splash TIDAK muncul lagi tiap pindah halaman — hanya saat buka aplikasi.
+ * Boot splash — HANYA tampil saat dibuka sebagai PWA terinstal (standalone).
+ * Di browser biasa tidak tampil sama sekali.
+ * Deteksi: display-mode standalone / fullscreen, iOS navigator.standalone,
+ * atau android-app referrer. Komponen tidak pernah unmount saat navigasi
+ * client-side, jadi splash TIDAK muncul lagi tiap pindah halaman.
  */
 export function BootSplash() {
+  const [show, setShow] = useState(false);
   const [fade, setFade] = useState(false);
   const [gone, setGone] = useState(false);
 
   useEffect(() => {
+    const standalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.matchMedia("(display-mode: fullscreen)").matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone ===
+        true ||
+      document.referrer.startsWith("android-app://");
+    if (!standalone) {
+      setGone(true);
+      return;
+    }
+    setShow(true);
     const t1 = window.setTimeout(() => setFade(true), 550);
     const t2 = window.setTimeout(() => setGone(true), 1050);
     return () => {
@@ -21,7 +34,7 @@ export function BootSplash() {
     };
   }, []);
 
-  if (gone) return null;
+  if (gone || !show) return null;
 
   return (
     <div
