@@ -242,3 +242,30 @@ div {
 .morph-in {
   animation: morph-rise 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+/* ---------------------------------------------------------------------- */
+/* Boot splash PWA: sembunyi total kecuali mode standalone. CSS murni      */
+/* (tanpa JS) agar splash sudah tampil di first paint — mulus, tanpa      */
+/* kedip. JS hanya mengatur fade-out + fallback iOS lama.                 */
+/* ---------------------------------------------------------------------- */
+.boot-splash {
+  display: none;
+}
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  .boot-splash {
+    display: flex;
+  }
+}
+@keyframes boot-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.boot-splash-pop {
+  animation: boot-pop 450ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
