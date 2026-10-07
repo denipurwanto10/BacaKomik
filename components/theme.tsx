@@ -12,7 +12,8 @@ const ThemeCtx = createContext<{ theme: Theme; toggle: () => void }>({
 /**
  * Samakan bar sistem (status bar iOS standalone + theme-color browser)
  * dengan tema aplikasi — bukan tema OS. Dipanggil tiap tema dibaca/diubah.
- * dark  → bar hitam teks putih; light → bar putih teks hitam.
+ * iOS 26+: bar transparan di atas konten — dark pakai black-translucent
+ * (teks putih), light pakai default (teks hitam).
  */
 function syncMeta(theme: Theme) {
   const setMeta = (name: string, content: string) => {
@@ -26,7 +27,7 @@ function syncMeta(theme: Theme) {
   };
   setMeta(
     "apple-mobile-web-app-status-bar-style",
-    theme === "dark" ? "black" : "default",
+    theme === "dark" ? "black-translucent" : "default",
   );
   setMeta("theme-color", theme === "dark" ? "#101217" : "#eef0f3");
 }

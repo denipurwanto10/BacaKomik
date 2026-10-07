@@ -29,9 +29,11 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "KomikFrost",
+    // iOS 26+: status bar selalu transparan di atas konten — nilai yang
+    // berlaku adalah black-translucent (teks putih); "black" diabaikan.
     // Default gelap (tema default aplikasi); ThemeProvider memperbarui
     // meta ini setiap tema diganti agar bar iOS ikut terang/gelap.
-    statusBarStyle: "black",
+    statusBarStyle: "black-translucent",
   },
   icons: {
     icon: [
