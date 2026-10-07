@@ -56,7 +56,7 @@ export default function GenreListPage() {
     .filter(Boolean);
 
   return (
-    <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
+    <section className="flex min-w-0 flex-col gap-3 rounded-2xl border border-line bg-paper-2 p-3 sm:gap-4 sm:p-4 dark:border-line-dark dark:bg-ink-2">
       <SectionHead title="Daftar Genre" />
       <input
         value={q}
@@ -141,6 +141,6 @@ export default function GenreListPage() {
           })}
         </div>
       )}
-    </div>
+    </section>
   );
 }

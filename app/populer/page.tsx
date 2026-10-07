@@ -44,7 +44,7 @@ function PopulerContent() {
   }, [load]);
 
   return (
-    <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
+    <section className="flex min-w-0 flex-col gap-3 rounded-2xl border border-line bg-paper-2 p-3 sm:gap-4 sm:p-4 dark:border-line-dark dark:bg-ink-2">
       <SectionHead title="Peringkat Komik" />
       <div className="rail-scroll -mx-3 flex gap-1.5 overflow-x-auto px-3 pb-0.5 sm:mx-0 sm:px-0">
         {PERIODS.map((p) => {
@@ -70,13 +70,13 @@ function PopulerContent() {
         <EmptyState message="Belum ada data peringkat dari sumber data." />
       )}
       {items && items.length > 0 && (
-        <div className="grid min-w-0 gap-x-8 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 lg:grid-cols-2 dark:border-line-dark dark:bg-ink-2">
+        <div className="grid min-w-0 gap-x-8 lg:grid-cols-2">
           {items.map((item) => (
             <RankRow key={`${item.slug}#${item.latestChapter?.url ?? ""}`} item={item} />
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }
 

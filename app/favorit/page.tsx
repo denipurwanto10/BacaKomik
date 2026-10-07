@@ -90,7 +90,7 @@ export default function FavoritPage() {
   const updateCount = bookmarks.filter((b) => updates[b.slug]).length;
 
   return (
-    <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
+    <section className="flex min-w-0 flex-col gap-3 rounded-2xl border border-line bg-paper-2 p-3 sm:gap-4 sm:p-4 dark:border-line-dark dark:bg-ink-2">
       <div className="min-w-0">
         <SectionHead title="Favorit" />
         {bookmarks.length > 0 && (
@@ -189,6 +189,6 @@ export default function FavoritPage() {
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }

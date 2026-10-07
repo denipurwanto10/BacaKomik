@@ -26,7 +26,7 @@ export default function RiwayatPage() {
   const [confirmClear, setConfirmClear] = useState(false);
 
   return (
-    <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
+    <section className="flex min-w-0 flex-col gap-3 rounded-2xl border border-line bg-paper-2 p-3 sm:gap-4 sm:p-4 dark:border-line-dark dark:bg-ink-2">
       <div className="flex min-w-0 items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <SectionHead title="Riwayat Baca" />
@@ -85,7 +85,7 @@ export default function RiwayatPage() {
       )}
 
       {entries.length > 0 && (
-        <div className="min-w-0 divide-y divide-line rounded-2xl border border-line bg-paper-2 dark:divide-line-dark dark:border-line-dark dark:bg-ink-2">
+        <div className="min-w-0 divide-y divide-line dark:divide-line-dark">
           {entries.map((h) => (
             <article key={h.slug} className="flex min-w-0 items-center gap-2.5 p-2.5 sm:gap-3 sm:p-3">
               <Link
@@ -137,6 +137,6 @@ export default function RiwayatPage() {
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }
