@@ -66,7 +66,7 @@ export function BootSplash() {
         <svg viewBox="48 48 160 160" className="h-16 w-16" fill="currentColor" aria-hidden="true">
           <path
             fillRule="evenodd"
-            d="M64 64H112L88 128L112 192H64Z M168 64H192V192H168L132 128Z"
+            d="M64 64H124L96 128L124 192H64Z M156 64H192V192H156L128 128Z"
           />
         </svg>
       </span>

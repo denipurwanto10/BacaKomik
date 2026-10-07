@@ -43,10 +43,10 @@ function MasukForm() {
   return (
     <div className="mx-auto flex min-h-[60vh] w-full max-w-sm flex-col items-center justify-center gap-4 px-4">
       <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-white">
-        <svg viewBox="0 0 256 256" className="h-8 w-8" fill="currentColor" aria-hidden="true">
+        <svg viewBox="48 48 160 160" className="h-10 w-10" fill="currentColor" aria-hidden="true">
           <path
             fillRule="evenodd"
-            d="M64 64H112L88 128L112 192H64Z M168 64H192V192H168L132 128Z"
+            d="M64 64H124L96 128L124 192H64Z M156 64H192V192H156L128 128Z"
           />
         </svg>
       </span>
