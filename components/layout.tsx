@@ -26,7 +26,7 @@ function Mark() {
       <svg viewBox="48 48 160 160" className="h-7 w-7" fill="currentColor" aria-hidden="true">
         <path
           fillRule="evenodd"
-          d="M64 64H192V192H64Z M120 64H160L128 128L160 192H120L90 128Z"
+          d="M64 64H112L88 128L112 192H64Z M168 64H192V192H168L132 128Z"
         />
       </svg>
     </span>
