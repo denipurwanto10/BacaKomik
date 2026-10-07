@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme";
+import { BootSplash } from "@/components/boot-splash";
 import { RouteMemory } from "@/components/route-memory";
 import { BackToTop, Footer, Header, Main, MobileTabBar } from "@/components/layout";
 import "./globals.css";
@@ -81,6 +82,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-screen overflow-x-hidden bg-paper font-sans text-fg antialiased dark:bg-ink dark:text-fg-dark">
         <ThemeProvider>
+          <BootSplash />
           <RouteMemory />
           <Header />
           <Main>{children}</Main>
