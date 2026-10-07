@@ -25,6 +25,19 @@ export const metadata: Metadata = {
   title: "KomikFrost — Baca Manga, Manhwa & Manhua Bahasa Indonesia",
   description:
     "Platform baca komik online: manga, manhwa, dan manhua terbaru dalam Bahasa Indonesia.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "KomikFrost",
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   // Situs pribadi — jangan dirayapi / ditampilkan mesin pencari.
   robots: {
     index: false,
@@ -45,6 +58,10 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#eef0f3" },
+    { media: "(prefers-color-scheme: dark)", color: "#101217" },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
