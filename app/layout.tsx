@@ -29,7 +29,9 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "KomikFrost",
-    statusBarStyle: "default",
+    // Default gelap (tema default aplikasi); ThemeProvider memperbarui
+    // meta ini setiap tema diganti agar bar iOS ikut terang/gelap.
+    statusBarStyle: "black",
   },
   icons: {
     icon: [
@@ -58,10 +60,11 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#eef0f3" },
-    { media: "(prefers-color-scheme: dark)", color: "#101217" },
-  ],
+  // Satu nilai default gelap (tema default aplikasi). Nilai media-query
+  // dihapus — yang berlaku adalah meta theme-color yang ditulis ulang
+  // ThemeProvider setiap tema diganti, agar bar browser/PWA selalu sama
+  // dengan tema aplikasi, bukan tema OS.
+  themeColor: "#101217",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

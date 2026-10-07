@@ -9,6 +9,28 @@ const ThemeCtx = createContext<{ theme: Theme; toggle: () => void }>({
   toggle: () => {},
 });
 
+/**
+ * Samakan bar sistem (status bar iOS standalone + theme-color browser)
+ * dengan tema aplikasi — bukan tema OS. Dipanggil tiap tema dibaca/diubah.
+ * dark  → bar hitam teks putih; light → bar putih teks hitam.
+ */
+function syncMeta(theme: Theme) {
+  const setMeta = (name: string, content: string) => {
+    let el = document.querySelector(`meta[name="${name}"]`);
+    if (!el) {
+      el = document.createElement("meta");
+      el.setAttribute("name", name);
+      document.head.appendChild(el);
+    }
+    el.setAttribute("content", content);
+  };
+  setMeta(
+    "apple-mobile-web-app-status-bar-style",
+    theme === "dark" ? "black" : "default",
+  );
+  setMeta("theme-color", theme === "dark" ? "#101217" : "#eef0f3");
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("dark");
 
@@ -17,6 +39,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const initial: Theme = saved === "light" || saved === "dark" ? saved : "dark";
     setTheme(initial);
     document.documentElement.classList.toggle("dark", initial === "dark");
+    syncMeta(initial);
   }, []);
 
   const toggle = () => {
@@ -24,6 +47,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const next: Theme = t === "dark" ? "light" : "dark";
       localStorage.setItem("bk-theme", next);
       document.documentElement.classList.toggle("dark", next === "dark");
+      syncMeta(next);
       return next;
     });
   };
