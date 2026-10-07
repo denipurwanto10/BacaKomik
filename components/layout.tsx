@@ -23,7 +23,7 @@ function isActive(pathname: string, href: string) {
 function Mark() {
   return (
     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-white">
-      <svg viewBox="0 0 256 256" className="h-6 w-6" fill="currentColor" aria-hidden="true">
+      <svg viewBox="48 48 160 160" className="h-7 w-7" fill="currentColor" aria-hidden="true">
         <path
           fillRule="evenodd"
           d="M64 64H192V192H64Z M124 64H156L128 128L156 192H124L96 128Z"
