@@ -1,55 +1,78 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 /**
- * Pengendali splash statis (div #boot-splash dirender server di layout).
- * HANYA di PWA terinstal (standalone) — di browser node langsung dibuang.
- * Splash hilang saat halaman siap (window load) + tampil minimal 900ms,
- * lalu crossfade 650ms ala splash aplikasi native. Tidak pernah unmount
- * saat navigasi client-side → tidak muncul lagi tiap pindah halaman.
+ * Splash boot PWA — markup ikut server-render (langsung ada di first paint,
+ * semulus splash aplikasi native), visibilitas dikunci via CSS display-mode
+ * (hanya PWA terinstal). Hilang via STATE React (jangan pernah node.remove()
+ * langsung — node ini milik React, hapus paksa bikin crash saat navigasi).
+ * Hilang saat halaman siap (window load) + tampil minimal 900ms, lalu
+ * crossfade 650ms. Tidak muncul lagi tiap pindah halaman (hanya full load).
  */
 export function BootSplash() {
+  const [phase, setPhase] = useState<"show" | "hide" | "gone">("show");
+
   useEffect(() => {
-    const node = document.getElementById("boot-splash");
-    if (!node) return;
     const mq =
       window.matchMedia("(display-mode: standalone)").matches ||
       window.matchMedia("(display-mode: fullscreen)").matches;
     const legacy =
       (window.navigator as Navigator & { standalone?: boolean }).standalone ===
         true || document.referrer.startsWith("android-app://");
-    // Bukan PWA: buang node agar tidak menutupi apa pun.
+    // Bukan PWA: lepas via React agar reconciler tetap konsisten.
     if (!mq && !legacy) {
-      node.remove();
+      setPhase("gone");
       return;
     }
-    const started =
+    const now = () =>
       typeof performance !== "undefined" ? performance.now() : Date.now();
+    const started = now();
     const MIN_SHOW = 900;
     const FADE_MS = 750;
-    let done = false;
+    const timers: number[] = [];
     const hide = () => {
-      if (done) return;
-      done = true;
-      node.classList.add("boot-splash-hide");
-      window.setTimeout(() => node.remove(), FADE_MS + 100);
+      setPhase("hide");
+      timers.push(window.setTimeout(() => setPhase("gone"), FADE_MS + 100));
     };
     const hideWhenReady = () => {
-      const elapsed =
-        (typeof performance !== "undefined" ? performance.now() : Date.now()) -
-        started;
-      const wait = Math.max(0, MIN_SHOW - elapsed);
-      window.setTimeout(hide, wait);
+      timers.push(
+        window.setTimeout(hide, Math.max(0, MIN_SHOW - (now() - started))),
+      );
     };
     if (document.readyState === "complete") {
       hideWhenReady();
     } else {
       window.addEventListener("load", hideWhenReady, { once: true });
       // Pengaman: jangan menggantung lebih dari 2,5 dtk bila load macet.
-      window.setTimeout(hide, 2500);
+      timers.push(window.setTimeout(hide, 2500));
     }
+    return () => {
+      timers.forEach((t) => window.clearTimeout(t));
+      window.removeEventListener("load", hideWhenReady);
+    };
   }, []);
 
-  return null;
+  if (phase === "gone") return null;
+
+  return (
+    <div
+      aria-hidden="true"
+      className={`boot-splash fixed inset-0 z-[100] flex-col items-center justify-center gap-4 bg-ink ${
+        phase === "hide" ? "boot-splash-hide" : ""
+      }`}
+    >
+      <span className="boot-splash-pop flex h-20 w-20 items-center justify-center rounded-2xl bg-accent text-white">
+        <svg viewBox="0 0 256 256" className="h-14 w-14" fill="currentColor" aria-hidden="true">
+          <path
+            fillRule="evenodd"
+            d="M64 64H192V192H64Z M124 64H156L128 128L156 192H124L96 128Z"
+          />
+        </svg>
+      </span>
+      <p className="font-display text-2xl font-extrabold tracking-tight text-white">
+        Komik<span className="text-accent">Frost</span>
+      </p>
+    </div>
+  );
 }

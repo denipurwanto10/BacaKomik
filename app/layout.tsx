@@ -81,22 +81,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="dns-prefetch" href="https://api.komiku.org" />
       </head>
       <body className="min-h-screen overflow-x-hidden bg-paper font-sans text-fg antialiased dark:bg-ink dark:text-fg-dark">
-        {/* Splash statis server-render: langsung ada di first paint (sebelum
-            JS hydrate) — semulus splash aplikasi native. Hanya tampil di PWA
-            via CSS display-mode; JS (BootSplash) hanya fade-out. */}
-        <div id="boot-splash" aria-hidden="true" className="boot-splash fixed inset-0 z-[100] flex-col items-center justify-center gap-4 bg-ink">
-          <span className="boot-splash-pop flex h-20 w-20 items-center justify-center rounded-2xl bg-accent text-white">
-            <svg viewBox="0 0 256 256" className="h-14 w-14" fill="currentColor" aria-hidden="true">
-              <path
-                fillRule="evenodd"
-                d="M64 64H192V192H64Z M124 64H156L128 128L156 192H124L96 128Z"
-              />
-            </svg>
-          </span>
-          <p className="font-display text-2xl font-extrabold tracking-tight text-white">
-            Komik<span className="text-accent">Frost</span>
-          </p>
-        </div>
         <ThemeProvider>
           <BootSplash />
           <RouteMemory />
