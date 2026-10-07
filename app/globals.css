@@ -88,7 +88,8 @@ body {
   background-image:
     radial-gradient(720px 280px at 12% -80px, color-mix(in srgb, var(--color-accent) 9%, transparent), transparent 70%),
     radial-gradient(640px 260px at 88% -60px, color-mix(in srgb, var(--color-accent) 6%, transparent), transparent 70%);
-  background-attachment: fixed;
+  /* fixed bikin ghosting/blur saat scroll di WebView PWA iOS — pakai scroll. */
+  background-attachment: scroll;
 }
 .dark body {
   background-color: var(--color-ink);

@@ -42,10 +42,12 @@ function MasukForm() {
 
   return (
     <div className="mx-auto flex min-h-[60vh] w-full max-w-sm flex-col items-center justify-center gap-4 px-4">
-      <span className="flex h-12 w-12 items-center justify-center bg-gradient-to-br from-accent to-accent-strong text-white [clip-path:polygon(0_0,100%_0,100%_100%,25%_100%,0_75%)]">
-        <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
-          <path d="M12 2v20M4 6l16 12M20 6L4 18" />
-          <path d="M12 2l-2 3m2-3l2 3M12 22l-2-3m2 3l2-3M4 6l3.4.6M4 6L4.6 9.4M20 18l-3.4-.6m3.4.6l-.6-3.4M20 6l-3.4.6M20 6l-.6 3.4M4 18l3.4-.6M4 18l.6-3.4" strokeWidth={1.6} />
+      <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-white">
+        <svg viewBox="0 0 256 256" className="h-8 w-8" fill="currentColor" aria-hidden="true">
+          <path
+            fillRule="evenodd"
+            d="M64 64H192V192H64Z M124 64H156L128 128L156 192H124L96 128Z"
+          />
         </svg>
       </span>
       <div className="text-center">
