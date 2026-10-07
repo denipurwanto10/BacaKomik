@@ -56,11 +56,11 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-[calc(-1*env(safe-area-inset-top,0px))] z-40 border-b border-line bg-paper-2 pt-[calc(env(safe-area-inset-top,0px)+12px)] dark:border-line-dark dark:bg-ink-2">
+    <header className="sticky top-[calc(-1*env(safe-area-inset-top,0px))] z-40 border-b border-line bg-paper-2 pt-[calc(env(safe-area-inset-top,0px)+16px)] dark:border-line-dark dark:bg-ink-2">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-3 sm:gap-3 sm:px-4">
         <Link href="/" className="flex min-w-0 shrink-0 items-center gap-2" aria-label="KomikFrost — Beranda">
           <Mark />
-          <span className="truncate font-display text-base font-extrabold tracking-tight text-fg sm:text-lg dark:text-accent">
+          <span className="truncate font-display text-base font-extrabold tracking-tight text-fg sm:text-lg dark:text-fg-dark">
             Komik<span className="text-accent">Frost</span>
           </span>
         </Link>
