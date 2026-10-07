@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiGet, apiGetSWR, titleKey } from "@/lib/client";
 import { usePageTitle } from "@/lib/page-title";
+import { useAutoRefresh } from "@/lib/use-auto-refresh";
 import type { GenreRef, MangaCard } from "@/lib/api/types";
 import { KomikListCard, KomikListSkeleton } from "@/components/komik-list";
 import { Pagination } from "@/components/pagination";
@@ -93,6 +94,17 @@ function TerbaruContent() {
   // di p1 dari satu source dan p2 dari source lain karena beda timing).
   // Reset tiap filter berubah. Murni client-side, tanpa request tambahan.
   const seenRef = useRef(new Map<string, Set<string>>());
+  // Cermin state untuk pengecekan background (hindari stale closure).
+  const itemsRef = useRef<MangaCard[]>([]);
+  const pageRef = useRef(page);
+  const loadingRef = useRef(loading);
+  const filtersKeyRef = useRef(filtersKey);
+  useEffect(() => {
+    itemsRef.current = items;
+    pageRef.current = page;
+    loadingRef.current = loading;
+    filtersKeyRef.current = filtersKey;
+  });
 
   // Saring item yang judulnya sudah tampil di halaman sebelumnya
   // (filter aktif), lalu catat sisanya. Urutan + prioritas server utuh.
@@ -136,6 +148,33 @@ function TerbaruContent() {
     },
     [orderby, tipe, status, genre1, genre2],
   );
+
+  // Auto-refresh PWA: cek diam-diam tiap interval, ganti daftar HANYA
+  // bila ada komik baru (3 teratas berubah). Tanpa skeleton, tanpa
+  // menyentuh error/loading — gagal = abaikan. Hanya halaman 1 &
+  // urutan non-acak (komik baru muncul di halaman 1; mode acak jangan
+  // diusik urutannya saat dibaca).
+  const silentCheck = useCallback(async () => {
+    if (orderby === "rand") return;
+    if (pageRef.current !== 1 || loadingRef.current) return;
+    const cur = itemsRef.current;
+    if (cur.length === 0) return;
+    try {
+      const res = await apiGet<LatestPayload>(`/api/latest?${buildQs(1)}`, { noStore: true });
+      if (!res.items || res.items.length === 0) return;
+      const sig = (l: MangaCard[]) =>
+        l
+          .slice(0, 3)
+          .map((i) => `${i.slug}#${i.latestChapter?.url ?? ""}`)
+          .join("|");
+      if (sig(res.items) === sig(cur)) return;
+      seenRef.current.delete(filtersKeyRef.current);
+      applyItems(res.items, res.hasNextPage, 1);
+    } catch {
+      // Abaikan — daftar lama tetap tampil.
+    }
+  }, [orderby, buildQs, applyItems]);
+  useAutoRefresh(silentCheck);
 
   const scrollToList = useCallback(() => {
     requestAnimationFrame(() => {

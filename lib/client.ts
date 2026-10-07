@@ -21,10 +21,11 @@ const STALE_MS = 5 * 60_000;
 const cache = new Map<string, { at: number; data: unknown }>();
 const inflight = new Map<string, Promise<unknown>>();
 
-async function fetchJson<T>(path: string, signal?: AbortSignal): Promise<T> {
+async function fetchJson<T>(path: string, signal?: AbortSignal, noStore = false): Promise<T> {
   const res = await fetch(path, {
     headers: { Accept: "application/json" },
     signal,
+    ...(noStore ? { cache: "no-store" as RequestCache } : {}),
   });
   const json = await res.json().catch(() => null);
   if (!res.ok || !json || json.error) {
@@ -36,7 +37,22 @@ async function fetchJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   return (json as ApiSuccess<T>).data;
 }
 
-export async function apiGet<T>(path: string, opts?: { signal?: AbortSignal }): Promise<T> {
+export async function apiGet<T>(
+  path: string,
+  opts?: { signal?: AbortSignal; noStore?: boolean },
+): Promise<T> {
+  // `noStore` (cek background auto-refresh): lewati cache memori baca/tulis
+  // + cache HTTP browser agar benar-benar menembak server. Dedupe inflight
+  // tetap dipakai supaya pemanggil bersamaan (2 section beranda) = 1 fetch.
+  if (opts?.noStore && !opts?.signal) {
+    const pending = inflight.get(path);
+    if (pending) return pending as Promise<T>;
+    const p = fetchJson<T>(path, undefined, true).finally(() => {
+      if (inflight.get(path) === p) inflight.delete(path);
+    });
+    inflight.set(path, p);
+    return p;
+  }
   // Data segar dari cache — tanpa round-trip jaringan sama sekali.
   const hit = cache.get(path);
   if (hit && Date.now() - hit.at < TTL_MS && !opts?.signal) {

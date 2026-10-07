@@ -7,6 +7,7 @@ import { timeAgo, useHistory } from "@/lib/history";
 import type { MangaCard } from "@/lib/api/types";
 import { SectionHead, ListSkeleton, ErrorState, EmptyState } from "@/components/states";
 import { RankRow, UpdateRow } from "@/components/cards";
+import { useAutoRefresh } from "@/lib/use-auto-refresh";
 
 /** Acak array (Fisher-Yates) — rekomendasi tampil beda tiap kunjungan. */
 function shuffle<T>(arr: T[]): T[] {
@@ -16,6 +17,14 @@ function shuffle<T>(arr: T[]): T[] {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+/** Tanda daftar (3 teratas) — pembanding ringan untuk deteksi komik baru. */
+function listSig(list: MangaCard[] | null): string {
+  return (list || [])
+    .slice(0, 3)
+    .map((i) => `${i.slug}#${i.latestChapter?.url ?? ""}`)
+    .join("|");
 }
 
 interface HomePayload {
@@ -36,6 +45,11 @@ function useHomeSection<K extends keyof HomePayload>(key: K, shuffleData = false
   // langsung di dalam useCallback menangkap nilai basi (stale closure)
   // sehingga spinner `refreshing` tidak pernah menyala saat muat ulang.
   const hasDataRef = useRef(false);
+  // Cermin `data` untuk pengecekan background (hindari stale closure).
+  const dataRef = useRef<MangaCard[] | null>(null);
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
   const load = useCallback(
     async (fresh = false) => {
       setError(null);
@@ -69,10 +83,29 @@ function useHomeSection<K extends keyof HomePayload>(key: K, shuffleData = false
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [key, shuffleData],
   );
+  // Cek diam-diam (auto-refresh PWA): fetch baru, ganti daftar HANYA
+  // bila 3 teratas berubah (ada komik baru). Tanpa spinner, tanpa
+  // menyentuh error — gagal = abaikan. Rekomendasi (acak) dikecualikan:
+  // urutannya memang beda tiap fetch.
+  const checkNew = useCallback(async () => {
+    if (shuffleData) return;
+    if (!dataRef.current || dataRef.current.length === 0) return;
+    try {
+      const home = await apiGet<HomePayload>("/api/home", { noStore: true });
+      const list = home ? home[key] : null;
+      if (!list || list.length === 0) return;
+      if (listSig(list) === listSig(dataRef.current)) return;
+      hasDataRef.current = true;
+      dataRef.current = list;
+      setData(list);
+    } catch {
+      // Abaikan — daftar lama tetap tampil.
+    }
+  }, [key, shuffleData]);
   useEffect(() => {
     load();
   }, [load]);
-  return { data, error, load, refreshing };
+  return { data, error, load, refreshing, checkNew };
 }
 
 /**
@@ -90,6 +123,15 @@ export default function HomePage() {
   const popular = useHomeSection("popular");
   const latest = useHomeSection("latest");
   const recommended = useRecommended();
+
+  // Daftar update sendiri tiap interval + tiap PWA dibuka lagi — tanpa
+  // reload manual. Hanya section terurut (rekomendasi acak dikecualikan
+  // di dalam checkNew agar tidak lompat saat dibaca).
+  const checkNewAll = useCallback(() => {
+    void popular.checkNew();
+    void latest.checkNew();
+  }, [popular.checkNew, latest.checkNew]);
+  useAutoRefresh(checkNewAll);
 
   // Prefetch hemat: hanya daftar genre + hanya saat browser idle, agar
   // tidak berebut bandwidth/CPU dengan gambar + section beranda.

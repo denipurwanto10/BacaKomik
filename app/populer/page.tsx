@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { apiGet } from "@/lib/client";
+import { useAutoRefresh } from "@/lib/use-auto-refresh";
 import { usePageTitle } from "@/lib/page-title";
 import type { MangaCard } from "@/lib/api/types";
 import { SectionHead, ListSkeleton, ErrorState, EmptyState } from "@/components/states";
@@ -42,6 +43,35 @@ function PopulerContent() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Auto-refresh PWA: cek diam-diam tiap interval, ganti daftar HANYA
+  // bila ada yang baru (3 teratas berubah). Tanpa skeleton, tanpa
+  // menyentuh error — gagal = abaikan.
+  const itemsRef = useRef<MangaCard[] | null>(null);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+  const silentCheck = useCallback(async () => {
+    const cur = itemsRef.current;
+    if (!cur || cur.length === 0) return;
+    try {
+      const res = await apiGet<{ period: string; items: MangaCard[] }>(
+        `/api/popular?period=${period}`,
+        { noStore: true },
+      );
+      if (!res.items || res.items.length === 0) return;
+      const sig = (l: MangaCard[]) =>
+        l
+          .slice(0, 3)
+          .map((i) => `${i.slug}#${i.latestChapter?.url ?? ""}`)
+          .join("|");
+      if (sig(res.items) === sig(cur)) return;
+      setItems(res.items);
+    } catch {
+      // Abaikan — daftar lama tetap tampil.
+    }
+  }, [period]);
+  useAutoRefresh(silentCheck);
 
   return (
     <section className="flex min-w-0 flex-col gap-3 rounded-2xl border border-line bg-paper-2 p-3 sm:gap-4 sm:p-4 dark:border-line-dark dark:bg-ink-2">
