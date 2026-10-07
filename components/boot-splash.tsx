@@ -63,7 +63,7 @@ export function BootSplash() {
       }`}
     >
       <span className="boot-splash-pop flex h-20 w-20 items-center justify-center rounded-2xl bg-accent text-white">
-        <svg viewBox="0 0 256 256" className="h-14 w-14" fill="currentColor" aria-hidden="true">
+        <svg viewBox="48 48 160 160" className="h-16 w-16" fill="currentColor" aria-hidden="true">
           <path
             fillRule="evenodd"
             d="M64 64H192V192H64Z M124 64H156L128 128L156 192H124L96 128Z"
