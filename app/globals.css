@@ -53,6 +53,17 @@
   --radius-pill: 999px;
 }
 
+/* Background solid di <html> mengikuti tema APLIKASI (bukan OS).
+   iOS 26+ menggambar status bar transparan di atas konten — tanpa ini
+   area status bar jatuh ke putih default dan teks ikut hitam. */
+html {
+  background-color: var(--color-paper);
+}
+html.dark {
+  background-color: var(--color-ink);
+  color-scheme: dark;
+}
+
 ::selection {
   background: var(--color-accent);
   color: #fff;
@@ -69,6 +80,9 @@ body {
   text-rendering: optimizeLegibility;
   font-feature-settings: "ss01" 1;
   overflow-x: clip;
+  /* Samakan dengan background html agar tidak ada lapisan terang
+     di bawah konten saat dark mode (tembus ke status bar iOS 26+). */
+  background-color: var(--color-paper);
   /* Latar modern: semburat hijau sangat halus di atas paper/ink.
      Light & dark ikut adaptif via color-mix — tanpa gambar, nol request. */
   background-image:
@@ -77,6 +91,7 @@ body {
   background-attachment: fixed;
 }
 .dark body {
+  background-color: var(--color-ink);
   background-image:
     radial-gradient(720px 280px at 12% -80px, color-mix(in srgb, var(--color-accent) 16%, transparent), transparent 70%),
     radial-gradient(640px 260px at 88% -60px, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 70%);
