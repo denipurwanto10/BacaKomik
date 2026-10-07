@@ -153,9 +153,14 @@ div {
   scrollbar-width: thin;
 }
 
-/* Safe-area padding for the fixed mobile tab bar. */
+/* Safe-area untuk header sticky: di PWA iOS 26+ (black-translucent)
+   konten menggambar di bawah status bar — tanpa padding ini logo +
+   tombol header ketiban bar. Desktop/browser biasa: env = 0, no-op. */
 .pb-safe {
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 /* Input 16px di mobile — cegah auto-zoom iOS yang menggeser layout. */

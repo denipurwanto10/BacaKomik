@@ -54,7 +54,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-paper-2/90 backdrop-blur-md dark:border-line-dark dark:bg-ink-2/90">
+    <header className="sticky top-0 z-40 -mt-[env(safe-area-inset-top,0px)] border-b border-line bg-paper-2/90 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md dark:border-line-dark dark:bg-ink-2/90">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-3 sm:gap-3 sm:px-4">
         <Link href="/" className="flex min-w-0 shrink-0 items-center gap-2" aria-label="KomikFrost — Beranda">
           <Mark />
