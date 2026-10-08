@@ -8,6 +8,7 @@ import type {
   PagedResult,
 } from "./types";
 import { KomikuError } from "./komiku";
+import { proxiedImage } from "./img-proxy";
 
 /**
  * Lapisan HTTP + mapping JSON publik Shinigami (dipakai frontend mereka sendiri).
@@ -248,9 +249,10 @@ function authorNames(m: ShiniManga): string | undefined {
   return names.length > 0 ? names.join(", ") : undefined;
 }
 
-/** Cover portrait untuk kartu/detail (rasio slot 3:4); fallback landscape. */
+/** Cover portrait untuk kartu/detail (rasio slot 3:4); fallback landscape.
+ *  Host Shinigami rusak dari jaringan ID → lewat proxy /api/img. */
 function coverUrl(m: ShiniManga): string {
-  return m.cover_portrait_url || m.cover_image_url || "";
+  return proxiedImage(m.cover_portrait_url || m.cover_image_url || "");
 }
 
 /** Kartu daftar dari satu item manga/list. Slug = manga_id (UUID). */
@@ -568,7 +570,8 @@ export async function fetchShiniChapterById(
   const base = (d.base_url || "https://assets.shngm.id").replace(/\/+$/, "");
   const path = d.chapter?.path ?? "";
   const files = Array.isArray(d.chapter?.data) ? d.chapter.data : [];
-  const images = files.filter(isPageFile).map((f) => `${base}${path}${f}`);
+  // Gambar reader Shinigami satu host dengan cover → proxy juga.
+  const images = files.filter(isPageFile).map((f) => proxiedImage(`${base}${path}${f}`));
   if (images.length === 0) {
     throw new KomikuError(
       "Halaman chapter Shinigami tidak memuat gambar yang dikenali.",
