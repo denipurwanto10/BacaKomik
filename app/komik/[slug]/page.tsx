@@ -284,7 +284,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
             {detail.latestChapter && (
               <Link
                 href={chapterPathToRoute(detail.latestChapter.url)}
-                className="morph-stagger-item min-w-0 flex-1 truncate rounded-full bg-gradient-to-br from-accent to-accent-strong px-5 py-2.5 text-center text-sm font-semibold text-white transition-transform active:scale-[0.98] min-[420px]:flex-none sm:order-2"
+                className="morph-stagger-item min-w-0 flex-1 truncate rounded-full bg-accent px-5 py-2.5 text-center text-sm font-semibold text-white transition-transform active:scale-[0.98] min-[420px]:flex-none sm:order-2"
               >
                 Lanjut · {detail.latestChapter.label}
               </Link>
@@ -304,8 +304,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
       {/* Sinopsis — dibungkus kartu seperti section beranda */}
       {detail.synopsis && (
         <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
-          <h2 className="mb-2 flex items-center gap-2 font-display text-base font-bold text-fg dark:text-fg-dark">
-            <span className="h-4 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-accent to-accent-strong" />
+          <h2 className="mb-2 truncate font-display text-base font-bold text-fg dark:text-fg-dark">
             Sinopsis
           </h2>
           <p className="whitespace-pre-line break-words text-[13px] leading-relaxed text-fg/85 sm:text-sm dark:text-fg-dark/80">
@@ -317,9 +316,8 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
       {/* Daftar chapter */}
       <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
         <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
-          <h2 className="flex min-w-0 flex-1 items-center gap-2 font-display text-base font-bold text-fg dark:text-fg-dark">
-            <span className="h-4 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-accent to-accent-strong" />
-            <span className="truncate">Daftar Chapter ({detail.chapters.length})</span>
+          <h2 className="min-w-0 flex-1 truncate font-display text-base font-bold text-fg dark:text-fg-dark">
+            Daftar Chapter ({detail.chapters.length})
           </h2>
           {detail.chapters.length > 1 && (
             <button
@@ -381,9 +379,8 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
       {similar !== null && similar.length > 0 && detail.genres[0] && (
         <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
           <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
-            <h2 className="flex min-w-0 flex-1 items-center gap-2 font-display text-base font-bold text-fg dark:text-fg-dark">
-              <span className="h-4 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-accent to-accent-strong" />
-              <span className="truncate">Serupa: {detail.genres[0].name}</span>
+            <h2 className="min-w-0 flex-1 truncate font-display text-base font-bold text-fg dark:text-fg-dark">
+              Serupa: {detail.genres[0].name}
             </h2>
             <Link
               href={`/genre/${detail.genres[0].slug}`}

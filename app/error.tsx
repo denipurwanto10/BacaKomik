@@ -33,7 +33,7 @@ export default function Error({
       <div className="mt-1 flex flex-wrap items-center justify-center gap-2">
         <button
           onClick={() => reset()}
-          className="rounded-full bg-gradient-to-br from-accent to-accent-strong px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+          className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
         >
           Coba lagi
         </button>

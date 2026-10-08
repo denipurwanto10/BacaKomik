@@ -23,7 +23,7 @@ const sans = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "KomikFrost — Baca Manga, Manhwa & Manhua Bahasa Indonesia",
+  title: "KomikFrost: Baca Manga, Manhwa & Manhua Bahasa Indonesia",
   description:
     "Platform baca komik online: manga, manhwa, dan manhua terbaru dalam Bahasa Indonesia.",
   manifest: "/manifest.webmanifest",

@@ -121,7 +121,7 @@ export default function RiwayatPage() {
                 </div>
                 <Link
                   href={h.route}
-                  className="mt-1.5 w-fit rounded-full bg-gradient-to-br from-accent to-accent-strong px-3.5 py-1.5 text-[11px] font-semibold text-white sm:text-xs"
+                  className="mt-1.5 w-fit rounded-full bg-accent px-3.5 py-1.5 text-[11px] font-semibold text-white sm:text-xs"
                 >
                   Lanjutkan
                 </Link>

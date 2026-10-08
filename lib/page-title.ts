@@ -14,7 +14,7 @@ export function usePageTitle(title: string | null | undefined): void {
   useEffect(() => {
     if (!title) return;
     const prev = document.title;
-    document.title = `${title} — ${SITE}`;
+    document.title = `${title} | ${SITE}`;
     return () => {
       document.title = prev;
     };

@@ -9,7 +9,7 @@ export default function NotFound() {
     <div className="flex min-w-0 flex-col items-center gap-3 px-4 py-14 text-center sm:py-20">
       <p
         aria-hidden="true"
-        className="bg-gradient-to-br from-accent to-accent-strong bg-clip-text font-display text-6xl font-extrabold text-transparent sm:text-7xl"
+        className="font-display text-6xl font-extrabold text-accent sm:text-7xl"
       >
         404
       </p>
@@ -22,7 +22,7 @@ export default function NotFound() {
       </p>
       <Link
         href="/"
-        className="mt-1 rounded-full bg-gradient-to-br from-accent to-accent-strong px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        className="mt-1 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
       >
         Kembali ke beranda
       </Link>

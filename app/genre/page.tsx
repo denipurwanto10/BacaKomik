@@ -78,7 +78,7 @@ export default function GenreListPage() {
             )}
             <Link
               href={picked.length === 1 ? `/genre/${picked[0]}` : `/terbaru?genre=${picked[0]}&genre2=${picked[1]}`}
-              className="shrink-0 rounded-full bg-gradient-to-br from-accent to-accent-strong px-4 py-2 text-xs font-semibold text-white sm:text-[13px]"
+              className="shrink-0 rounded-full bg-accent px-4 py-2 text-xs font-semibold text-white sm:text-[13px]"
             >
               {picked.length === 1 ? "Lihat genre ini" : "Lihat gabungan"}
             </Link>
@@ -130,7 +130,7 @@ export default function GenreListPage() {
                   aria-label={active ? `Batalkan genre ${g.name}` : `Pilih genre ${g.name}`}
                   className={`flex h-8 w-8 shrink-0 touch-manipulation items-center justify-center rounded-full border text-base font-bold leading-none transition-colors ${
                     active
-                      ? "border-transparent bg-gradient-to-br from-accent to-accent-strong text-white"
+                      ? "border-transparent bg-accent text-white"
                       : "border-line text-muted hover:border-accent hover:text-accent dark:border-line-dark dark:text-muted-dark"
                   }`}
                 >

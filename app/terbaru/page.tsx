@@ -325,7 +325,7 @@ function TerbaruContent() {
           aria-label="Filter genre pertama"
           className="h-11 w-full min-w-0 truncate rounded-full border border-line bg-paper-2 px-3 text-sm font-medium text-fg sm:h-[30px] sm:w-auto sm:max-w-40 sm:shrink-0 sm:text-xs dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark"
         >
-          <option value="">Genre 1</option>
+          <option value="">Genre</option>
           {genreOpts.map((g) => (
             <option key={g.slug} value={g.slug} disabled={g.slug === genre2 && genre2 !== ""}>
               {g.name}
@@ -338,7 +338,7 @@ function TerbaruContent() {
           aria-label="Filter genre kedua"
           className="h-11 w-full min-w-0 truncate rounded-full border border-line bg-paper-2 px-3 text-sm font-medium text-fg sm:h-[30px] sm:w-auto sm:max-w-40 sm:shrink-0 sm:text-xs dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark"
         >
-          <option value="">Genre 2</option>
+          <option value="">+ Genre</option>
           {genreOpts.map((g) => (
             <option key={g.slug} value={g.slug} disabled={g.slug === genre1 && genre1 !== ""}>
               {g.name}

@@ -177,7 +177,7 @@ export function SearchSuggest({
                       />
                     ) : (
                       <span className="flex h-14 w-10 shrink-0 items-center justify-center rounded-md bg-paper-3 text-[9px] text-muted dark:bg-ink-3 dark:text-muted-dark">
-                        —
+                        ?
                       </span>
                     )}
                     <span className="min-w-0 flex-1">

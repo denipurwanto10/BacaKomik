@@ -77,7 +77,7 @@ function MasukForm() {
         <button
           type="submit"
           disabled={loading || !pw}
-          className="h-12 w-full rounded-full bg-gradient-to-br from-accent to-accent-strong text-sm font-semibold text-white disabled:opacity-50 sm:h-11"
+          className="h-12 w-full rounded-full bg-accent text-sm font-semibold text-white disabled:opacity-50 sm:h-11"
         >
           {loading ? "Memeriksa…" : "Masuk"}
         </button>

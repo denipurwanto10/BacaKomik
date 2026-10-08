@@ -58,7 +58,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-paper-2 pt-[calc(env(safe-area-inset-top,0px)+16px)] dark:border-line-dark dark:bg-ink-2">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-3 sm:gap-3 sm:px-4">
-        <Link href="/" className="flex min-w-0 shrink-0 items-center gap-2" aria-label="KomikFrost — Beranda">
+        <Link href="/" className="flex min-w-0 shrink-0 items-center gap-2" aria-label="KomikFrost, ke beranda">
           <Mark />
           <span className="truncate font-display text-base font-extrabold tracking-tight text-fg sm:text-lg dark:text-fg-dark">
             Komik<span className="text-accent">Frost</span>
@@ -92,7 +92,7 @@ export function Header() {
                 href={n.href}
                 className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
                   active
-                    ? "bg-gradient-to-br from-accent to-accent-strong text-white"
+                    ? "bg-accent text-white"
                     : "text-muted hover:bg-paper hover:text-fg dark:text-muted-dark dark:hover:bg-ink dark:hover:text-fg-dark"
                 }`}
               >
@@ -268,7 +268,7 @@ export function BackToTop() {
     <button
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       aria-label="Kembali ke atas"
-      className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] right-3 z-40 flex h-11 w-11 touch-manipulation items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent-strong text-white transition-transform active:scale-95 md:bottom-6 md:right-6"
+      className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] right-3 z-40 flex h-11 w-11 touch-manipulation items-center justify-center rounded-full bg-accent text-white transition-transform active:scale-95 md:bottom-6 md:right-6"
     >
       <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
         <path

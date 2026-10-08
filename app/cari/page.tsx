@@ -207,7 +207,7 @@ function CariContent() {
         />
         <button
           type="submit"
-          className="absolute right-1.5 h-9 shrink-0 rounded-full bg-gradient-to-br from-accent to-accent-strong px-5 text-sm font-semibold text-white sm:h-8 sm:text-xs"
+          className="absolute right-1.5 h-9 shrink-0 rounded-full bg-accent px-5 text-sm font-semibold text-white sm:h-8 sm:text-xs"
         >
           Cari
         </button>
@@ -217,7 +217,7 @@ function CariContent() {
         {q && (
           <p className="truncate text-sm text-muted dark:text-muted-dark">
             Hasil untuk &quot;{q}&quot;
-            {page > 1 && ` — halaman ${page}`}
+            {page > 1 && `, halaman ${page}`}
           </p>
         )}
       </div>
@@ -231,7 +231,7 @@ function CariContent() {
           </p>
           <ul className="max-w-xs list-none space-y-1 text-xs leading-relaxed text-muted dark:text-muted-dark">
             <li>Coba 1 kata saja (mis. judul tanpa angka).</li>
-            <li>Periksa ejaan — beda 1 huruf bisa nihil hasil.</li>
+            <li>Periksa ejaan: beda 1 huruf bisa nihil hasil.</li>
             <li>Coba judul Inggris/alternatifnya.</li>
           </ul>
         </div>
@@ -244,7 +244,7 @@ function CariContent() {
                 {item.exactMatch === false &&
                   (idx === 0 || items[idx - 1]?.exactMatch !== false) && (
                     <p className="px-1 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-muted dark:text-muted-dark">
-                      Hasil mirip — tidak ada judul yang memuat semua kata kunci
+                      Hasil mirip (tidak ada judul yang memuat semua kata kunci)
                     </p>
                   )}
                 <KomikListCard item={item} />
