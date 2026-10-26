@@ -2,12 +2,13 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { apiGet, apiGetSWR, titleKey } from "@/lib/client";
+import { apiGet, apiGetSWR, peekApiCache, titleKey } from "@/lib/client";
 import { usePageTitle } from "@/lib/page-title";
 import { useAutoRefresh } from "@/lib/use-auto-refresh";
 import type { GenreRef, MangaCard } from "@/lib/api/types";
 import { KomikListCard, KomikListSkeleton } from "@/components/komik-list";
 import { Pagination } from "@/components/pagination";
+import { Select } from "@/components/select";
 import { SectionHead, ListSkeleton, ErrorState, EmptyState } from "@/components/states";
 
 interface LatestPayload {
@@ -56,6 +57,26 @@ function initParam(sp: URLSearchParams, key: string): string {
   return sp.get(key) ?? "";
 }
 
+/**
+ * Path API untuk halaman + filter yang sedang ada di URL. Dipakai untuk
+ * cache awal/prefetch menu — harus sama persis dengan `buildQs` di bawah.
+ */
+function latestApiPath(sp: URLSearchParams, page: number): string {
+  const qs = new URLSearchParams({
+    page: String(page),
+    orderby: parseOrderby(sp.get("orderby")),
+  });
+  const tipe = initParam(sp, "tipe");
+  const status = initParam(sp, "status");
+  const genre1 = initParam(sp, "genre");
+  const genre2 = initParam(sp, "genre2");
+  if (tipe) qs.set("tipe", tipe);
+  if (status) qs.set("status", status);
+  if (genre1) qs.set("genre", genre1);
+  if (genre2) qs.set("genre2", genre2);
+  return `/api/latest?${qs}`;
+}
+
 function TerbaruContent() {
   const router = useRouter();
   const sp = useSearchParams();
@@ -76,11 +97,16 @@ function TerbaruContent() {
   // yang sama. Keluar lalu masuk lagi lewat link /terbaru (tanpa ?page=)
   // otomatis mulai dari halaman 1.
   const [page, setPage] = useState<number>(() => parsePage(sp.get("page")));
-  const [items, setItems] = useState<MangaCard[]>([]);
-  const [hasNext, setHasNext] = useState(false);
+  // Cache prefetch menu (hover/idle) dipakai sebagai isi awal — halaman
+  // tujuan langsung tampil, bukan skeleton yang terasa seperti reload.
+  const [boot] = useState(() =>
+    peekApiCache<LatestPayload>(latestApiPath(sp, parsePage(sp.get("page")))),
+  );
+  const [items, setItems] = useState<MangaCard[]>(() => boot?.items ?? []);
+  const [hasNext, setHasNext] = useState(() => boot?.hasNextPage ?? false);
 
   const [genreOpts, setGenreOpts] = useState<GenreRef[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => (boot?.items.length ?? 0) === 0);
   const [error, setError] = useState<string | null>(null);
 
   const bootedRef = useRef(false);
@@ -188,22 +214,23 @@ function TerbaruContent() {
   // Filter berubah / pagination (fresh): selalu fetch baru.
   const loadPage = useCallback(
     async (p: number, fresh = false) => {
-      setLoading(true);
+      const path = `/api/latest?${buildQs(p)}`;
+      // Cache prefetch masih segar → tampilkan isi yang sudah ada tanpa
+      // mengganti layar dengan skeleton.
+      const cached = !fresh ? peekApiCache<LatestPayload>(path) : null;
+      setLoading(!cached);
       setError(null);
       try {
         if (fresh) {
-          const res = await apiGet<LatestPayload>(`/api/latest?${buildQs(p)}`);
+          const res = await apiGet<LatestPayload>(path);
           applyItems(res.items, res.hasNextPage, p);
           setLoading(false);
           return;
         }
-        const { data, stale } = await apiGetSWR<LatestPayload>(
-          `/api/latest?${buildQs(p)}`,
-          (d) => {
-            applyItems(d.items, d.hasNextPage, p);
-            setLoading(false);
-          },
-        );
+        const { data, stale } = await apiGetSWR<LatestPayload>(path, (d) => {
+          applyItems(d.items, d.hasNextPage, p);
+          setLoading(false);
+        });
         if (data) {
           applyItems(data.items, data.hasNextPage, p);
         }
@@ -276,76 +303,50 @@ function TerbaruContent() {
   return (
     <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
       <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
-        <div ref={listTopRef} className="scroll-mt-16">
+        <div ref={listTopRef} className="scroll-mt-[calc(var(--header-h)+0.5rem)]">
           <SectionHead title="Komik Terbaru" />
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:mx-0 sm:flex sm:items-center sm:gap-1.5 sm:overflow-x-auto sm:px-0 sm:pb-0.5">
-        <select
-          value={orderby}
-          onChange={(e) => setOrderby(parseOrderby(e.target.value))}
-          aria-label="Urutkan daftar"
-          className="h-11 w-full min-w-0 rounded-full border border-line bg-paper-2 px-3 text-sm font-medium text-fg sm:h-[30px] sm:w-auto sm:shrink-0 sm:text-xs dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark"
-        >
-          {ORDERBYS.map((o) => (
-            <option key={o.v} value={o.v}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={tipe}
-          onChange={(e) => setTipe(e.target.value)}
-          aria-label="Filter tipe komik"
-          className="h-11 w-full min-w-0 rounded-full border border-line bg-paper-2 px-3 text-sm font-medium text-fg sm:h-[30px] sm:w-auto sm:shrink-0 sm:text-xs dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark"
-        >
-          {TIPES.map((t) => (
-            <option key={t.v} value={t.v}>
-              {t.label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          aria-label="Filter status komik"
-          className="h-11 w-full min-w-0 rounded-full border border-line bg-paper-2 px-3 text-sm font-medium text-fg sm:h-[30px] sm:w-auto sm:shrink-0 sm:text-xs dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark"
-        >
-          {STATUSES.map((s) => (
-            <option key={s.v} value={s.v}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={genre1}
-          onChange={(e) => {
-            setGenre1(e.target.value);
-            if (e.target.value && e.target.value === genre2) setGenre2("");
-          }}
-          aria-label="Filter genre pertama"
-          className="h-11 w-full min-w-0 truncate rounded-full border border-line bg-paper-2 px-3 text-sm font-medium text-fg sm:h-[30px] sm:w-auto sm:max-w-40 sm:shrink-0 sm:text-xs dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark"
-        >
-          <option value="">Genre</option>
-          {genreOpts.map((g) => (
-            <option key={g.slug} value={g.slug} disabled={g.slug === genre2 && genre2 !== ""}>
-              {g.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={genre2}
-          onChange={(e) => setGenre2(e.target.value)}
-          aria-label="Filter genre kedua"
-          className="h-11 w-full min-w-0 truncate rounded-full border border-line bg-paper-2 px-3 text-sm font-medium text-fg sm:h-[30px] sm:w-auto sm:max-w-40 sm:shrink-0 sm:text-xs dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark"
-        >
-          <option value="">+ Genre</option>
-          {genreOpts.map((g) => (
-            <option key={g.slug} value={g.slug} disabled={g.slug === genre1 && genre1 !== ""}>
-              {g.name}
-            </option>
-          ))}
-        </select>
-      </div>
+        <div className="filter-row">
+          <Select
+            value={orderby}
+            onChange={(v) => setOrderby(parseOrderby(v))}
+            label="Urutkan daftar"
+            options={ORDERBYS.map((o) => ({ value: o.v, label: o.label }))}
+          />
+          <Select
+            value={tipe}
+            onChange={setTipe}
+            label="Filter tipe komik"
+            options={TIPES.map((t) => ({ value: t.v, label: t.label }))}
+          />
+          <Select
+            value={status}
+            onChange={setStatus}
+            label="Filter status komik"
+            options={STATUSES.map((s) => ({ value: s.v, label: s.label }))}
+          />
+          <Select
+            value={genre1}
+            onChange={(v) => {
+              setGenre1(v);
+              if (v && v === genre2) setGenre2("");
+            }}
+            label="Filter genre pertama"
+            options={[
+              { value: "", label: "Genre" },
+              ...genreOpts.map((g) => ({ value: g.slug, label: g.name, disabled: g.slug === genre2 && genre2 !== "" })),
+            ]}
+          />
+          <Select
+            value={genre2}
+            onChange={setGenre2}
+            label="Filter genre kedua"
+            options={[
+              { value: "", label: "+ Genre" },
+              ...genreOpts.map((g) => ({ value: g.slug, label: g.name, disabled: g.slug === genre1 && genre1 !== "" })),
+            ]}
+          />
+        </div>
 
       {loading && <KomikListSkeleton count={8} />}
       {error && <ErrorState message={error} onRetry={() => loadPage(page)} />}

@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { apiGet, apiGetSWR, invalidateApi, prefetchApi } from "@/lib/client";
+import { apiGet, apiGetSWR, invalidateApi, peekApiCache, prefetchApi } from "@/lib/client";
 import { timeAgo, useHistory } from "@/lib/history";
 import type { MangaCard } from "@/lib/api/types";
 import { SectionHead, ListSkeleton, ErrorState, EmptyState } from "@/components/states";
-import { RankRow, UpdateRow } from "@/components/cards";
+import { MangaGridCard, RankRow } from "@/components/cards";
 import { useAutoRefresh } from "@/lib/use-auto-refresh";
 
 /** Acak array (Fisher-Yates) — rekomendasi tampil beda tiap kunjungan. */
@@ -38,13 +38,20 @@ interface HomePayload {
  * diam-diam — layar tidak pernah kosong menunggu jaringan.
  */
 function useHomeSection<K extends keyof HomePayload>(key: K, shuffleData = false) {
-  const [data, setData] = useState<MangaCard[] | null>(null);
+  const [data, setData] = useState<MangaCard[] | null>(() => {
+    // Cache prefetch dari menu/hover = konten langsung tampil. Rekomendasi
+    // dikecualikan: urutannya diacak saat load sehingga memakai cache akan
+    // membuat daftar melompat tepat setelah tampil.
+    if (shuffleData) return null;
+    const cached = peekApiCache<HomePayload>("/api/home");
+    return cached ? cached[key] : null;
+  });
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   // Cermin `data !== null` tanpa ikut ke deps `load` — membaca `data`
   // langsung di dalam useCallback menangkap nilai basi (stale closure)
   // sehingga spinner `refreshing` tidak pernah menyala saat muat ulang.
-  const hasDataRef = useRef(false);
+  const hasDataRef = useRef(data !== null);
   // Cermin `data` untuk pengecekan background (hindari stale closure).
   const dataRef = useRef<MangaCard[] | null>(null);
   useEffect(() => {
@@ -164,20 +171,73 @@ export default function HomePage() {
     };
   }, []);
 
+  const anyRefreshing = popular.refreshing || latest.refreshing || recommended.refreshing;
+
   return (
-    <div className="flex min-w-0 flex-col gap-3 sm:gap-5">
+    <div className="flex min-w-0 flex-col gap-10 sm:gap-14 lg:gap-16">
+      {/* Peringkat harian: daftar 1–10, dua kolom di layar lebar (urut ke bawah per kolom) */}
+      <section className="min-w-0">
+        <div className="mb-1 flex items-end justify-between gap-3 border-b border-line pb-2 dark:border-line-dark">
+          <h1 className="display-cond relative min-w-0 flex-1 truncate text-2xl text-fg sm:text-3xl lg:text-4xl dark:text-fg-dark">
+            Peringkat harian
+            <span aria-hidden className="bar-grow absolute -bottom-[9px] left-0 h-[3px] w-10 bg-accent" />
+          </h1>
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              onClick={() => {
+                popular.load(true);
+                latest.load(true);
+                recommended.load(true);
+              }}
+              aria-label="Muat ulang data terbaru"
+              title="Muat ulang data terbaru"
+              className="flex h-9 w-9 touch-manipulation items-center justify-center rounded-md text-muted transition-colors hover:bg-accent hover:text-white dark:text-muted-dark"
+            >
+              <svg className={`h-4 w-4 ${anyRefreshing ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24">
+                <path
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 4v6h6M20 20v-6h-6M5.6 9a7 7 0 0 1 12.8 0M18.4 15a7 7 0 0 1-12.8 0"
+                />
+              </svg>
+            </button>
+            <Link href="/populer" className="rounded-md px-2 py-1.5 text-xs font-bold text-accent hover:bg-accent hover:text-white">
+              Lihat semua
+            </Link>
+          </div>
+        </div>
+        {!popular.data && !popular.error && <ListSkeleton count={6} />}
+        {popular.error && <ErrorState message={popular.error} onRetry={() => popular.load(true)} />}
+        {popular.data && popular.data.length === 0 && (
+          <EmptyState message="Belum ada data peringkat dari sumber data." />
+        )}
+        {popular.data && popular.data.length > 0 && (
+          <div className="mt-3 grid gap-2.5 lg:grid-cols-2 lg:gap-3">
+            {[popular.data.slice(0, 5), popular.data.slice(5, 10)].map((col, ci) => (
+              <div key={ci} className="flex min-w-0 flex-col gap-2.5 lg:gap-3">
+                {col.map((item) => (
+                  <RankRow key={`${item.slug}#${item.latestChapter?.url ?? ""}`} item={item} />
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* Terakhir dibaca — hanya tampil bila ada riwayat di perangkat ini */}
       {history.length > 0 && (
-        <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
-          <SectionHead title="Terakhir Dibaca" href="/riwayat" />
-          <div className="rail-scroll -mx-3 flex gap-2.5 overflow-x-auto px-3 pb-0.5 sm:mx-0 sm:px-0">
+        <section className="min-w-0">
+          <SectionHead title="Lanjut membaca" href="/riwayat" />
+          <div className="rail-scroll rail-snap -mx-3 flex gap-3 overflow-x-auto px-3 pb-1 sm:mx-0 sm:px-0">
             {history.slice(0, 10).map((h) => (
               <Link
                 key={h.slug}
                 href={h.route}
-                className="group w-[104px] shrink-0 snap-start overflow-hidden rounded-xl border border-line bg-paper transition-[border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-accent sm:w-[120px] dark:border-line-dark dark:bg-ink"
+                className="group w-[112px] shrink-0 sm:w-[132px] lg:w-[148px]"
               >
-                <div className="relative aspect-[3/4] w-full overflow-hidden bg-paper-3 dark:bg-ink-3">
+                <div className="chamfer chamfer-sm relative aspect-[3/4] w-full overflow-hidden bg-paper-3 dark:bg-ink-3">
                   {h.cover ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -187,110 +247,89 @@ export default function HomePage() {
                       decoding="async"
                       fetchPriority="low"
                       onLoad={(e) => e.currentTarget.classList.add("blur-done")}
-                      className="blur-up h-full w-full object-cover"
+                      className="blur-up h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center p-2 text-center text-[11px] text-muted dark:text-muted-dark">
                       {h.title}
                     </div>
                   )}
-                  <span className="absolute bottom-1 left-1 right-1 truncate rounded-md bg-black/70 px-1.5 py-0.5 text-center text-[10px] font-semibold text-white">
-                    {h.chapterLabel}
-                  </span>
+                  {h.progress > 0 && (
+                    <span
+                      aria-hidden
+                      className="absolute inset-x-0 bottom-0 h-1 bg-black/40"
+                    >
+                      <span className="block h-full bg-accent" style={{ width: `${Math.round(h.progress * 100)}%` }} />
+                    </span>
+                  )}
                 </div>
-                <div className="min-w-0 p-1.5">
-                  <p className="truncate text-[11px] font-semibold leading-tight text-fg group-hover:text-accent sm:text-xs dark:text-fg-dark">
-                    {h.title}
-                  </p>
-                  <p className="mt-0.5 truncate text-[10px] text-muted dark:text-muted-dark">
-                    {timeAgo(h.updatedAt)}
-                    {h.progress > 0 ? ` · ${Math.round(h.progress * 100)}%` : ""}
-                  </p>
-                </div>
+                <p className="mt-2 truncate text-xs font-bold leading-tight text-fg group-hover:text-accent dark:text-fg-dark">
+                  {h.title}
+                </p>
+                <p className="mt-0.5 truncate text-[11px] text-muted dark:text-muted-dark">
+                  {h.chapterLabel} · {timeAgo(h.updatedAt)}
+                </p>
               </Link>
             ))}
           </div>
         </section>
       )}
 
-      {/* Peringkat — ringkas di atas untuk mobile */}
-      <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
-        <div className="flex items-center gap-2">
-          <div className="min-w-0 flex-1">
-            <SectionHead title="Peringkat Harian" href="/populer" />
-          </div>
-          <button
-            onClick={() => {
-              popular.load(true);
-              latest.load(true);
-              recommended.load(true);
-            }}
-            aria-label="Muat ulang data terbaru"
-            title="Muat ulang data terbaru"
-            className="flex h-9 w-9 shrink-0 touch-manipulation items-center justify-center rounded-full border border-line text-muted transition-colors hover:border-accent hover:text-accent sm:h-8 sm:w-8 dark:border-line-dark dark:text-muted-dark"
-          >
-            <svg
-              className={`h-4 w-4 ${popular.refreshing || latest.refreshing || recommended.refreshing ? "animate-spin" : ""}`}
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4 4v6h6M20 20v-6h-6M5.6 9a7 7 0 0 1 12.8 0M18.4 15a7 7 0 0 1-12.8 0"
-              />
-            </svg>
-          </button>
-        </div>
-        {!popular.data && !popular.error && <ListSkeleton count={5} />}
-        {popular.error && <ErrorState message={popular.error} onRetry={() => popular.load(true)} />}
-        {popular.data && popular.data.length === 0 && (
-          <EmptyState message="Belum ada data peringkat dari sumber data." />
-        )}
-        {popular.data && popular.data.length > 0 && (
-          <div className="grid gap-x-6 lg:grid-cols-2">
-            {popular.data.slice(0, 10).map((item) => (
-              <RankRow key={`${item.slug}#${item.latestChapter?.url ?? ""}`} item={item} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Update terbaru */}
-      <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
-        <SectionHead title="Update Terbaru" href="/terbaru" />
+      {/* Update terbaru — grid seragam: 12 judul (16 di layar sangat lebar) */}
+      <section className="min-w-0">
+        <SectionHead title="Update terbaru" href="/terbaru" />
         {!latest.data && !latest.error && <ListSkeleton count={8} />}
         {latest.error && <ErrorState message={latest.error} onRetry={() => latest.load(true)} />}
         {latest.data && latest.data.length === 0 && !latest.error && (
           <EmptyState message="Belum ada update dari sumber data." />
         )}
         {latest.data && latest.data.length > 0 && (
-          <div className="grid gap-x-6 lg:grid-cols-2">
-            {latest.data.slice(0, 12).map((item) => (
-              <UpdateRow key={item.slug + (item.latestChapter?.url || "")} item={item} />
+          <div className="stagger grid grid-cols-2 gap-x-3 gap-y-5 min-[420px]:grid-cols-3 sm:grid-cols-4 sm:gap-x-3.5 lg:grid-cols-6 lg:gap-x-4 lg:gap-y-6 xl:grid-cols-8">
+            {latest.data.slice(0, 16).map((item, i) => (
+              <div
+                key={item.slug + (item.latestChapter?.url || "")}
+                className={`min-w-0 ${i >= 12 ? "hidden xl:flex" : "flex"}`}
+              >
+                <MangaGridCard item={item} />
+              </div>
             ))}
           </div>
         )}
       </section>
 
-      {/* Rekomendasi — sama seperti Update Terbaru (baris horizontal),
-          isinya acak tiap dibuka. */}
-      <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
-        <SectionHead title="Rekomendasi" href="/terbaru?orderby=rand" />
-        {!recommended.data && !recommended.error && <ListSkeleton count={8} />}
-        {recommended.error && <ErrorState message={recommended.error} onRetry={() => recommended.load(true)} />}
-        {recommended.data && recommended.data.length === 0 && !recommended.error && (
-          <EmptyState message="Belum ada rekomendasi dari sumber data." />
-        )}
-        {recommended.data && recommended.data.length > 0 && (
-          <div className="grid gap-x-6 lg:grid-cols-2">
-            {recommended.data.slice(0, 12).map((item) => (
-              <UpdateRow key={item.slug + (item.latestChapter?.url || "")} item={item} />
-            ))}
-          </div>
-        )}
+      {/* Rekomendasi — judul di kolom kiri (desktop), cover berjajar di rail */}
+      <section className="grid min-w-0 gap-4 lg:grid-cols-[210px_minmax(0,1fr)] lg:gap-8 xl:grid-cols-[240px_minmax(0,1fr)]">
+        <div className="lg:sticky lg:top-[calc(var(--header-h)+1rem)] lg:self-start">
+          <h2 className="display-cond text-3xl text-fg sm:text-4xl dark:text-fg-dark">
+            Rekomendasi
+          </h2>
+          <span aria-hidden className="mt-2 block h-[3px] w-10 bg-accent" />
+          <p className="mt-3 hidden text-sm leading-relaxed text-muted lg:block dark:text-muted-dark">
+            Pilihan acak, berganti setiap kamu membuka beranda.
+          </p>
+          <Link
+            href="/terbaru?orderby=rand"
+            className="mt-3 hidden w-fit rounded-md bg-accent px-3 py-2 text-xs font-bold text-white hover:bg-accent-strong lg:inline-block"
+          >
+            Lihat semua
+          </Link>
+        </div>
+        <div className="min-w-0">
+          {!recommended.data && !recommended.error && <ListSkeleton count={4} />}
+          {recommended.error && <ErrorState message={recommended.error} onRetry={() => recommended.load(true)} />}
+          {recommended.data && recommended.data.length === 0 && !recommended.error && (
+            <EmptyState message="Belum ada rekomendasi dari sumber data." />
+          )}
+          {recommended.data && recommended.data.length > 0 && (
+            <div className="rail-scroll rail-snap -mx-3 flex gap-3 overflow-x-auto px-3 pb-2 sm:mx-0 sm:px-0">
+              {recommended.data.slice(0, 12).map((item) => (
+                <div key={item.slug + (item.latestChapter?.url || "")} className="flex w-[132px] shrink-0 sm:w-[156px] lg:w-[168px]">
+                  <MangaGridCard item={item} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </section>
     </div>
   );

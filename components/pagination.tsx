@@ -47,9 +47,9 @@ export function Pagination({ page, hasNext, pending, onChange }: PaginationProps
   // Mobile: tombol dibuat kompak (tinggi 36px, angka 13px) agar
   // pagination tidak mendominasi layar kecil. Desktop tetap seperti semula.
   const base =
-    "flex min-h-9 min-w-9 touch-manipulation items-center justify-center rounded-full border px-2.5 py-1 text-[13px] font-semibold transition-[color,border-color,transform] active:scale-[0.94] sm:min-h-0 sm:min-w-9 sm:py-1.5 sm:text-[13px]";
+    "flex min-h-9 min-w-9 touch-manipulation items-center justify-center rounded-md border px-2.5 py-1 text-[13px] font-semibold transition-[color,border-color,transform] active:scale-[0.94] sm:min-h-0 sm:min-w-9 sm:py-1.5 sm:text-[13px]";
   const idle = "border-line bg-paper-2 text-fg hover:border-accent hover:text-accent dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark";
-  const active = "border-transparent bg-accent text-white";
+  const active = "border-accent bg-accent text-white";
   // Tombol ‹ › boleh meredup saat nonaktif; tombol angka JANGAN memakai
   // disabled:opacity agar halaman aktif (mis. ?page=2 → angka 2) tetap solid.
   const atStart = page <= 1;

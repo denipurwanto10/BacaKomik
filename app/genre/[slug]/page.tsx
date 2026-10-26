@@ -7,6 +7,7 @@ import { usePageTitle } from "@/lib/page-title";
 import type { MangaCard } from "@/lib/api/types";
 import { KomikListCard, KomikListSkeleton } from "@/components/komik-list";
 import { Pagination } from "@/components/pagination";
+import { Select } from "@/components/select";
 import { SectionHead, ErrorState, EmptyState } from "@/components/states";
 
 interface LatestPayload {
@@ -202,33 +203,21 @@ function GenreDetailContent({ slug }: { slug: string }) {
   usePageTitle(`Genre: ${title}`);
 
   return (
-    <div ref={listTopRef} className="flex min-w-0 scroll-mt-16 flex-col gap-3 sm:gap-4">
+    <div ref={listTopRef} className="flex min-w-0 scroll-mt-[calc(var(--header-h)+0.5rem)] flex-col gap-3 sm:gap-4">
       <SectionHead title={`Genre: ${title}`} />
-      <div className="grid grid-cols-2 gap-2 sm:mx-0 sm:flex sm:items-center sm:gap-1.5 sm:overflow-x-auto sm:px-0 sm:pb-0.5">
-        <select
+      <div className="filter-row">
+        <Select
           value={orderby}
-          onChange={(e) => setOrderby(e.target.value as Orderby)}
-          aria-label="Urutkan daftar"
-          className="h-11 w-full min-w-0 rounded-full border border-line bg-paper-2 px-3 text-sm font-medium text-fg sm:h-[30px] sm:w-auto sm:shrink-0 sm:text-xs dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark"
-        >
-          {ORDERBYS.map((o) => (
-            <option key={o.v} value={o.v}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-        <select
+          onChange={(v) => setOrderby(v as Orderby)}
+          label="Urutkan daftar"
+          options={ORDERBYS.map((o) => ({ value: o.v, label: o.label }))}
+        />
+        <Select
           value={tipe}
-          onChange={(e) => setTipe(e.target.value)}
-          aria-label="Filter tipe komik"
-          className="h-11 w-full min-w-0 rounded-full border border-line bg-paper-2 px-3 text-sm font-medium text-fg sm:h-[30px] sm:w-auto sm:shrink-0 sm:text-xs dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark"
-        >
-          {TIPES.map((t) => (
-            <option key={t.v} value={t.v}>
-              {t.label}
-            </option>
-          ))}
-        </select>
+          onChange={setTipe}
+          label="Filter tipe komik"
+          options={TIPES.map((t) => ({ value: t.v, label: t.label }))}
+        />
       </div>
 
       {loading && <KomikListSkeleton count={8} />}

@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTheme } from "./theme";
 import { SearchSuggest } from "./search-suggest";
+import { NavLink } from "./nav-link";
+import { warmPrimaryNav } from "@/lib/nav-prefetch";
 
 const NAV = [
   { href: "/", label: "Beranda", icon: IconHome },
@@ -22,8 +23,8 @@ function isActive(pathname: string, href: string) {
 /** Logo mark: Rupture Panel — panel komik dibelah fracture kristalin, negative space membentuk K. */
 function Mark() {
   return (
-    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-white">
-      <svg viewBox="48 48 160 160" className="h-7 w-7" fill="currentColor" aria-hidden="true">
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent text-white">
+      <svg viewBox="48 48 160 160" className="h-[26px] w-[26px]" fill="currentColor" aria-hidden="true">
         <path
           fillRule="evenodd"
           d="M64 64H124L96 128L124 192H64Z M156 64H192V192H156L128 128Z"
@@ -47,6 +48,12 @@ export function Header() {
     setMobileSearch(false);
   }, [pathname]);
 
+  // Panaskan data menu lain saat browser idle — tap menu di ponsel
+  // langsung menampilkan isi, bukan skeleton yang terasa seperti reload.
+  useEffect(() => {
+    warmPrimaryNav(pathname);
+  }, [pathname]);
+
   const submitSearch = () => {
     const kw = q.trim();
     if (!kw) return;
@@ -56,18 +63,18 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-paper-2 pt-[calc(env(safe-area-inset-top,0px)+16px)] dark:border-line-dark dark:bg-ink-2">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-3 sm:gap-3 sm:px-4">
-        <Link href="/" className="flex min-w-0 shrink-0 items-center gap-2" aria-label="KomikFrost, ke beranda">
+    <header data-app-header className="sticky top-0 z-40 border-b border-line bg-paper/90 backdrop-blur-md pt-[calc(env(safe-area-inset-top,0px)+16px)] md:pt-[env(safe-area-inset-top,0px)] dark:border-line-dark dark:bg-ink/90">
+      <div className="mx-auto flex h-14 max-w-app items-stretch gap-2 px-3 sm:gap-4 sm:px-4 lg:px-6">
+        <NavLink href="/" className="flex min-w-0 shrink-0 items-center gap-2.5" aria-label="KomikFrost, ke beranda">
           <Mark />
-          <span className="truncate font-display text-base font-extrabold tracking-tight text-fg sm:text-lg dark:text-fg-dark">
+          <span className="truncate font-display text-lg font-extrabold tracking-tight text-fg sm:text-xl dark:text-fg-dark">
             Komik<span className="text-accent">Frost</span>
           </span>
-        </Link>
+        </NavLink>
 
         {/* Search + saran langsung — full width on desktop, hidden on mobile (bottom tab covers it) */}
         <form
-          className="relative hidden min-w-0 flex-1 items-center md:flex"
+          className="relative hidden min-w-0 max-w-md flex-1 items-center self-center lg:flex xl:max-w-xl"
           onSubmit={(e) => {
             e.preventDefault();
             submitSearch();
@@ -78,36 +85,37 @@ export function Header() {
             value={q}
             onChange={setQ}
             onSubmit={submitSearch}
-            inputClassName="h-10 w-full min-w-0 rounded-full border border-line bg-paper pl-9 pr-4 text-sm text-fg outline-none placeholder:text-muted focus-visible:border-accent dark:border-line-dark dark:bg-ink dark:text-fg-dark dark:placeholder:text-muted-dark"
+            inputClassName="h-9 w-full min-w-0 rounded-md border border-line bg-paper-2 pl-9 pr-3 text-sm text-fg outline-none placeholder:text-muted focus-visible:border-accent dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark dark:placeholder:text-muted-dark"
           />
         </form>
 
-        {/* Desktop nav */}
-        <nav className="hidden shrink-0 items-center gap-1 md:flex">
+        {/* Desktop nav: tab bergaris bawah yang menempel ke tepi header */}
+        <nav className="ml-auto hidden shrink-0 items-stretch gap-0.5 md:flex">
           {NAV.map((n) => {
             const active = isActive(pathname, n.href);
             return (
-              <Link
+              <NavLink
                 key={n.href}
                 href={n.href}
-                className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+                aria-current={active ? "page" : undefined}
+                className={`relative flex items-center px-2 text-[13px] font-semibold transition-colors after:absolute after:inset-x-2 lg:px-3 lg:text-sm lg:after:inset-x-3 after:-bottom-px after:h-[3px] after:bg-accent after:transition-transform after:duration-200 ${
                   active
-                    ? "bg-accent text-white"
-                    : "text-muted hover:bg-paper hover:text-fg dark:text-muted-dark dark:hover:bg-ink dark:hover:text-fg-dark"
+                    ? "text-fg after:scale-x-100 dark:text-fg-dark"
+                    : "text-muted after:scale-x-0 hover:text-fg dark:text-muted-dark dark:hover:text-fg-dark"
                 }`}
               >
                 {n.label}
-              </Link>
+              </NavLink>
             );
           })}
         </nav>
 
-        <div className="ml-auto flex shrink-0 items-center gap-1.5 md:ml-0">
+        <div className="ml-auto flex shrink-0 items-center gap-1.5 md:ml-1">
           <button
             onClick={() => setMobileSearch((v) => !v)}
             aria-label="Cari komik"
             aria-expanded={mobileSearch}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-line text-fg md:hidden dark:border-line-dark dark:text-fg-dark"
+            className="flex h-10 w-10 items-center justify-center self-center rounded-md border border-line text-fg lg:hidden dark:border-line-dark dark:text-fg-dark"
           >
             {mobileSearch ? (
               <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
@@ -120,7 +128,7 @@ export function Header() {
           <button
             onClick={toggle}
             aria-label="Ganti tema"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line text-fg dark:border-line-dark dark:text-fg-dark"
+            className="flex h-10 w-10 shrink-0 items-center justify-center self-center rounded-md border border-line text-fg transition-colors hover:border-accent hover:text-accent md:h-9 md:w-9 dark:border-line-dark dark:text-fg-dark"
           >
             {theme === "dark" ? <IconSun className="h-[18px] w-[18px]" /> : <IconMoon className="h-[18px] w-[18px]" />}
           </button>
@@ -129,7 +137,7 @@ export function Header() {
       {/* Bar pencarian mobile — expand di bawah header, hasil dropdown
           langsung tanpa pindah halaman. */}
       {mobileSearch && (
-        <div className="mx-auto max-w-6xl px-3 pb-3 md:hidden">
+        <div className="mx-auto max-w-app px-3 pb-3 sm:px-4 lg:hidden">
           <form
             className="relative flex min-w-0 items-center"
             onSubmit={(e) => {
@@ -143,7 +151,7 @@ export function Header() {
               onChange={setQ}
               onSubmit={submitSearch}
               autoFocus
-              inputClassName="h-11 w-full min-w-0 rounded-full border border-line bg-paper pl-9 pr-4 text-base text-fg outline-none placeholder:text-muted focus-visible:border-accent dark:border-line-dark dark:bg-ink dark:text-fg-dark dark:placeholder:text-muted-dark"
+              inputClassName="h-11 w-full min-w-0 rounded-md border border-line bg-paper-2 pl-9 pr-4 text-base text-fg outline-none placeholder:text-muted focus-visible:border-accent dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark dark:placeholder:text-muted-dark"
             />
           </form>
         </div>
@@ -158,49 +166,60 @@ export function Main({ children }: { children: React.ReactNode }) {
   const reading = pathname.startsWith("/baca/");
   return (
     <main
-      className={`mx-auto w-full max-w-6xl min-w-0 px-3 pt-3 sm:px-4 sm:pt-4 sm:py-6 ${
-        reading ? "pb-4" : "pb-24 md:pb-6"
+      className={`mx-auto w-full max-w-app min-w-0 flex-1 px-3 pt-4 sm:px-4 sm:pt-6 sm:pb-6 lg:px-6 lg:pt-8 ${
+        reading ? "pb-4" : "pb-28 md:pb-6"
       }`}
     >
-      {children}
+      {!reading && <div aria-hidden className="scroll-progress" />}
+      <div key={pathname} className="page-in min-w-0">
+        {children}
+      </div>
     </main>
   );
 }
 
-/** Fixed bottom tab bar — app-like primary nav for mobile, hidden on desktop. */
-export function MobileTabBar() {  const pathname = usePathname();
-  // Tab bar kecil: Beranda, Terbaru, Peringkat, Riwayat.
-  // Cari = tombol di header (expand inline + saran langsung).
-  // Genre & Favorit tetap di nav desktop + halaman masing-masing.
-  const items = NAV.filter((n) => n.href !== "/genre" && n.href !== "/favorit");
+/**
+ * Tab bar mobile: kapsul melayang, datar, 4 tujuan utama. Hanya tab
+ * aktif yang menampilkan label — sisanya ikon saja, jadi bar tetap
+ * ramping di layar 320px. Peringkat ada di beranda, Riwayat lewat
+ * halaman Favorit; Cari = tombol di header.
+ */
+export function MobileTabBar() {
+  const pathname = usePathname();
+  const items = [
+    { href: "/", label: "Beranda", icon: IconHome, match: ["/"] },
+    { href: "/terbaru", label: "Terbaru", icon: IconClock, match: ["/terbaru", "/populer"] },
+    { href: "/genre", label: "Genre", icon: IconTag, match: ["/genre"] },
+    { href: "/favorit", label: "Favorit", icon: IconBookmark, match: ["/favorit", "/riwayat"] },
+  ];
 
   // Sembunyikan saat membaca chapter — halaman baca butuh layar penuh.
   if (pathname.startsWith("/baca/")) return null;
 
   return (
-    <nav className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-line bg-paper-2 md:hidden dark:border-line-dark dark:bg-ink-2">
-      <div className="mx-auto grid max-w-6xl grid-cols-4 items-stretch px-1">
+    <nav
+      aria-label="Navigasi utama"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+10px)] md:hidden"
+    >
+      <div className="pointer-events-auto mx-auto flex h-14 max-w-[21rem] items-center gap-1 rounded-2xl border border-line bg-paper-2/90 p-1.5 backdrop-blur-md dark:border-line-dark dark:bg-ink-2/90">
         {items.map((n) => {
-          const active = isActive(pathname, n.href);
+          const active = n.match.some((m) => (m === "/" ? pathname === "/" : pathname.startsWith(m)));
           const Icon = n.icon;
           return (
-            <Link
+            <NavLink
               key={n.href}
               href={n.href}
+              aria-label={n.label}
               aria-current={active ? "page" : undefined}
-              className="flex min-w-0 flex-col items-center gap-0.5 px-1 py-2 text-[11px] font-medium"
+              className={`flex h-full min-w-0 items-center justify-center gap-1.5 rounded-xl transition-[flex-grow,background-color,color] duration-200 ${
+                active
+                  ? "flex-[2.4] bg-accent px-2 text-white"
+                  : "flex-1 text-muted active:bg-paper-3 dark:text-muted-dark dark:active:bg-ink-3"
+              }`}
             >
-              <span
-                className={`flex h-[38px] w-[52px] shrink-0 items-center justify-center rounded-full transition-colors ${active ? "bg-accent-soft dark:bg-accent-soft-dark" : ""}`}
-              >
-              <Icon
-                className={`h-[22px] w-[22px] shrink-0 ${active ? "text-accent" : "text-muted dark:text-muted-dark"}`}
-              />
-              </span>
-              <span className={`truncate ${active ? "font-semibold text-accent" : "text-muted dark:text-muted-dark"}`}>
-                {n.label}
-              </span>
-            </Link>
+              <Icon className="h-5 w-5 shrink-0" />
+              {active && <span className="tab-label truncate text-[13px] font-bold">{n.label}</span>}
+            </NavLink>
           );
         })}
       </div>
@@ -210,12 +229,14 @@ export function MobileTabBar() {  const pathname = usePathname();
 
 export function Footer() {
   return (
-    <footer className="mt-10 hidden border-t border-line py-6 md:block dark:border-line-dark">
-      <div className="mx-auto max-w-6xl px-4 text-center text-xs leading-relaxed text-muted dark:text-muted-dark">
-        <p className="font-display font-bold text-fg dark:text-fg-dark">KomikFrost</p>
-        <p className="mt-1">
-          Seluruh data (judul, cover, sinopsis, chapter, peringkat) dimuat langsung dari
-          sumber eksternal. KomikFrost tidak menyimpan konten komik.
+    <footer className="mt-12 hidden shrink-0 border-t border-line py-8 md:block dark:border-line-dark">
+      <div className="mx-auto flex max-w-app items-start justify-between gap-10 px-4 lg:px-6">
+        <p className="display-cond text-4xl text-fg dark:text-fg-dark">
+          Komik<span className="text-accent">Frost</span>
+        </p>
+        <p className="max-w-md text-xs leading-relaxed text-muted dark:text-muted-dark">
+          Judul, cover, sinopsis, chapter, dan peringkat dimuat langsung dari sumber eksternal.
+          KomikFrost tidak menyimpan konten komik.
         </p>
       </div>
     </footer>
@@ -268,9 +289,9 @@ export function BackToTop() {
     <button
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       aria-label="Kembali ke atas"
-      className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] right-3 z-40 flex h-11 w-11 touch-manipulation items-center justify-center rounded-full bg-accent text-white transition-transform active:scale-95 md:bottom-6 md:right-6"
+      className="fab-in group/fab fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] right-3 z-40 flex h-11 w-11 touch-manipulation items-center justify-center rounded-lg bg-accent text-white transition-[transform,background-color] hover:bg-accent-strong active:scale-90 md:bottom-6 md:right-6"
     >
-      <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+      <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 transition-transform duration-300 group-hover/fab:-translate-y-0.5">
         <path
           d="M12 19V5m0 0l-6 6m6-6l6 6"
           stroke="currentColor"

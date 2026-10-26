@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { apiGet } from "@/lib/client";
+import { apiGet, peekApiCache, prefetchApi } from "@/lib/client";
 import { useAutoRefresh } from "@/lib/use-auto-refresh";
 import { usePageTitle } from "@/lib/page-title";
 import type { MangaCard } from "@/lib/api/types";
@@ -24,12 +24,23 @@ function PopulerContent() {
   usePageTitle(
     `Peringkat ${PERIODS.find((p) => p.v === period)?.label ?? "Harian"}`,
   );
-  const [items, setItems] = useState<MangaCard[] | null>(null);
+  // Cache dari prefetch menu (hover/idle) dipakai sebagai state awal agar
+  // halaman langsung terisi, bukan menampilkan skeleton seperti reload.
+  const [items, setItems] = useState<MangaCard[] | null>(() => {
+    const cached = peekApiCache<{ period: string; items: MangaCard[] }>(
+      `/api/popular?period=${period}`,
+    );
+    return cached?.items ?? null;
+  });
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
-    setItems(null);
+    // Ganti periode tanpa cache: kosongkan agar skeleton tampil. Bila cache
+    // prefetch sudah ada, biarkan daftar tampil sampai data baru tiba.
+    if (!peekApiCache<{ period: string; items: MangaCard[] }>(`/api/popular?period=${period}`)) {
+      setItems(null);
+    }
     try {
       const res = await apiGet<{ period: string; items: MangaCard[] }>(
         `/api/popular?period=${period}`,
@@ -83,6 +94,8 @@ function PopulerContent() {
             <Link
               key={p.v}
               href={p.v === "harian" ? "/populer" : `/populer?period=${p.v}`}
+              onMouseEnter={() => prefetchApi(`/api/popular?period=${p.v}`)}
+              onTouchStart={() => prefetchApi(`/api/popular?period=${p.v}`)}
               className={`shrink-0 rounded-full border px-3.5 py-2 text-xs font-semibold transition-colors sm:py-1.5 ${
                 active
                   ? "border-transparent bg-accent text-white"
@@ -100,7 +113,7 @@ function PopulerContent() {
         <EmptyState message="Belum ada data peringkat dari sumber data." />
       )}
       {items && items.length > 0 && (
-        <div className="grid min-w-0 gap-x-8 lg:grid-cols-2">
+        <div className="grid min-w-0 gap-2.5 lg:grid-cols-2 lg:gap-3">
           {items.map((item) => (
             <RankRow key={`${item.slug}#${item.latestChapter?.url ?? ""}`} item={item} />
           ))}

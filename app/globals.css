@@ -6,29 +6,40 @@
 /* Design tokens — "panel & ink" system, brand-specific, not a stock kit.  */
 /* ---------------------------------------------------------------------- */
 @theme {
-  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+
+  /* Lebar konten maksimum — melebar di monitor besar (1440px). */
+  --container-app: 90rem;
+
+  /* Geometri tegas: sudut kecil, bukan bubble. Pil ditangani di bawah. */
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+  --radius-3xl: 16px;
 
   /* Ink = dark surfaces, Paper = light surfaces. Cool neutrals, not cream. */
-  --color-ink: #101217;
-  --color-ink-2: #191c23;
-  --color-ink-3: #23262f;
-  --color-line-dark: #2b2f3a;
-  --color-paper: #eef0f3;
-  --color-paper-2: #ffffff;
-  --color-paper-3: #e4e7eb;
-  --color-line: #dcdfe4;
+  --color-ink: #090d10;
+  --color-ink-2: #10161a;
+  --color-ink-3: #182026;
+  --color-line-dark: #1e2a30;
+  --color-paper: #eef2f3;
+  --color-paper-2: #fbfdfd;
+  --color-paper-3: #e2e9eb;
+  --color-line: #d6e0e2;
 
-  --color-fg: #13151a;
-  --color-fg-dark: #eef0f3;
-  --color-muted: #676c76;
-  --color-muted-dark: #8d93a0;
+  --color-fg: #0b1013;
+  --color-fg-dark: #eaf1f2;
+  --color-muted: #566469;
+  --color-muted-dark: #8fa0a7;
 
   /* Brand accent: ink teal — distinct from the usual SaaS-blue / vermilion. */
   --color-accent: #0f8f79;
   --color-accent-strong: #0a7562;
-  --color-accent-soft: #dcf1ec;
-  --color-accent-soft-dark: #113831;
+  --color-accent-soft: #d3eee8;
+  --color-accent-soft-dark: #0f3a33;
 
   /* Reading-type marks (manga / manhwa / manhua). */
   --color-mark-manga: #d84a41;
@@ -47,9 +58,32 @@
   --color-danger-dark: #e57368;
 }
 
+/* Tinggi header sticky (safe-area + padding mobile + bar 56px + garis).
+   Dipakai progress bar reader, scroll-margin, dan kolom sticky agar
+   tidak tertutup header di ukuran layar mana pun. */
+:root {
+  --header-h: calc(env(safe-area-inset-top, 0px) + 16px + 56px + 1px);
+}
+@media (min-width: 768px) {
+  :root {
+    --header-h: calc(env(safe-area-inset-top, 0px) + 57px);
+  }
+}
+/* HP landscape (layar pendek): header tidak ikut menempel — jangan
+   makan 70px dari tinggi layar yang cuma ~380px. */
+@media (max-height: 480px) and (orientation: landscape) {
+  :root {
+    --header-h: 0px;
+  }
+  [data-app-header] {
+    position: static;
+  }
+}
+
 :root {
   color-scheme: light dark;
-  --radius-card: 1rem;
+  --radius-card: 12px;
+  --radius-btn: 8px;
   --radius-pill: 999px;
 }
 
@@ -78,24 +112,14 @@ html {
 
 body {
   text-rendering: optimizeLegibility;
-  font-feature-settings: "ss01" 1;
   overflow-x: clip;
   /* Samakan dengan background html agar tidak ada lapisan terang
      di bawah konten saat dark mode (tembus ke status bar iOS 26+). */
   background-color: var(--color-paper);
-  /* Latar modern: semburat hijau sangat halus di atas paper/ink.
-     Light & dark ikut adaptif via color-mix — tanpa gambar, nol request. */
-  background-image:
-    radial-gradient(720px 280px at 12% -80px, color-mix(in srgb, var(--color-accent) 9%, transparent), transparent 70%),
-    radial-gradient(640px 260px at 88% -60px, color-mix(in srgb, var(--color-accent) 6%, transparent), transparent 70%);
-  /* fixed bikin ghosting/blur saat scroll di WebView PWA iOS — pakai scroll. */
-  background-attachment: scroll;
+  font-family: var(--font-sans);
 }
 .dark body {
   background-color: var(--color-ink);
-  background-image:
-    radial-gradient(720px 280px at 12% -80px, color-mix(in srgb, var(--color-accent) 16%, transparent), transparent 70%),
-    radial-gradient(640px 260px at 88% -60px, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 70%);
 }
 
 /* Media tidak boleh melebar melewati viewport kecil (320px). */
@@ -173,6 +197,20 @@ div {
   }
 }
 
+/* Target sentuh >= 44px di layar sentuh (tablet & HP) walau kontrol
+   desktop dibuat kompak (mis. dropdown filter h-[30px]). */
+@media (pointer: coarse) {
+  select,
+  .touch-target {
+    min-height: 44px;
+  }
+}
+
+/* Teks panjang tidak boleh memecah layout. */
+h1, h2, h3, p, dd {
+  overflow-wrap: break-word;
+}
+
 /* ---------------------------------------------------------------------- */
 /* Performa + kesan modern (CSS-only, nol JS, nol bundle):                  */
 /* - .cv-auto: browser skip render kartu di luar layar (list panjang).      */
@@ -210,11 +248,16 @@ div {
   );
 }
 .blur-up {
-  filter: blur(10px);
-  transition: filter 0.45s ease;
+  filter: blur(12px);
+  transform: scale(1.06);
+  transition:
+    filter 0.7s var(--ease-out),
+    transform 0.9s var(--ease-out),
+    scale 0.5s var(--ease-out);
 }
 .blur-up.blur-done {
   filter: none;
+  transform: none;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -274,4 +317,334 @@ div {
 }
 .boot-splash-pop {
   animation: boot-pop 450ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Bahasa visual "panel": datar, sudut tajam, satu potongan miring (chamfer) */
+/* sebagai tanda tangan, dan blok offset ala cetakan misregistrasi.        */
+/* Tanpa bayangan, tanpa gradien.                                         */
+/* ---------------------------------------------------------------------- */
+.font-display {
+  font-stretch: 90%;
+  letter-spacing: -0.01em;
+}
+/* Judul besar: Archivo dirapatkan ke lebar minimum, seperti judul tankobon. */
+.display-cond {
+  font-family: var(--font-display);
+  font-stretch: 68%;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+/* Dulu potongan miring; kini sudut membulat biasa agar bersih. */
+.chamfer {
+  border-radius: var(--radius-xl);
+}
+.chamfer-sm {
+  --cut: 12px;
+}
+.chamfer-bl {
+  border-radius: var(--radius-xl);
+}
+.hard-offset {
+  position: relative;
+}
+.hard-offset::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translate(7px, 7px);
+  background: color-mix(in srgb, var(--color-ink) 32%, transparent);
+  z-index: 0;
+}
+.hard-offset > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Tombol/tautan "pil" lama jadi persegi bersudut kecil agar seragam.
+   Tak berlayer, jadi menang atas utilitas rounded-full Tailwind. */
+a.rounded-full,
+button.rounded-full,
+input.rounded-full,
+label.rounded-full {
+  border-radius: var(--radius-btn);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Grid kartu fluid: jumlah kolom menyesuaikan lebar kontainer apa pun    */
+/* (HP 320px → tablet → monitor 1440px) tanpa breakpoint per-kolom.       */
+/* ---------------------------------------------------------------------- */
+.grid-cards {
+  --card-min: 104px;
+  --card-gap: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
+  gap: var(--card-gap);
+}
+@media (min-width: 420px) {
+  .grid-cards { --card-min: 108px; --card-gap: 0.625rem; }
+}
+@media (min-width: 640px) {
+  .grid-cards { --card-min: 132px; --card-gap: 0.75rem; }
+}
+@media (min-width: 1024px) {
+  .grid-cards { --card-min: 148px; --card-gap: 1rem; }
+}
+@media (min-width: 1536px) {
+  .grid-cards { --card-min: 160px; }
+}
+
+/* Rail horizontal dengan snap. */
+.rail-snap {
+  scroll-snap-type: x proximity;
+}
+.rail-snap > * {
+  scroll-snap-align: start;
+}
+
+/* Satu momen masuk di beranda: panel hero menyapu dari kiri. */
+@keyframes panel-wipe {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+.hero-wipe {
+  animation: panel-wipe 520ms cubic-bezier(0.7, 0, 0.2, 1) both;
+}
+
+/* Di rail horizontal, kartu tidak boleh dilewati render (content-visibility). */
+.rail-snap .cv-auto {
+  content-visibility: visible;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Dropdown kustom (components/select.tsx): popover desktop + bottom      */
+/* sheet HP. Animasi singkat, dimatikan otomatis oleh reduced-motion.     */
+/* ---------------------------------------------------------------------- */
+@keyframes select-pop-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes select-sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+@keyframes select-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.select-pop { animation: select-pop-in 140ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.select-pop.origin-bottom { animation-name: select-pop-in-up; }
+@keyframes select-pop-in-up {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.select-sheet { animation: select-sheet-in 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.select-fade { animation: select-fade-in 180ms ease both; }
+
+/* Baris filter: membungkus ke baris baru (tanpa geser horizontal). */
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.filter-row > * {
+  flex: 1 1 calc(50% - 0.25rem);
+  min-width: 0;
+}
+@media (min-width: 640px) {
+  .filter-row { gap: 0.5rem; }
+  .filter-row > * {
+    flex: 0 1 auto;
+    min-width: 8.5rem;
+    max-width: 12rem;
+  }
+}
+
+/* ====================================================================== */
+/* Sistem animasi — modern, halus, tetap datar (tanpa bayangan/gradien).  */
+/* Hanya transform/opacity/filter (GPU), hormati prefers-reduced-motion.  */
+/* ====================================================================== */
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 1) Transisi antar halaman: konten naik + memudar masuk. */
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.page-in {
+  animation: page-in 420ms var(--ease-out) backwards;
+}
+
+/* 2) Kartu masuk. Browser modern: terungkap mengikuti scroll (CSS murni).
+      Lainnya: masuk berjenjang saat halaman dibuka (--st per urutan). */
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+.cv-auto,
+.cv-row {
+  animation: card-in 560ms var(--ease-out) backwards;
+  animation-delay: var(--st, 0ms);
+}
+:is(.stagger, .grid-cards, .divide-y, .rail-snap) > :nth-child(2) { --st: 45ms; }
+:is(.stagger, .grid-cards, .divide-y, .rail-snap) > :nth-child(3) { --st: 90ms; }
+:is(.stagger, .grid-cards, .divide-y, .rail-snap) > :nth-child(4) { --st: 135ms; }
+:is(.stagger, .grid-cards, .divide-y, .rail-snap) > :nth-child(5) { --st: 180ms; }
+:is(.stagger, .grid-cards, .divide-y, .rail-snap) > :nth-child(6) { --st: 225ms; }
+:is(.stagger, .grid-cards, .divide-y, .rail-snap) > :nth-child(7) { --st: 270ms; }
+:is(.stagger, .grid-cards, .divide-y, .rail-snap) > :nth-child(8) { --st: 315ms; }
+:is(.stagger, .grid-cards, .divide-y, .rail-snap) > :nth-child(n + 9) { --st: 360ms; }
+
+@supports (animation-timeline: view()) {
+  @keyframes card-reveal {
+    from { opacity: 0; transform: translateY(28px) scale(0.97); }
+    to { opacity: 1; transform: none; }
+  }
+  .cv-auto,
+  .cv-row {
+    animation: card-reveal linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 45%;
+    animation-delay: 0s;
+  }
+  /* Rail horizontal: jangan ikut terungkap vertikal. */
+  .rail-snap .cv-auto {
+    animation: card-in 560ms var(--ease-out) backwards;
+    animation-timeline: auto;
+    animation-range: normal;
+    animation-delay: var(--st, 0ms);
+  }
+}
+
+/* 3) Kartu cover: angkat halus saat hover, menekan saat disentuh.
+      Pakai properti `translate`/`scale` agar tak bentrok dengan animasi masuk. */
+.cv-auto.group {
+  transition:
+    translate 320ms var(--ease-out),
+    scale 200ms var(--ease-out),
+    border-color 200ms ease,
+    background-color 200ms ease;
+}
+@media (hover: hover) {
+  .cv-auto.group:hover {
+    translate: 0 -4px;
+  }
+}
+.cv-auto.group:active {
+  scale: 0.98;
+}
+/* Kartu list & baris: tekan halus. */
+.cv-row,
+article.cv-auto:not(.group) {
+  transition: scale 200ms var(--ease-out);
+}
+.cv-row:active,
+article.cv-auto:not(.group):active {
+  scale: 0.99;
+}
+
+/* 4) Garis aksen judul seksi tumbuh dari kiri. */
+@keyframes bar-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.bar-grow {
+  transform-origin: left center;
+  animation: bar-grow 640ms 180ms var(--ease-out) backwards;
+}
+
+/* 5) Label tab aktif (mobile) & tombol kembali ke atas. */
+@keyframes tab-label-in {
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: none; }
+}
+.tab-label {
+  animation: tab-label-in 260ms 60ms var(--ease-out) backwards;
+}
+@keyframes fab-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.8); }
+  to { opacity: 1; transform: none; }
+}
+.fab-in {
+  animation: fab-in 320ms var(--ease-spring) backwards;
+}
+
+/* 6) Progress baca halaman di tepi atas (mengikuti scroll, CSS murni). */
+.scroll-progress {
+  display: none;
+}
+@supports (animation-timeline: scroll()) {
+  @keyframes scroll-grow {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+  .scroll-progress {
+    display: block;
+    position: fixed;
+    top: env(safe-area-inset-top, 0px);
+    left: 0;
+    right: 0;
+    height: 2px;
+    z-index: 60;
+    background: var(--color-accent);
+    transform-origin: 0 50%;
+    animation: scroll-grow linear both;
+    animation-timeline: scroll(root block);
+    pointer-events: none;
+  }
+}
+
+/* 7) Tombol aksen: kilau tipis melintas saat hover (desktop). */
+@media (hover: hover) {
+  a.bg-accent:not(.fixed),
+  button.bg-accent:not(.fixed) {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  a.bg-accent:not(.fixed)::after,
+  button.bg-accent:not(.fixed)::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(100deg, transparent 35%, rgb(255 255 255 / 0.22) 50%, transparent 65%);
+    transform: translateX(-120%);
+    transition: transform 650ms var(--ease-out);
+    pointer-events: none;
+  }
+  a.bg-accent:not(.fixed):hover::after,
+  button.bg-accent:not(.fixed):hover::after {
+    transform: translateX(120%);
+  }
+}
+
+/* Gerak dikurangi: matikan semua animasi tambahan di atas. */
+@media (prefers-reduced-motion: reduce) {
+  .page-in,
+  .cv-auto,
+  .cv-row,
+  .rail-snap .cv-auto,
+  .bar-grow,
+  .tab-label,
+  .fab-in,
+  .select-pop,
+  .select-sheet,
+  .select-fade {
+    animation: none !important;
+  }
+  .scroll-progress {
+    display: none !important;
+  }
+  .cv-auto.group:hover {
+    translate: none;
+  }
+  .blur-up {
+    transform: none;
+  }
 }

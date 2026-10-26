@@ -24,7 +24,7 @@ export function KomikListCard({ item }: { item: MangaCard }) {
         href={`/komik/${item.slug}`}
         aria-label={item.title}
         onClick={(e) => captureCoverMorph(item.slug, e.currentTarget.closest("article"))}
-        className="relative h-[132px] w-[96px] shrink-0 overflow-hidden rounded-lg bg-paper-3 sm:h-[112px] sm:w-[168px] dark:bg-ink-3"
+        className="relative h-[132px] w-[96px] shrink-0 overflow-hidden rounded-lg bg-paper-3 sm:h-[112px] sm:w-[168px] lg:h-[120px] lg:w-[150px] 2xl:h-[128px] 2xl:w-[192px] dark:bg-ink-3"
       >
         {item.thumbnail ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -107,7 +107,7 @@ export function KomikListSkeleton({ count = 8 }: { count?: number }) {
     <div className="divide-y divide-line dark:divide-line-dark">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="flex gap-2.5 py-3 sm:gap-3.5 sm:py-3.5">
-          <div className="shimmer h-[132px] w-[96px] shrink-0 rounded-lg sm:h-[112px] sm:w-[168px]" />
+          <div className="shimmer h-[132px] w-[96px] shrink-0 rounded-lg sm:h-[112px] sm:w-[168px] lg:h-[120px] lg:w-[150px] 2xl:h-[128px] 2xl:w-[192px]" />
           <div className="min-w-0 flex-1 space-y-2 py-1">
             <div className="shimmer h-4 w-11/12 rounded" />
             <div className="shimmer h-3 w-1/2 rounded" />

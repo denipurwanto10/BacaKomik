@@ -92,7 +92,7 @@ export default function FavoritPage() {
   return (
     <section className="flex min-w-0 flex-col gap-3 rounded-2xl border border-line bg-paper-2 p-3 sm:gap-4 sm:p-4 dark:border-line-dark dark:bg-ink-2">
       <div className="min-w-0">
-        <SectionHead title="Favorit" />
+        <SectionHead title="Favorit" href="/riwayat" linkLabel="Riwayat →" />
         {bookmarks.length > 0 && (
           <p className="-mt-2 text-xs text-muted dark:text-muted-dark">
             {bookmarks.length} judul · tersimpan di perangkat ini
@@ -126,7 +126,7 @@ export default function FavoritPage() {
       )}
 
       {filtered.length > 0 && (
-        <div className="grid min-w-0 grid-cols-2 gap-2 min-[420px]:grid-cols-3 min-[420px]:gap-2.5 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 lg:grid-cols-6">
+        <div className="grid-cards min-w-0">
           {filtered.map((b) => (
             <article
               key={b.slug}

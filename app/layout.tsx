@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Inter } from "next/font/google";
+import { Archivo, Figtree } from "next/font/google";
 import { ThemeProvider } from "@/components/theme";
 import { BootSplash } from "@/components/boot-splash";
 import { RouteMemory } from "@/components/route-memory";
@@ -10,13 +10,14 @@ import "./globals.css";
 // semua halaman fetch client-side via apiGet/apiGetSWR setelah mount.
 // API route (/api/*) tetap dinamis via force-dynamic masing-masing.
 
-const display = Bricolage_Grotesque({
+const display = Archivo({
   subsets: ["latin"],
+  axes: ["wdth"],
   variable: "--font-display",
   display: "swap",
 });
 
-const sans = Inter({
+const sans = Figtree({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
@@ -67,7 +68,7 @@ export const viewport: Viewport = {
   // dihapus — yang berlaku adalah meta theme-color yang ditulis ulang
   // ThemeProvider setiap tema diganti, agar bar browser/PWA selalu sama
   // dengan tema aplikasi, bukan tema OS.
-  themeColor: "#101217",
+  themeColor: "#0b1013",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -80,7 +81,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://thumbnail.komiku.org" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://api.komiku.org" />
       </head>
-      <body className="min-h-screen overflow-x-hidden bg-paper font-sans text-fg antialiased dark:bg-ink dark:text-fg-dark">
+      <body className="flex min-h-dvh flex-col overflow-x-hidden bg-paper font-sans text-fg antialiased dark:bg-ink dark:text-fg-dark">
         <ThemeProvider>
           <BootSplash />
           <RouteMemory />

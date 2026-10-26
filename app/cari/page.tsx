@@ -213,7 +213,7 @@ function CariContent() {
         </button>
       </form>
 
-      <div ref={listTopRef} className="scroll-mt-16">
+      <div ref={listTopRef} className="scroll-mt-[calc(var(--header-h)+0.5rem)]">
         {q && (
           <p className="truncate text-sm text-muted dark:text-muted-dark">
             Hasil untuk &quot;{q}&quot;

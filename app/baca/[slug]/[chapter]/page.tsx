@@ -9,6 +9,7 @@ import { usePageTitle } from "@/lib/page-title";
 import type { ChapterData, MangaDetail } from "@/lib/api/types";
 import { chapterPathToRoute } from "@/components/cards";
 import { ErrorState } from "@/components/states";
+import { Select } from "@/components/select";
 
 function ReaderSkeleton() {
   return (
@@ -482,8 +483,8 @@ export default function ReaderPage({
       : progress >= 0.95 && progress < 1 && !showTapNav);
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-2.5 sm:gap-3">
-      <div className="sticky top-14 z-30 -mx-3 h-1 bg-line sm:top-[57px] sm:-mx-4 dark:bg-line-dark">
+    <div className="mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-2.5 sm:gap-3 2xl:max-w-4xl">
+      <div className="sticky top-[var(--header-h)] z-30 -mx-3 h-1 bg-line sm:-mx-4 dark:bg-line-dark">
         <div
           ref={progressRef}
           className="h-full bg-accent transition-[width] duration-150"
@@ -531,31 +532,25 @@ export default function ReaderPage({
       {/* Pindah chapter tanpa balik ke detail — daftar dari cache detail,
           dimuat di background bila cache kosong (lihat effect di bawah). */}
       {chapters !== null && chapters.length > 1 && (
-        <label className="flex min-w-0 items-center gap-2 rounded-2xl border border-line bg-paper-2 px-3 py-2 text-sm dark:border-line-dark dark:bg-ink-2">
+        <div className="flex min-w-0 items-center gap-2 rounded-xl border border-line bg-paper-2 px-3 py-2 text-sm dark:border-line-dark dark:bg-ink-2">
           <span className="shrink-0 text-xs font-semibold text-muted dark:text-muted-dark">
             Chapter
           </span>
-          <select
+          <Select
             value={chapter}
-            onChange={(e) => {
-              const tok = e.target.value;
+            onChange={(tok) => {
               if (tok && tok !== chapter) router.push(`/baca/${data.mangaSlug}/${tok}`);
             }}
-            aria-label="Pindah chapter"
-            className="h-9 min-w-0 flex-1 truncate rounded-lg bg-transparent text-sm font-semibold text-fg outline-none dark:text-fg-dark"
-          >
-            {chapters.map((c) => {
+            label="Pindah chapter"
+            highlightActive={false}
+            searchFrom={8}
+            className="flex-1"
+            options={chapters.flatMap((c) => {
               const tok = c.url.match(/-chapter-(.+?)\/?$/)?.[1] ?? "";
-              if (!tok) return null;
-              return (
-                <option key={c.url} value={tok}>
-                  {c.title}
-                  {c.date ? ` · ${c.date}` : ""}
-                </option>
-              );
+              return tok ? [{ value: tok, label: c.title, hint: c.date || undefined }] : [];
             })}
-          </select>
-        </label>
+          />
+        </div>
       )}
 
       {mode === "scroll" ? (

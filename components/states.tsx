@@ -5,9 +5,9 @@ import { MangaGridCard } from "./cards";
 /** Skeleton loading untuk grid kartu. */
 export function GridSkeleton({ count = 10 }: { count?: number }) {
   return (
-    <div aria-hidden="true" className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-3 min-[420px]:gap-2.5 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 lg:grid-cols-6">
+    <div aria-hidden="true" className="grid-cards">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="overflow-hidden rounded-xl border border-line dark:border-line-dark">
+        <div key={i} className="overflow-hidden rounded-md bg-paper-2 dark:bg-ink-2">
           <div className="shimmer aspect-[3/4]" />
           <div className="space-y-1.5 p-2 sm:p-2.5">
             <div className="shimmer h-3 w-11/12 rounded" />
@@ -39,13 +39,13 @@ export function ListSkeleton({ count = 8 }: { count?: number }) {
 /** State error: tampilkan pesan jelas, tanpa data pengganti. */
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div role="alert" className="flex flex-col items-center gap-3 rounded-xl border border-danger/25 bg-danger/5 px-4 py-10 text-center dark:border-danger-dark/30 dark:bg-danger-dark/10">
+    <div role="alert" className="flex flex-col items-center gap-3 rounded-md border border-danger/25 bg-danger/5 px-4 py-10 text-center dark:border-danger-dark/30 dark:bg-danger-dark/10">
       <p className="text-sm font-semibold text-danger dark:text-danger-dark">Gagal memuat data</p>
       <p className="max-w-md text-sm text-danger/90 dark:text-danger-dark/90">{message}</p>
       {onRetry && (
         <button
           onClick={onRetry}
-          className="rounded-full border border-danger/40 px-4 py-1.5 text-sm font-medium text-danger transition-colors hover:bg-danger hover:text-white active:scale-[0.97] dark:border-danger-dark/40 dark:text-danger-dark dark:hover:bg-danger-dark dark:hover:text-ink"
+          className="rounded-md border border-danger/40 px-4 py-1.5 text-sm font-medium text-danger transition-colors hover:bg-danger hover:text-white active:scale-[0.97] dark:border-danger-dark/40 dark:text-danger-dark dark:hover:bg-danger-dark dark:hover:text-ink"
         >
           Coba lagi
         </button>
@@ -57,13 +57,13 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
 /** State kosong: API berhasil tapi tidak ada hasil. */
 export function EmptyState({ message }: { message: string }) {
   return (
-    <div className="rounded-xl border border-dashed border-line px-4 py-10 text-center text-sm text-muted dark:border-line-dark dark:text-muted-dark">
+    <div className="rounded-md border border-dashed border-line px-4 py-10 text-center text-sm text-muted dark:border-line-dark dark:text-muted-dark">
       {message}
     </div>
   );
 }
 
-/** Judul section + link "Lihat semua". */
+/** Judul section + link "Lihat semua". Judul condensed, garis tebal pendek di bawahnya. */
 export function SectionHead({
   title,
   href,
@@ -74,14 +74,15 @@ export function SectionHead({
   linkLabel?: string;
 }) {
   return (
-    <div className="mb-3 flex min-w-0 items-center justify-between gap-2 sm:gap-3">
-      <h2 className="min-w-0 flex-1 truncate font-display text-base font-extrabold text-fg sm:text-xl dark:text-fg-dark">
+    <div className="mb-4 flex min-w-0 items-end justify-between gap-3 border-b border-line pb-2 dark:border-line-dark">
+      <h2 className="display-cond relative min-w-0 flex-1 truncate text-2xl text-fg sm:text-3xl lg:text-4xl dark:text-fg-dark">
         {title}
+        <span aria-hidden className="bar-grow absolute -bottom-[9px] left-0 h-[3px] w-10 bg-accent" />
       </h2>
       {href && (
         <Link
           href={href}
-          className="shrink-0 rounded-full border border-line px-2.5 py-1 text-xs font-semibold text-accent transition-colors hover:border-accent hover:bg-accent-soft dark:border-line-dark dark:hover:bg-accent-soft-dark"
+          className="shrink-0 rounded-md px-2 py-1 text-xs font-bold text-accent transition-colors hover:bg-accent hover:text-white"
         >
           {linkLabel}
         </Link>
@@ -90,10 +91,10 @@ export function SectionHead({
   );
 }
 
-/** Grid kartu responsif: 2 kolom di HP kecil → 3 → 6 di desktop. */
+/** Grid kartu fluid: kolom otomatis menyesuaikan lebar (2 di HP kecil → 8+ di monitor lebar). */
 export function MangaGrid({ items }: { items: MangaCard[] }) {
   return (
-    <div className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-3 min-[420px]:gap-2.5 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 lg:grid-cols-6">
+    <div className="grid-cards">
       {items.map((item, i) => (
         <MangaGridCard
           key={`${item.slug}#${item.latestChapter?.url ?? item.firstChapter?.url ?? i}`}

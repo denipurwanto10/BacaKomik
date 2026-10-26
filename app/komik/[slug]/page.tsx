@@ -12,10 +12,10 @@ import Link from "next/link";
 
 function DetailSkeleton() {
   return (
-    <div aria-hidden="true" className="mx-auto flex w-full min-w-0 flex-col gap-4 sm:gap-6 lg:max-w-4xl">
+    <div aria-hidden="true" className="mx-auto flex w-full min-w-0 flex-col gap-4 sm:gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:items-start lg:gap-x-8 xl:grid-cols-[minmax(0,1fr)_440px]">
       {/* Header: cover + info — cermin struktur konten asli */}
-      <div className="flex min-w-0 flex-col gap-3 rounded-2xl border border-line bg-paper-2 p-3 min-[420px]:p-4 sm:flex-row sm:gap-5 dark:border-line-dark dark:bg-ink-2">
-        <div data-cover-slot className="shimmer mx-auto aspect-[3/4] w-32 shrink-0 rounded-xl min-[420px]:w-40 sm:mx-0 sm:w-44 sm:self-start" />
+      <div className="flex min-w-0 flex-col gap-3 rounded-2xl border border-line bg-paper-2 p-3 min-[420px]:p-4 sm:flex-row sm:gap-5 lg:col-start-1 lg:p-5 dark:border-line-dark dark:bg-ink-2">
+        <div data-cover-slot className="shimmer mx-auto aspect-[3/4] w-32 shrink-0 rounded-xl min-[420px]:w-40 sm:mx-0 sm:w-44 sm:self-start lg:w-52" />
         <div className="min-w-0 flex-1 space-y-2.5">
           <div className="shimmer h-5 w-16 rounded" />
           <div className="shimmer h-6 w-3/4 rounded" />
@@ -38,7 +38,7 @@ function DetailSkeleton() {
         </div>
       </div>
       {/* Sinopsis */}
-      <div className="rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
+      <div className="rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 lg:col-start-1 dark:border-line-dark dark:bg-ink-2">
         <div className="shimmer mb-2 h-5 w-28 rounded" />
         <div className="space-y-2">
           <div className="shimmer h-3.5 w-full rounded" />
@@ -47,7 +47,7 @@ function DetailSkeleton() {
         </div>
       </div>
       {/* Daftar chapter */}
-      <div className="rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
+      <div className="rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 lg:col-start-2 lg:row-start-1 lg:row-span-2 dark:border-line-dark dark:bg-ink-2">
         <div className="shimmer mb-2 h-5 w-36 rounded" />
         <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -184,10 +184,10 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
   ];
 
   return (
-    <article className="morph-in mx-auto flex w-full min-w-0 flex-col gap-4 sm:gap-6 lg:max-w-4xl">
+    <article className="morph-in mx-auto flex w-full min-w-0 flex-col gap-4 sm:gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:items-start lg:gap-x-8 xl:grid-cols-[minmax(0,1fr)_440px]">
       {/* Header: cover + info */}
-      <div className="flex min-w-0 flex-col gap-3 rounded-2xl border border-line bg-paper-2 p-3 min-[420px]:p-4 sm:flex-row sm:gap-5 dark:border-line-dark dark:bg-ink-2">
-        <div data-cover-slot className="mx-auto aspect-[3/4] w-32 shrink-0 overflow-hidden rounded-xl bg-paper-3 min-[420px]:w-40 sm:mx-0 sm:w-44 sm:self-start dark:bg-ink-3">
+      <div className="flex min-w-0 flex-col gap-3 rounded-2xl border border-line bg-paper-2 p-3 min-[420px]:p-4 sm:flex-row sm:gap-5 lg:col-start-1 lg:p-5 dark:border-line-dark dark:bg-ink-2">
+        <div data-cover-slot className="mx-auto aspect-[3/4] w-32 shrink-0 overflow-hidden rounded-xl bg-paper-3 min-[420px]:w-40 sm:mx-0 sm:w-44 sm:self-start lg:w-52 dark:bg-ink-3">
           {detail.cover ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={detail.cover} alt={detail.title} loading="eager" fetchPriority="high" decoding="sync" onLoad={(e) => e.currentTarget.classList.add("blur-done")} className="blur-up block h-full w-full object-cover" />
@@ -203,7 +203,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
           <div className="flex min-w-0 items-start gap-2">
             <div className="min-w-0 flex-1">
               <TypeBadge type={detail.type} />
-              <h1 className="mt-1.5 min-w-0 break-words font-display text-lg font-extrabold leading-tight text-fg min-[420px]:text-xl sm:text-2xl dark:text-fg-dark">
+              <h1 className="mt-1.5 min-w-0 break-words font-display text-lg font-extrabold leading-tight text-fg min-[420px]:text-xl sm:text-2xl lg:text-3xl dark:text-fg-dark">
                 {detail.title}
               </h1>
             </div>
@@ -303,7 +303,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
 
       {/* Sinopsis — dibungkus kartu seperti section beranda */}
       {detail.synopsis && (
-        <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
+        <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 lg:col-start-1 dark:border-line-dark dark:bg-ink-2">
           <h2 className="mb-2 truncate font-display text-base font-bold text-fg dark:text-fg-dark">
             Sinopsis
           </h2>
@@ -313,8 +313,8 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
         </section>
       )}
 
-      {/* Daftar chapter */}
-      <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
+      {/* Daftar chapter — kolom kanan yang menempel saat scroll di desktop */}
+      <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 lg:sticky lg:top-[calc(var(--header-h)+1rem)] lg:col-start-2 lg:row-start-1 lg:row-span-3 dark:border-line-dark dark:bg-ink-2">
         <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
           <h2 className="min-w-0 flex-1 truncate font-display text-base font-bold text-fg dark:text-fg-dark">
             Daftar Chapter ({detail.chapters.length})
@@ -355,7 +355,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
         {chapters.length === 0 && detail.chapters.length > 0 && (
           <EmptyState message={`Tidak ada chapter yang cocok dengan "${filter}".`} />
         )}
-        <div className="chapter-scroll max-h-[480px] min-w-0 divide-y divide-line overflow-y-auto rounded-xl border border-line bg-paper dark:divide-line-dark dark:border-line-dark dark:bg-ink">
+        <div className="chapter-scroll max-h-[480px] min-w-0 lg:max-h-[calc(100dvh-var(--header-h)-11rem)] lg:min-h-48 divide-y divide-line overflow-y-auto rounded-xl border border-line bg-paper dark:divide-line-dark dark:border-line-dark dark:bg-ink">
           {ordered.map((c) => {
             return (
               <Link
@@ -377,7 +377,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
           dibungkus kartu + baris horizontal seperti section beranda.
           Gagal fetch = section hilang diam-diam, detail tetap utuh. */}
       {similar !== null && similar.length > 0 && detail.genres[0] && (
-        <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 dark:border-line-dark dark:bg-ink-2">
+        <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 lg:col-start-1 dark:border-line-dark dark:bg-ink-2">
           <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
             <h2 className="min-w-0 flex-1 truncate font-display text-base font-bold text-fg dark:text-fg-dark">
               Serupa: {detail.genres[0].name}
@@ -389,7 +389,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
               Lihat semua
             </Link>
           </div>
-          <div className="grid gap-x-6 lg:grid-cols-2">
+          <div className="grid gap-x-6 2xl:grid-cols-2">
             {similar.map((item) => (
               <UpdateRow key={`${item.slug}#${item.latestChapter?.url ?? ""}`} item={item} />
             ))}
