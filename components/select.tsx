@@ -272,7 +272,7 @@ export function Select({
       id={listId}
       role="listbox"
       aria-label={label}
-      className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1.5 [scrollbar-width:thin]"
+      className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1.5"
     >
       {filtered.length === 0 && (
         <li className="px-3 py-6 text-center text-sm text-muted dark:text-muted-dark">Tidak ada hasil</li>
