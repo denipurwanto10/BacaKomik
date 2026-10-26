@@ -230,7 +230,7 @@ export default function HomePage() {
       {history.length > 0 && (
         <section className="min-w-0">
           <SectionHead title="Lanjut membaca" href="/riwayat" />
-          <div className="rail-scroll rail-snap -mx-3 flex gap-3 overflow-x-auto px-3 pb-1 sm:mx-0 sm:px-0">
+          <div className="rail-scroll rail-snap -mx-3 -mt-2 flex gap-3 overflow-x-auto px-3 pb-1 pt-2 sm:mx-0 sm:px-0">
             {history.slice(0, 10).map((h) => (
               <div key={h.slug} className="flex w-[112px] shrink-0 sm:w-[132px] lg:w-[148px]">
                 <Link
@@ -321,7 +321,7 @@ export default function HomePage() {
             <EmptyState message="Belum ada rekomendasi dari sumber data." />
           )}
           {recommended.data && recommended.data.length > 0 && (
-            <div className="rail-scroll rail-snap -mx-3 flex gap-3 overflow-x-auto px-3 pb-2 sm:mx-0 sm:px-0">
+            <div className="rail-scroll rail-snap -mx-3 -mt-2 flex gap-3 overflow-x-auto px-3 pb-2 pt-2 sm:mx-0 sm:px-0">
               {recommended.data.slice(0, 12).map((item) => (
                 <div key={item.slug + (item.latestChapter?.url || "")} className="flex w-[132px] shrink-0 sm:w-[156px] lg:w-[168px]">
                   <MangaGridCard item={item} />
