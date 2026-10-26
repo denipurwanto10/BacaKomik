@@ -232,44 +232,44 @@ export default function HomePage() {
           <SectionHead title="Lanjut membaca" href="/riwayat" />
           <div className="rail-scroll rail-snap -mx-3 flex gap-3 overflow-x-auto px-3 pb-1 sm:mx-0 sm:px-0">
             {history.slice(0, 10).map((h) => (
-              <Link
-                key={h.slug}
-                href={h.route}
-                className="group w-[112px] shrink-0 sm:w-[132px] lg:w-[148px]"
-              >
-                <div className="chamfer chamfer-sm relative aspect-[3/4] w-full overflow-hidden bg-paper-3 dark:bg-ink-3">
-                  {h.cover ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={h.cover}
-                      alt={h.title}
-                      loading="lazy"
-                      decoding="async"
-                      fetchPriority="low"
-                      onLoad={(e) => e.currentTarget.classList.add("blur-done")}
-                      className="blur-up h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center p-2 text-center text-[11px] text-muted dark:text-muted-dark">
+              <div key={h.slug} className="flex w-[112px] shrink-0 sm:w-[132px] lg:w-[148px]">
+                <Link
+                  href={h.route}
+                  className="cv-auto group flex h-full min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-line bg-paper-2 transition-colors duration-200 hover:border-accent/60 dark:border-line-dark dark:bg-ink-2"
+                >
+                  <div className="relative aspect-[3/4] w-full shrink-0 overflow-hidden bg-paper-3 dark:bg-ink-3">
+                    {h.cover ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={h.cover}
+                        alt={h.title}
+                        loading="lazy"
+                        decoding="async"
+                        fetchPriority="low"
+                        onLoad={(e) => e.currentTarget.classList.add("blur-done")}
+                        className="blur-up h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center p-2 text-center text-[11px] text-muted dark:text-muted-dark">
+                        {h.title}
+                      </div>
+                    )}
+                    {h.progress > 0 && (
+                      <span aria-hidden className="absolute inset-x-0 bottom-0 h-1 bg-black/40">
+                        <span className="block h-full bg-accent" style={{ width: `${Math.round(h.progress * 100)}%` }} />
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex min-w-0 flex-1 flex-col px-2.5 pb-2 pt-2.5">
+                    <p className="mb-2 line-clamp-2 break-words text-[13px] font-bold leading-snug text-fg group-hover:text-accent dark:text-fg-dark">
                       {h.title}
-                    </div>
-                  )}
-                  {h.progress > 0 && (
-                    <span
-                      aria-hidden
-                      className="absolute inset-x-0 bottom-0 h-1 bg-black/40"
-                    >
-                      <span className="block h-full bg-accent" style={{ width: `${Math.round(h.progress * 100)}%` }} />
-                    </span>
-                  )}
-                </div>
-                <p className="mt-2 truncate text-xs font-bold leading-tight text-fg group-hover:text-accent dark:text-fg-dark">
-                  {h.title}
-                </p>
-                <p className="mt-0.5 truncate text-[11px] text-muted dark:text-muted-dark">
-                  {h.chapterLabel} · {timeAgo(h.updatedAt)}
-                </p>
-              </Link>
+                    </p>
+                    <p className="mt-auto truncate border-t border-line pt-2 text-[11px] leading-tight text-muted dark:border-line-dark dark:text-muted-dark">
+                      {h.chapterLabel} · {timeAgo(h.updatedAt)}
+                    </p>
+                  </div>
+                </Link>
+              </div>
             ))}
           </div>
         </section>
