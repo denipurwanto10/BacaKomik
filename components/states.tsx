@@ -54,11 +54,28 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
   );
 }
 
-/** State kosong: API berhasil tapi tidak ada hasil. */
-export function EmptyState({ message }: { message: string }) {
+/** State kosong: API berhasil tapi tidak ada hasil. Tanpa kotak putus-putus; ikon + teks di tengah. */
+export function EmptyState({ message, className = "" }: { message: string; className?: string }) {
   return (
-    <div className="rounded-md border border-dashed border-line px-4 py-10 text-center text-sm text-muted dark:border-line-dark dark:text-muted-dark">
-      {message}
+    <div
+      role="status"
+      className={`flex flex-col items-center justify-center gap-3 px-4 py-12 text-center sm:py-16 ${className}`}
+    >
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        className="h-10 w-10 text-muted/60 dark:text-muted-dark/60"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5v-15Z" />
+        <path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5" />
+        <path d="m9.5 8.5 5 5m0-5-5 5" />
+      </svg>
+      <p className="max-w-sm text-balance text-sm leading-relaxed text-muted dark:text-muted-dark">{message}</p>
     </div>
   );
 }

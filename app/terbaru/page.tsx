@@ -351,7 +351,7 @@ function TerbaruContent() {
       {loading && <KomikListSkeleton count={8} />}
       {error && <ErrorState message={error} onRetry={() => loadPage(page)} />}
       {!loading && !error && items.length === 0 && (
-        <EmptyState message="Tidak ada komik dari sumber data untuk filter ini." />
+        <EmptyState className="mt-3 sm:mt-4" message="Tidak ada komik dari sumber data untuk filter ini." />
       )}
       {!loading && !error && items.length > 0 && (
         <>
