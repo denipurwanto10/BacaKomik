@@ -308,7 +308,7 @@ export function Select({
 
   const searchBox = searchable && (
     <div className="shrink-0 border-b border-line p-2 dark:border-line-dark">
-      <div className="relative">
+      <div className="search-wrap relative">
         <svg aria-hidden viewBox="0 0 20 20" className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted dark:text-muted-dark" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
           <circle cx="9" cy="9" r="5.5" />
           <path d="m13.5 13.5 3.5 3.5" />
@@ -324,7 +324,7 @@ export function Select({
           aria-label={`Cari ${label}`}
           aria-controls={listId}
           autoComplete="off"
-          className="h-10 w-full rounded-lg border border-line bg-paper px-3 pl-8 text-sm text-fg outline-none placeholder:text-muted focus:border-accent sm:h-9 dark:border-line-dark dark:bg-ink dark:text-fg-dark dark:placeholder:text-muted-dark"
+          className="search-field h-10 w-full rounded-lg border border-line bg-paper px-3 pl-8 text-sm text-fg outline-none placeholder:text-muted sm:h-9 dark:border-line-dark dark:bg-ink dark:text-fg-dark dark:placeholder:text-muted-dark"
         />
       </div>
     </div>

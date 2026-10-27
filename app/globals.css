@@ -719,3 +719,119 @@ article.cv-auto:not(.group):active {
     transform: none;
   }
 }
+
+/* ---------------------------------------------------------------------- */
+/* Kolom pencarian — hover & fokus seragam di semua halaman                */
+/* .search-field = <input>, .search-wrap = pembungkus yang memuat ikon     */
+/* ---------------------------------------------------------------------- */
+.search-field {
+  transition:
+    border-color 0.2s var(--ease-out),
+    background-color 0.2s var(--ease-out),
+    box-shadow 0.25s var(--ease-out),
+    transform 0.25s var(--ease-out);
+}
+.search-wrap > svg {
+  transition: color 0.2s var(--ease-out), transform 0.25s var(--ease-out);
+}
+.search-field:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 14%, transparent);
+}
+.search-wrap:focus-within > svg {
+  color: var(--color-accent);
+}
+@media (hover: hover) {
+  .search-field:hover:not(:focus-visible) {
+    border-color: color-mix(in srgb, var(--color-accent) 60%, var(--color-line));
+  }
+  .dark .search-field:hover:not(:focus-visible) {
+    border-color: color-mix(in srgb, var(--color-accent) 70%, var(--color-line-dark));
+  }
+  .search-wrap:hover > svg {
+    color: var(--color-accent);
+  }
+}
+.search-field::placeholder {
+  transition: opacity 0.2s var(--ease-out), transform 0.25s var(--ease-out);
+}
+.search-field:focus::placeholder {
+  opacity: 0.45;
+  transform: translateX(3px);
+}
+@media (prefers-reduced-motion: reduce) {
+}
+
+/* ---------------------------------------------------------------------- */
+/* Dropdown saran pencarian                                                */
+/* ---------------------------------------------------------------------- */
+@keyframes suggest-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+.suggest-panel {
+  transform-origin: top center;
+  animation: suggest-in 0.22s var(--ease-out);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--color-accent) 12%, transparent) inset,
+    0 18px 40px -12px rgb(0 0 0 / 0.22),
+    0 4px 12px -4px rgb(0 0 0 / 0.08);
+}
+.dark .suggest-panel {
+  box-shadow:
+    0 18px 44px -12px rgb(0 0 0 / 0.7),
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 14%, transparent);
+}
+.suggest-item { position: relative; }
+.suggest-link {
+  position: relative;
+  transition: background-color 0.18s var(--ease-out), transform 0.22s var(--ease-out);
+}
+.suggest-link::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 22%; bottom: 22%;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--color-accent);
+  transform: scaleY(0);
+  transition: transform 0.22s var(--ease-out);
+}
+.suggest-thumb { transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out); }
+.suggest-title { transition: color 0.18s var(--ease-out); }
+.suggest-arrow {
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.2s var(--ease-out), transform 0.25s var(--ease-out);
+}
+.suggest-item[data-active] .suggest-link,
+.suggest-link:focus-visible {
+  background: color-mix(in srgb, var(--color-accent) 9%, transparent);
+  outline: none;
+}
+.suggest-item[data-active] .suggest-link::before,
+.suggest-link:focus-visible::before { transform: scaleY(1); }
+.suggest-item[data-active] .suggest-title,
+.suggest-link:focus-visible .suggest-title { color: var(--color-accent-strong); }
+.dark .suggest-item[data-active] .suggest-title,
+.dark .suggest-link:focus-visible .suggest-title { color: var(--color-accent); }
+.suggest-item[data-active] .suggest-thumb {
+  transform: scale(1.06) rotate(-1deg);
+  box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--color-accent) 60%, black);
+}
+.suggest-item[data-active] .suggest-arrow { opacity: 1; transform: none; }
+.suggest-link:active { transform: scale(0.99); }
+.suggest-more {
+  transition: background-color 0.2s var(--ease-out), letter-spacing 0.25s var(--ease-out);
+}
+@media (hover: hover) {
+  .suggest-more:hover {
+    background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+    letter-spacing: 0.02em;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .suggest-panel { animation: none; }
+  .suggest-item[data-active] .suggest-thumb { transform: none; }
+}

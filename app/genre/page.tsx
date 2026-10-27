@@ -67,7 +67,7 @@ export default function GenreListPage() {
         onChange={(e) => setQ(e.target.value)}
         placeholder="Ketik nama genre…"
         enterKeyHint="search"
-        className="h-12 w-full min-w-0 rounded-full border border-line bg-paper-2 px-4 text-base text-fg outline-none placeholder:text-muted focus-visible:border-accent sm:h-10 sm:max-w-xs sm:text-sm dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark dark:placeholder:text-muted-dark"
+        className="search-field h-12 w-full min-w-0 rounded-full border border-line bg-paper-2 px-4 text-base text-fg outline-none placeholder:text-muted sm:h-10 sm:max-w-xs sm:text-sm dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark dark:placeholder:text-muted-dark"
       />
       {picked.length > 0 && (
         <div className="flex min-w-0 flex-col gap-2 rounded-2xl border border-accent/40 bg-accent-soft/40 p-3 sm:p-4 dark:border-accent/30 dark:bg-accent-soft-dark/40">

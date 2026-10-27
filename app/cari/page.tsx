@@ -189,7 +189,7 @@ function CariContent() {
       <SectionHead title="Pencarian" />
       <form
         role="search"
-        className="relative flex min-w-0 items-center"
+        className="search-wrap relative flex min-w-0 items-center"
         onSubmit={(e) => {
           e.preventDefault();
           submit();
@@ -203,7 +203,7 @@ function CariContent() {
           id="cari-q"
           autoFocus
           enabled={false}
-          inputClassName="h-12 w-full min-w-0 rounded-full border border-line bg-paper-2 px-4 text-base text-fg outline-none placeholder:text-muted focus-visible:border-accent sm:h-11 sm:text-sm dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark dark:placeholder:text-muted-dark"
+          inputClassName="search-field h-12 w-full min-w-0 rounded-full border border-line bg-paper-2 px-4 text-base text-fg outline-none placeholder:text-muted sm:h-11 sm:text-sm dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark dark:placeholder:text-muted-dark"
         />
         <button
           type="submit"

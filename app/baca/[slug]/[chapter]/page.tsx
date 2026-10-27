@@ -79,27 +79,38 @@ function ChapterNav({
   data,
   slug,
   chapter,
+  floating = false,
 }: {
   data: ChapterData | null;
   slug: string;
   chapter: string;
+  /** true = versi melayang (overlay tap); false = bar statis di alur halaman. */
+  floating?: boolean;
 }) {
   // nextUrl akurat dari server (daftar chapter). Bila absen (gagal scrape
   // daftar / chapter terbaru), tebak +1 seperti sebelumnya.
   const { prevHref, nextHref } = navHrefs(data, slug, chapter);
 
+  const base =
+    "group relative flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-xl px-4 text-[13px] font-semibold select-none transition-[background-color,border-color,color,transform,box-shadow] duration-200 ease-out active:scale-[0.97] sm:h-12 sm:gap-2 sm:px-6 sm:text-sm";
+  const ghost = `${base} border border-line-dark bg-ink-3/70 text-fg-dark hover:border-accent/60 hover:bg-accent/10 hover:text-white`;
+  const primary = `${base} bg-accent text-white shadow-[0_6px_18px_-8px_var(--color-accent)] hover:bg-accent-strong hover:shadow-[0_8px_22px_-8px_var(--color-accent)]`;
+  const off = `${base} cursor-not-allowed border border-line-dark/50 text-muted-dark/45 active:scale-100`;
+
   return (
-    <div className="flex min-w-0 items-center justify-between gap-1.5 rounded-2xl border border-line-dark bg-ink-2 px-1.5 py-1.5 text-sm sm:gap-2 sm:rounded-full sm:px-2 sm:py-2">
+    <nav
+      aria-label="Navigasi chapter"
+      className={`mx-auto grid w-full min-w-0 grid-cols-[1fr_auto_1fr] items-center gap-1.5 rounded-2xl border border-line-dark bg-ink-2/90 p-1.5 backdrop-blur-md sm:gap-2 sm:p-2 ${
+        floating ? "max-w-md shadow-2xl shadow-black/50 sm:max-w-lg" : "max-w-md shadow-lg shadow-black/30 sm:max-w-lg"
+      }`}
+    >
       {prevHref ? (
-        <Link
-          href={prevHref}
-          className="flex min-w-0 flex-1 items-center justify-center gap-1 rounded-xl bg-accent px-2 py-2 text-[13px] font-semibold text-white sm:flex-none sm:rounded-full sm:px-4"
-        >
-          <IconChevron dir="left" className="h-4 w-4 shrink-0" />
+        <Link href={prevHref} className={ghost}>
+          <IconChevron dir="left" className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:-translate-x-0.5" />
           <span className="truncate">Prev</span>
         </Link>
       ) : (
-        <span className="flex min-w-0 flex-1 cursor-not-allowed items-center justify-center gap-1 px-2 py-2 text-[13px] text-muted-dark sm:flex-none sm:px-4">
+        <span aria-disabled="true" className={off}>
           <IconChevron dir="left" className="h-4 w-4 shrink-0" />
           <span className="truncate">Prev</span>
         </span>
@@ -108,28 +119,25 @@ function ChapterNav({
       <Link
         href={`/komik/${slug}`}
         aria-label="Daftar isi"
-        className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-line-dark px-2 py-2 text-[13px] font-medium text-fg-dark sm:flex-none sm:rounded-full sm:px-3.5"
+        title="Daftar isi"
+        className="flex h-11 w-11 items-center justify-center gap-2 rounded-xl text-muted-dark transition-[background-color,color,transform] duration-200 hover:bg-ink-3 hover:text-fg-dark active:scale-95 sm:h-12 sm:w-auto sm:px-4 sm:text-sm sm:font-medium"
       >
-        <IconList className="h-4 w-4 shrink-0" />
-        <span className="hidden truncate sm:inline">Daftar isi</span>
-        <span className="truncate sm:hidden">Isi</span>
+        <IconList className="h-[18px] w-[18px] shrink-0" />
+        <span className="hidden sm:inline">Daftar isi</span>
       </Link>
 
       {nextHref ? (
-        <Link
-          href={nextHref}
-          className="flex min-w-0 flex-1 items-center justify-center gap-1 rounded-xl border border-line-dark px-2 py-2 text-[13px] font-medium text-fg-dark sm:flex-none sm:rounded-full sm:px-4"
-        >
+        <Link href={nextHref} className={primary}>
           <span className="truncate">Next</span>
-          <IconChevron dir="right" className="h-4 w-4 shrink-0" />
+          <IconChevron dir="right" className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5" />
         </Link>
       ) : (
-        <span className="flex min-w-0 flex-1 cursor-not-allowed items-center justify-center gap-1 px-2 py-2 text-[13px] text-muted-dark sm:flex-none sm:px-4">
+        <span aria-disabled="true" className={off}>
           <span className="truncate">Next</span>
           <IconChevron dir="right" className="h-4 w-4 shrink-0" />
         </span>
       )}
-    </div>
+    </nav>
   );
 }
 
@@ -470,7 +478,7 @@ export default function ReaderPage({
     });
   };
 
-  const { prevHref, nextHref } = navHrefs(data, data.mangaSlug, chapter);
+  const { nextHref } = navHrefs(data, data.mangaSlug, chapter);
   const scrollTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
   // Tombol "Chapter berikut" mengambang — tampil saat hampir tamat agar
   // tidak perlu scroll ke nav bawah: scroll ≥95% (belum mentok, karena
@@ -611,44 +619,7 @@ export default function ReaderPage({
           Tab bar disembunyikan saat membaca, jadi cukup 1rem + safe-area dari bawah. */}
       {mode === "scroll" && showTapNav && (
         <div className="fixed inset-x-3 bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] z-40 sm:bottom-6">
-          <div className="mx-auto flex w-full max-w-3xl items-center gap-1.5 rounded-2xl border border-line-dark bg-ink-2/95 p-1.5 text-sm shadow-2xl backdrop-blur">
-            {prevHref ? (
-              <Link
-                href={prevHref}
-                className="flex min-w-0 flex-1 items-center justify-center gap-1 rounded-xl bg-accent px-2 py-2.5 text-[13px] font-semibold text-white"
-              >
-                <IconChevron dir="left" className="h-4 w-4 shrink-0" />
-                <span className="truncate">Prev</span>
-              </Link>
-            ) : (
-              <span className="flex min-w-0 flex-1 cursor-not-allowed items-center justify-center gap-1 px-2 py-2.5 text-[13px] text-muted-dark">
-                <IconChevron dir="left" className="h-4 w-4 shrink-0" />
-                <span className="truncate">Prev</span>
-              </span>
-            )}
-            <Link
-              href={`/komik/${data.mangaSlug}`}
-              aria-label="Semua chapter"
-              className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-line-dark px-2 py-2.5 text-[13px] font-medium text-fg-dark"
-            >
-              <IconList className="h-4 w-4 shrink-0" />
-              <span className="truncate">All</span>
-            </Link>
-            {nextHref ? (
-              <Link
-                href={nextHref}
-                className="flex min-w-0 flex-1 items-center justify-center gap-1 rounded-xl border border-line-dark px-2 py-2.5 text-[13px] font-medium text-fg-dark"
-              >
-                <span className="truncate">Next</span>
-                <IconChevron dir="right" className="h-4 w-4 shrink-0" />
-              </Link>
-            ) : (
-              <span className="flex min-w-0 flex-1 cursor-not-allowed items-center justify-center gap-1 px-2 py-2.5 text-[13px] text-muted-dark">
-                <span className="truncate">Next</span>
-                <IconChevron dir="right" className="h-4 w-4 shrink-0" />
-              </span>
-            )}
-          </div>
+          <ChapterNav data={data} slug={data.mangaSlug} chapter={chapter} floating />
         </div>
       )}
 

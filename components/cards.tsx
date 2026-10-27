@@ -28,12 +28,22 @@ const TYPE_STYLE: Record<string, string> = {
 };
 
 /** Tanda tipe komik — kecil, seperti cap kertas, satu warna per tipe. */
-export function TypeBadge({ type, className = "" }: { type?: string; className?: string }) {
+export function TypeBadge({
+  type,
+  className = "",
+  flush = false,
+}: {
+  type?: string;
+  className?: string;
+  /** Menempel di sudut cover: kotak tanpa lengkung, ukuran sama dengan SourceBadge. */
+  flush?: boolean;
+}) {
   if (!type) return null;
   const color = TYPE_STYLE[type.toLowerCase()] ?? "bg-muted";
+  const shape = flush ? "rounded-none px-2 py-1 text-[9px]" : "rounded-sm px-1.5 py-0.5 text-[10px]";
   return (
     <span
-      className={`inline-block max-w-full shrink-0 truncate rounded-sm px-1.5 py-0.5 text-[10px] font-extrabold uppercase leading-tight tracking-wide text-white ${color} ${className}`}
+      className={`inline-block max-w-full shrink-0 truncate font-extrabold uppercase leading-tight tracking-wide text-white ${shape} ${color} ${className}`}
     >
       {type}
     </span>
@@ -116,7 +126,7 @@ export function MangaGridCard({ item }: { item: MangaCard }) {
         )}
         {item.type && (
           <div className="absolute left-0 top-0">
-            <TypeBadge type={item.type} className="rounded-none px-2 py-1" />
+            <TypeBadge type={item.type} flush />
           </div>
         )}
         <SourceBadge

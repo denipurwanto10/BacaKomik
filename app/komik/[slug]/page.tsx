@@ -346,7 +346,7 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
             placeholder="Cari chapter..."
             aria-label="Cari chapter"
             enterKeyHint="search"
-            className="mb-2 h-12 w-full min-w-0 rounded-full border border-line bg-paper px-4 text-base text-fg outline-none focus-visible:border-accent sm:h-10 sm:max-w-xs sm:text-sm dark:border-line-dark dark:bg-ink dark:text-fg-dark"
+            className="search-field mb-2 h-12 w-full min-w-0 rounded-full border border-line bg-paper px-4 text-base text-fg outline-none sm:h-10 sm:max-w-xs sm:text-sm dark:border-line-dark dark:bg-ink dark:text-fg-dark"
           />
         )}
         {detail.chapters.length === 0 && (

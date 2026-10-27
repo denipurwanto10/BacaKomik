@@ -36,7 +36,7 @@ export function KomikListCard({ item }: { item: MangaCard }) {
         )}
         {item.type && (
           <div className="absolute left-0 top-0">
-            <TypeBadge type={item.type} className="rounded-none px-2 py-1" />
+            <TypeBadge type={item.type} flush />
           </div>
         )}
       </Link>

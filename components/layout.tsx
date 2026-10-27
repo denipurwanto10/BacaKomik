@@ -74,7 +74,7 @@ export function Header() {
 
         {/* Search + saran langsung — full width on desktop, hidden on mobile (bottom tab covers it) */}
         <form
-          className="relative hidden min-w-0 max-w-md flex-1 items-center self-center lg:flex xl:max-w-xl"
+          className="search-wrap relative hidden min-w-0 max-w-md flex-1 items-center self-center lg:flex xl:max-w-xl"
           onSubmit={(e) => {
             e.preventDefault();
             submitSearch();
@@ -85,7 +85,7 @@ export function Header() {
             value={q}
             onChange={setQ}
             onSubmit={submitSearch}
-            inputClassName="h-10 w-full min-w-0 rounded-xl border border-line bg-paper-2 pl-10 pr-3 text-sm text-fg outline-none transition-[border-color,box-shadow] placeholder:text-muted focus-visible:border-accent focus-visible:ring-4 focus-visible:ring-accent/15 dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark dark:placeholder:text-muted-dark"
+            inputClassName="search-field h-10 w-full min-w-0 rounded-xl border border-line bg-paper-2 pl-10 pr-3 text-sm text-fg outline-none placeholder:text-muted dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark dark:placeholder:text-muted-dark"
           />
         </form>
 
@@ -141,7 +141,7 @@ export function Header() {
       {mobileSearch && (
         <div className="mx-auto max-w-app px-3 pb-3 sm:px-4 lg:hidden">
           <form
-            className="relative flex min-w-0 items-center"
+            className="search-wrap relative flex min-w-0 items-center"
             onSubmit={(e) => {
               e.preventDefault();
               submitSearch();
@@ -153,7 +153,7 @@ export function Header() {
               onChange={setQ}
               onSubmit={submitSearch}
               autoFocus
-              inputClassName="h-11 w-full min-w-0 rounded-md border border-line bg-paper-2 pl-9 pr-4 text-base text-fg outline-none placeholder:text-muted focus-visible:border-accent dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark dark:placeholder:text-muted-dark"
+              inputClassName="search-field h-11 w-full min-w-0 rounded-xl border border-line bg-paper-2 pl-9 pr-4 text-base text-fg outline-none placeholder:text-muted dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark dark:placeholder:text-muted-dark"
             />
           </form>
         </div>

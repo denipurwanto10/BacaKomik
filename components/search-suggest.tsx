@@ -139,7 +139,7 @@ export function SearchSuggest({
       {showDropdown && (
         <div
           role="listbox"
-          className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-line bg-paper-2 dark:border-line-dark dark:bg-ink-2"
+          className="suggest-panel absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-line bg-paper-2 dark:border-line-dark dark:bg-ink-2"
         >
           {loading && (!items || items.length === 0) && (
             <p className="px-4 py-3 text-sm text-muted dark:text-muted-dark">Mencari…</p>
@@ -150,9 +150,9 @@ export function SearchSuggest({
             </p>
           )}
           {items && items.length > 0 && (
-            <ul className="max-h-[320px] overflow-y-auto py-1">
+            <ul className="max-h-[320px] overflow-y-auto p-1.5">
               {items.map((it, i) => (
-                <li key={`${it.slug}#${it.latestChapter?.url ?? ""}`} role="option" aria-selected={i === hi}>
+                <li key={`${it.slug}#${it.latestChapter?.url ?? ""}`} role="option" aria-selected={i === hi} className="suggest-item" data-active={i === hi || undefined}>
                   <Link
                     href={`/komik/${it.slug}`}
                     onClick={() => setOpen(false)}
@@ -160,9 +160,7 @@ export function SearchSuggest({
                       setHi(i);
                       prefetchApi(`/api/manga/${encodeURIComponent(it.slug)}`);
                     }}
-                    className={`flex min-w-0 items-center gap-2.5 px-3 py-2 ${
-                      i === hi ? "bg-paper-3 dark:bg-ink-3" : ""
-                    }`}
+                    className="suggest-link flex min-w-0 items-center gap-3 rounded-xl px-2.5 py-2"
                   >
                     {it.thumbnail ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -173,28 +171,34 @@ export function SearchSuggest({
                         decoding="async"
                         fetchPriority="low"
                         onLoad={(e) => e.currentTarget.classList.add("blur-done")}
-                        className="blur-up h-14 w-10 shrink-0 rounded-md bg-paper-3 object-cover dark:bg-ink-3"
+                        className="suggest-thumb blur-up h-14 w-10 shrink-0 rounded-lg bg-paper-3 object-cover dark:bg-ink-3"
                       />
                     ) : (
                       <span className="flex h-14 w-10 shrink-0 items-center justify-center rounded-md bg-paper-3 text-[9px] text-muted dark:bg-ink-3 dark:text-muted-dark">
                         ?
                       </span>
                     )}
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13px] font-semibold leading-snug text-fg dark:text-fg-dark">
+                    <span className="flex h-14 min-w-0 flex-1 flex-col justify-center gap-1.5">
+                      <span className="suggest-title block truncate text-[13px] font-semibold leading-tight text-fg dark:text-fg-dark">
                         {it.title}
                       </span>
-                      <span className="mt-0.5 flex min-w-0 items-center gap-1.5">
+                      <span className="flex min-w-0 items-center gap-2 leading-none">
+                        {it.latestSource || it.sources?.length ? (
+                          <SourceBadge
+                            className="leading-none"
+                            sources={it.latestSource ? [it.latestSource] : it.sources?.slice(0, 1)}
+                          />
+                        ) : null}
                         {it.latestChapter && (
-                          <span className="min-w-0 flex-1 truncate text-[11px] text-accent">
+                          <span className="min-w-0 truncate text-[11px] font-medium leading-none text-accent">
                             {it.latestChapter.label}
                           </span>
                         )}
-                        <SourceBadge
-                          sources={it.latestSource ? [it.latestSource] : it.sources?.slice(0, 1)}
-                        />
                       </span>
                     </span>
+                    <svg aria-hidden viewBox="0 0 20 20" className="suggest-arrow h-4 w-4 shrink-0 text-accent" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m8 5 5 5-5 5" />
+                    </svg>
                   </Link>
                 </li>
               ))}
@@ -206,7 +210,7 @@ export function SearchSuggest({
                 setOpen(false);
                 onSubmit();
               }}
-              className="w-full border-t border-line px-4 py-2.5 text-center text-xs font-semibold text-accent hover:underline dark:border-line-dark"
+              className="suggest-more w-full border-t border-line px-4 py-3 text-center text-xs font-semibold text-accent dark:border-line-dark"
             >
               Lihat semua hasil untuk &quot;{kw}&quot;
             </button>
