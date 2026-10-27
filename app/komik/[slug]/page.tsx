@@ -315,16 +315,27 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
 
       {/* Daftar chapter — kolom kanan yang menempel saat scroll di desktop */}
       <section className="min-w-0 rounded-2xl border border-line bg-paper-2 p-3 sm:p-4 lg:sticky lg:top-[calc(var(--header-h)+1rem)] lg:col-start-2 lg:row-start-1 lg:row-span-3 dark:border-line-dark dark:bg-ink-2">
-        <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
-          <h2 className="min-w-0 flex-1 truncate font-display text-base font-bold text-fg dark:text-fg-dark">
+        {/* Judul + tombol urut di baris atas; pencarian penuh selebar kartu di bawahnya. */}
+        <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
+          <h2 className="order-1 min-w-0 flex-1 truncate font-display text-base font-bold text-fg dark:text-fg-dark">
             Daftar Chapter ({detail.chapters.length})
           </h2>
+          {detail.chapters.length > 10 && (
+            <input
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="Cari chapter..."
+              aria-label="Cari chapter"
+              enterKeyHint="search"
+              className="search-field order-3 h-12 w-full min-w-0 basis-full rounded-full border border-line bg-paper px-4 text-base text-fg outline-none sm:h-10 sm:text-sm dark:border-line-dark dark:bg-ink dark:text-fg-dark"
+            />
+          )}
           {detail.chapters.length > 1 && (
             <button
               onClick={() => setAsc((a) => !a)}
               aria-label={asc ? "Urutkan terbaru dulu" : "Urutkan terlama dulu"}
               title={asc ? "Terbaru dulu" : "Terlama dulu"}
-              className="flex shrink-0 items-center gap-1 rounded-full border border-line bg-paper px-3 py-1.5 text-[11px] font-semibold text-muted hover:border-accent hover:text-accent sm:text-xs dark:border-line-dark dark:bg-ink dark:text-muted-dark"
+              className="order-2 flex shrink-0 items-center gap-1 rounded-full border border-line bg-paper px-3 py-1.5 text-[11px] font-semibold text-muted hover:border-accent hover:text-accent sm:text-xs dark:border-line-dark dark:bg-ink dark:text-muted-dark"
             >
               <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5">
                 <path
@@ -339,16 +350,6 @@ export default function MangaDetailPage({ params }: { params: Promise<{ slug: st
             </button>
           )}
         </div>
-        {detail.chapters.length > 10 && (
-          <input
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder="Cari chapter..."
-            aria-label="Cari chapter"
-            enterKeyHint="search"
-            className="search-field mb-2 h-12 w-full min-w-0 rounded-full border border-line bg-paper px-4 text-base text-fg outline-none sm:h-10 sm:max-w-xs sm:text-sm dark:border-line-dark dark:bg-ink dark:text-fg-dark"
-          />
-        )}
         {detail.chapters.length === 0 && (
           <EmptyState message="Belum ada chapter untuk komik ini di sumber data." />
         )}

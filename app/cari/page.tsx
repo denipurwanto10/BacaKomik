@@ -189,13 +189,22 @@ function CariContent() {
       <SectionHead title="Pencarian" />
       <form
         role="search"
-        className="search-wrap relative flex min-w-0 items-center"
+        className="search-wrap relative flex w-full min-w-0 items-center"
         onSubmit={(e) => {
           e.preventDefault();
           submit();
         }}
       >
         <label htmlFor="cari-q" className="sr-only">Cari judul komik</label>
+        <svg
+          aria-hidden
+          viewBox="0 0 24 24"
+          fill="none"
+          className="pointer-events-none absolute left-3.5 z-10 h-[18px] w-[18px] text-muted sm:left-4 sm:h-5 sm:w-5 dark:text-muted-dark"
+        >
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.8" />
+          <path d="m20 20-4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
         <SearchSuggest
           value={draft}
           onChange={setDraft}
@@ -203,14 +212,8 @@ function CariContent() {
           id="cari-q"
           autoFocus
           enabled={false}
-          inputClassName="search-field h-12 w-full min-w-0 rounded-full border border-line bg-paper-2 px-4 text-base text-fg outline-none placeholder:text-muted sm:h-11 sm:text-sm dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark dark:placeholder:text-muted-dark"
+          inputClassName="search-field h-12 w-full min-w-0 rounded-xl border border-line bg-paper-2 pl-11 pr-4 text-base text-fg outline-none placeholder:text-muted sm:h-14 sm:pl-12 sm:pr-5 sm:text-base dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark dark:placeholder:text-muted-dark"
         />
-        <button
-          type="submit"
-          className="absolute right-1.5 h-9 shrink-0 rounded-full bg-accent px-5 text-sm font-semibold text-white sm:h-8 sm:text-xs"
-        >
-          Cari
-        </button>
       </form>
 
       <div ref={listTopRef} className="scroll-mt-[calc(var(--header-h)+0.5rem)]">
