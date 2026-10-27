@@ -23,7 +23,7 @@ function isActive(pathname: string, href: string) {
 /** Logo mark: Rupture Panel — panel komik dibelah fracture kristalin, negative space membentuk K. */
 function Mark() {
   return (
-    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent text-white">
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-white shadow-[0_4px_14px_-4px_var(--color-accent)] transition-transform duration-200 group-hover/logo:scale-105">
       <svg viewBox="48 48 160 160" className="h-[26px] w-[26px]" fill="currentColor" aria-hidden="true">
         <path
           fillRule="evenodd"
@@ -64,8 +64,8 @@ export function Header() {
 
   return (
     <header data-app-header className="sticky top-0 z-40 border-b border-line bg-paper/90 backdrop-blur-md pt-[calc(env(safe-area-inset-top,0px)+16px)] md:pt-[env(safe-area-inset-top,0px)] dark:border-line-dark dark:bg-ink/90">
-      <div className="mx-auto flex h-14 max-w-app items-stretch gap-2 px-3 sm:gap-4 sm:px-4 lg:px-6">
-        <NavLink href="/" className="flex min-w-0 shrink-0 items-center gap-2.5" aria-label="KomikFrost, ke beranda">
+      <div className="mx-auto flex h-14 max-w-app items-stretch gap-2 md:h-16 px-3 sm:gap-4 sm:px-4 lg:px-6">
+        <NavLink href="/" className="group/logo flex min-w-0 shrink-0 items-center gap-2.5" aria-label="KomikFrost, ke beranda">
           <Mark />
           <span className="truncate font-display text-lg font-extrabold tracking-tight text-fg sm:text-xl dark:text-fg-dark">
             Komik<span className="text-accent">Frost</span>
@@ -80,30 +80,32 @@ export function Header() {
             submitSearch();
           }}
         >
-          <IconSearch className="pointer-events-none absolute left-3 z-10 h-4 w-4 text-muted dark:text-muted-dark" />
+          <IconSearch className="pointer-events-none absolute left-3.5 z-10 h-4 w-4 text-muted dark:text-muted-dark" />
           <SearchSuggest
             value={q}
             onChange={setQ}
             onSubmit={submitSearch}
-            inputClassName="h-9 w-full min-w-0 rounded-md border border-line bg-paper-2 pl-9 pr-3 text-sm text-fg outline-none placeholder:text-muted focus-visible:border-accent dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark dark:placeholder:text-muted-dark"
+            inputClassName="h-10 w-full min-w-0 rounded-xl border border-line bg-paper-2 pl-10 pr-3 text-sm text-fg outline-none transition-[border-color,box-shadow] placeholder:text-muted focus-visible:border-accent focus-visible:ring-4 focus-visible:ring-accent/15 dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark dark:placeholder:text-muted-dark"
           />
         </form>
 
-        {/* Desktop nav: tab bergaris bawah yang menempel ke tepi header */}
-        <nav className="ml-auto hidden shrink-0 items-stretch gap-0.5 md:flex">
+        {/* Desktop nav: pil dengan ikon; tab aktif diisi warna aksen lembut */}
+        <nav className="ml-auto hidden shrink-0 items-center gap-1 md:flex">
           {NAV.map((n) => {
             const active = isActive(pathname, n.href);
+            const Icon = n.icon;
             return (
               <NavLink
                 key={n.href}
                 href={n.href}
                 aria-current={active ? "page" : undefined}
-                className={`relative flex items-center px-2 text-[13px] font-semibold transition-colors after:absolute after:inset-x-2 lg:px-3 lg:text-sm lg:after:inset-x-3 after:-bottom-px after:h-[3px] after:bg-accent after:transition-transform after:duration-200 ${
+                className={`flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-[13px] font-semibold transition-colors lg:px-3 lg:text-sm ${
                   active
-                    ? "text-fg after:scale-x-100 dark:text-fg-dark"
-                    : "text-muted after:scale-x-0 hover:text-fg dark:text-muted-dark dark:hover:text-fg-dark"
+                    ? "bg-accent-soft text-accent-strong dark:bg-accent-soft-dark dark:text-white"
+                    : "text-muted hover:bg-paper-3 hover:text-fg dark:text-muted-dark dark:hover:bg-ink-3 dark:hover:text-fg-dark"
                 }`}
               >
+                <Icon className="hidden h-[17px] w-[17px] shrink-0 xl:block" />
                 {n.label}
               </NavLink>
             );
@@ -115,7 +117,7 @@ export function Header() {
             onClick={() => setMobileSearch((v) => !v)}
             aria-label="Cari komik"
             aria-expanded={mobileSearch}
-            className="flex h-10 w-10 items-center justify-center self-center rounded-md border border-line text-fg lg:hidden dark:border-line-dark dark:text-fg-dark"
+            className="flex h-10 w-10 items-center justify-center self-center rounded-xl border border-line bg-paper-2 text-fg lg:hidden dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark"
           >
             {mobileSearch ? (
               <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
@@ -128,7 +130,7 @@ export function Header() {
           <button
             onClick={toggle}
             aria-label="Ganti tema"
-            className="flex h-10 w-10 shrink-0 items-center justify-center self-center rounded-md border border-line text-fg transition-colors hover:border-accent hover:text-accent md:h-9 md:w-9 dark:border-line-dark dark:text-fg-dark"
+            className="flex h-10 w-10 shrink-0 items-center justify-center self-center rounded-xl border border-line bg-paper-2 text-fg transition-colors hover:border-accent hover:text-accent md:h-10 md:w-10 dark:border-line-dark dark:bg-ink-2 dark:text-fg-dark"
           >
             {theme === "dark" ? <IconSun className="h-[18px] w-[18px]" /> : <IconMoon className="h-[18px] w-[18px]" />}
           </button>

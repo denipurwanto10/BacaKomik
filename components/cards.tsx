@@ -1,7 +1,10 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { prefetchApi } from "@/lib/client";
+import { apiGet, peekApiCache, prefetchApi } from "@/lib/client";
 import { captureCoverMorph } from "@/lib/morph";
-import type { MangaCard } from "@/lib/api/types";
+import type { MangaCard, MangaDetail } from "@/lib/api/types";
 
 /** Saat cover diklik: rekam posisi + gambar untuk animasi terbang ke detail. */
 function coverMorphProps(slug: string) {
@@ -251,21 +254,59 @@ export function UpdateRow({ item }: { item: MangaCard }) {
   );
 }
 
-/** Baris ranking: nomor, cover kecil, judul, genre, chapter, views. Polos, dipisah garis tipis. */
+const RANK_TINT = ["text-gold", "text-gold", "text-gold"];
+
+/** Cache tipe per slug (modul-level) agar tidak fetch ulang. */
+const typeCache = new Map<string, string>();
+
+/** Ranking dari sumber data kerap tak membawa tipe. Bila kosong, ambil dari
+ *  detail komik (cache dulu, lalu fetch) supaya badge MANGA/MANHWA/MANHUA selalu ada. */
+function useResolvedType(item: MangaCard): string | undefined {
+  const [type, setType] = useState<string | undefined>(
+    () => item.type || typeCache.get(item.slug) || peekApiCache<MangaDetail>(`/api/manga/${encodeURIComponent(item.slug)}`)?.type,
+  );
+  useEffect(() => {
+    if (item.type) {
+      setType(item.type);
+      return;
+    }
+    const known = typeCache.get(item.slug);
+    if (known) {
+      setType(known);
+      return;
+    }
+    let off = false;
+    apiGet<MangaDetail>(`/api/manga/${encodeURIComponent(item.slug)}`)
+      .then((d) => {
+        if (d?.type) typeCache.set(item.slug, d.type);
+        if (!off && d?.type) setType(d.type);
+      })
+      .catch(() => {});
+    return () => {
+      off = true;
+    };
+  }, [item.slug, item.type]);
+  return type;
+}
+
+
+
+/** Baris ranking: lencana nomor, cover + tipe, judul, genre, views, chapter terbaru. */
 export function RankRow({ item }: { item: MangaCard }) {
   const detailPath = `/api/manga/${encodeURIComponent(item.slug)}`;
   const warm = () => prefetchApi(detailPath);
-  const top3 = typeof item.rank === "number" && item.rank <= 3;
+  const hasRank = typeof item.rank === "number";
+  const type = useResolvedType(item);
   return (
     <article
       onMouseEnter={warm}
       onTouchStart={warm}
-      className="cv-row relative flex min-w-0 items-center gap-3 rounded-xl border border-line bg-paper-2 p-2.5 transition-colors hover:border-accent hover:bg-paper-3/60 sm:gap-4 sm:p-3 dark:border-line-dark dark:bg-ink-2 dark:hover:bg-ink-3/70"
+      className="cv-row group relative flex min-w-0 items-center gap-2.5 rounded-xl border border-line bg-paper-2 p-2.5 transition-[border-color,background-color,transform] duration-200 hover:border-accent/70 hover:bg-paper-3/60 active:scale-[0.99] sm:gap-3.5 sm:p-3 dark:border-line-dark dark:bg-ink-2 dark:hover:bg-ink-3/70"
     >
-      {typeof item.rank === "number" && (
+      {hasRank && (
         <span
-          className={`w-6 shrink-0 text-center font-display text-lg font-extrabold tabular-nums sm:w-7 sm:text-xl ${
-            top3 ? "text-gold" : "text-muted dark:text-muted-dark"
+          className={`w-6 shrink-0 text-center font-display text-lg font-black tabular-nums sm:w-7 sm:text-xl ${
+            RANK_TINT[(item.rank as number) - 1] ?? "text-muted dark:text-muted-dark"
           }`}
         >
           {item.rank}
@@ -275,30 +316,58 @@ export function RankRow({ item }: { item: MangaCard }) {
         href={`/komik/${item.slug}`}
         aria-label={item.title}
         {...coverMorphProps(item.slug)}
-        className="relative z-10 h-[68px] w-[50px] shrink-0 overflow-hidden rounded-md bg-paper-3 sm:h-[84px] sm:w-[62px] dark:bg-ink-3"
+        className="relative z-10 h-[80px] w-[60px] shrink-0 overflow-hidden rounded-lg bg-paper-3 shadow-md shadow-black/20 ring-1 ring-black/5 sm:h-[96px] sm:w-[72px] dark:bg-ink-3 dark:ring-white/10"
       >
         {item.thumbnail ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.thumbnail} alt="" loading="lazy" decoding="async" fetchPriority="low" onLoad={(e) => e.currentTarget.classList.add("blur-done")} className="blur-up h-full w-full object-cover" />
+          <img
+            src={item.thumbnail}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            fetchPriority="low"
+            onLoad={(e) => e.currentTarget.classList.add("blur-done")}
+            className="blur-up h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
         ) : null}
       </Link>
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
         <Link
           href={`/komik/${item.slug}`}
           title={item.title}
-          className="truncate text-sm font-bold leading-snug text-fg after:absolute after:inset-0 after:content-[''] sm:text-[15px] lg:text-base dark:text-fg-dark"
+          className="break-words font-display text-sm font-bold leading-snug text-fg transition-colors after:absolute after:inset-0 after:content-[''] group-hover:text-accent sm:text-[15px] dark:text-fg-dark"
+          style={{
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}
         >
           {item.title}
         </Link>
-        <p className="truncate text-xs leading-tight text-muted sm:text-[13px] dark:text-muted-dark">
-          {[item.genre, item.views].filter(Boolean).join(" · ")}
-        </p>
+        {(item.genre || item.views || type) && (
+          <p className="flex min-w-0 items-center gap-1.5 text-[11px] leading-tight text-muted sm:text-xs dark:text-muted-dark">
+            {item.genre && <span className="truncate">{item.genre}</span>}
+            {item.genre && item.views && <span aria-hidden="true" className="h-0.5 w-0.5 shrink-0 rounded-full bg-current opacity-60" />}
+            {item.views && (
+              <span className="inline-flex shrink-0 items-center gap-1 tabular-nums">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                {String(item.views).replace(/\s*views?$/i, "")}
+              </span>
+            )}
+            {type && <TypeBadge type={type} className="ml-auto rounded-sm px-1.5 py-0.5" />}
+          </p>
+        )}
         {item.latestChapter && (
           <Link
             href={chapterPathToRoute(item.latestChapter.url)}
-            className="relative z-10 mt-0.5 w-fit max-w-full truncate text-xs font-semibold leading-tight text-accent sm:text-[13px]"
+            className="relative z-10 mt-1 inline-flex w-fit max-w-full items-center rounded-md bg-accent-soft px-2 py-1 text-[11px] font-semibold leading-tight text-accent-strong transition-colors hover:bg-accent hover:text-white sm:text-xs dark:bg-accent-soft-dark dark:text-accent"
           >
-            {item.latestChapter.label}
+            <span className="truncate">{item.latestChapter.label}</span>
+            <span aria-hidden="true" className="ml-1 opacity-70">›</span>
           </Link>
         )}
       </div>

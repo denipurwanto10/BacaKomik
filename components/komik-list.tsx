@@ -35,8 +35,8 @@ export function KomikListCard({ item }: { item: MangaCard }) {
           </span>
         )}
         {item.type && (
-          <div className="absolute right-1 top-1">
-            <TypeBadge type={item.type} />
+          <div className="absolute left-0 top-0">
+            <TypeBadge type={item.type} className="rounded-none px-2 py-1" />
           </div>
         )}
       </Link>
