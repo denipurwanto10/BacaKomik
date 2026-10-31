@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { searchManga } from "@/lib/api/search";
 import { guard, handle } from "../_lib";
 
+export const maxDuration = 30;
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const q = (searchParams.get("q") || "").trim();

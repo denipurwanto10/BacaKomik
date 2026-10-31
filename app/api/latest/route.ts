@@ -3,6 +3,7 @@ import { getLatestPaged } from "@/lib/api/manga";
 import { guard, handle } from "../_lib";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
 const ORDERBYS = ["modified", "date", "popular", "rand"] as const;
 type Orderby = (typeof ORDERBYS)[number];

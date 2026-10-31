@@ -3,6 +3,8 @@ import { getPopular } from "@/lib/api/manga";
 import type { RankPeriod } from "@/lib/api/komiku";
 import { guard, handle } from "../_lib";
 
+export const maxDuration = 30;
+
 const PERIODS: RankPeriod[] = ["harian", "mingguan", "bulanan", "total"];
 
 export async function GET(req: NextRequest) {

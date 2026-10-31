@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { getMangaByGenre } from "@/lib/api/genre";
 import { guard, handle } from "../../_lib";
 
+export const maxDuration = 30;
+
 export async function GET(req: NextRequest, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
   const { searchParams } = new URL(req.url);

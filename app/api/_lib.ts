@@ -10,8 +10,11 @@ import { isAuthed, rateLimited } from "@/lib/gate";
  * - Origin/Referer check — tolak embed lintas-situs (header mudah
  *   dipalsukan, jadi ini pertahanan kedua; gate password yang utama).
  */
-export async function guard(req: NextRequest): Promise<NextResponse | null> {
-  if (rateLimited(req)) {
+export async function guard(
+  req: NextRequest,
+  rate?: { limit: number; bucket: string },
+): Promise<NextResponse | null> {
+  if (rateLimited(req, rate?.limit, rate?.bucket)) {
     return NextResponse.json(
       { error: { message: "Terlalu banyak permintaan. Tunggu sebentar.", source: "rate-limit" } },
       { status: 429 },

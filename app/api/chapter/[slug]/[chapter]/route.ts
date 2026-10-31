@@ -4,6 +4,8 @@ import { getChapter } from "@/lib/api/chapter";
 import type { ComicSourceId } from "@/lib/api/aggregator";
 import { guard, handle } from "../../../_lib";
 
+export const maxDuration = 30;
+
 export async function GET(
   req: NextRequest,
   ctx: { params: Promise<{ slug: string; chapter: string }> },

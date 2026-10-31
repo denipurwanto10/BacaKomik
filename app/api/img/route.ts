@@ -13,9 +13,12 @@ import { guard } from "../_lib";
  *
  * Keamanan: hanya host upstream yang dikenal; path dibatasi ke gambar;
  * tanpa cookie/auth ke upstream; timeout 15 dtk; Content-Type dari
- * respons upstream yang tervalidasi; Cache-Control publik 1 hari.
+ * respons upstream yang tervalidasi; Cache-Control private 1 hari.
  */
 export const dynamic = "force-dynamic";
+// Upstream gambar bisa lambat (abort 15 dtk di bawah) — jangan biarkan
+// batas fungsi default memutus stream sebelum itu.
+export const maxDuration = 30;
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
@@ -38,7 +41,10 @@ const ALLOWED_HOSTS = new Set([
 const IMG_EXT = /\.(jpe?g|png|webp|gif|avif)(\?|$)/i;
 
 export async function GET(req: NextRequest) {
-  const blocked = await guard(req);
+  // Bucket gambar terpisah dengan batas tinggi: satu chapter berisi puluhan
+  // gambar, jadi memakai batas API (60/menit) membuat gambar ke-61 dst
+  // dijawab 429 — penyebab utama halaman chapter tampil kosong.
+  const blocked = await guard(req, { limit: 600, bucket: "img" });
   if (blocked) return blocked;
 
   const raw = (req.nextUrl.searchParams.get("u") || "").trim();
@@ -89,7 +95,9 @@ export async function GET(req: NextRequest) {
       status: 200,
       headers: {
         "Content-Type": ct,
-        "Cache-Control": "public, max-age=86400, stale-while-revalidate=86400",
+        // Route ini di belakang gate → cache browser saja (private), jangan
+        // biarkan CDN menyajikan gambar kepada request tanpa sesi.
+        "Cache-Control": "private, max-age=86400, stale-while-revalidate=86400",
         "X-Content-Type-Options": "nosniff",
       },
     });

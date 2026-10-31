@@ -581,18 +581,21 @@ export default function ReaderPage({
               fetchPriority={i === 0 ? "high" : i < 3 ? "auto" : "low"}
               decoding={i < 3 ? "sync" : "async"}
               draggable={false}
-              onError={() => {
+              onError={(e) => {
+                // Gambar lewat proxy: kegagalan upstream sering sementara
+                // (timeout/5xx). Coba sekali lagi sebelum menyerah.
+                const el = e.currentTarget;
+                if (src.startsWith("/api/img") && !el.dataset.retried) {
+                  el.dataset.retried = "1";
+                  el.src = `${src}&r=${Date.now()}`;
+                  return;
+                }
                 // Fallback sesuai perilaku Komiku: imageN.komiku.to → img.komiku.org
                 const alt = src.replace(/image\d+\.komiku\.to/i, "img.komiku.org");
-                if (alt !== src) {
-                  const el = document.querySelector<HTMLImageElement>(
-                    `img[data-pg="${i}"]`,
-                  );
-                  if (el && !el.dataset.fb) {
-                    el.dataset.fb = "1";
-                    el.src = alt;
-                    return;
-                  }
+                if (alt !== src && !el.dataset.fb) {
+                  el.dataset.fb = "1";
+                  el.src = alt;
+                  return;
                 }
                 setFailed((s) => new Set(s).add(i));
               }}
@@ -718,15 +721,18 @@ function PageMode({
             src={src}
             alt={`${data.title} halaman ${cur + 1}`}
             draggable={false}
-            onError={() => {
+            onError={(e) => {
+              const el = e.currentTarget;
+              if (src.startsWith("/api/img") && !el.dataset.retried) {
+                el.dataset.retried = "1";
+                el.src = `${src}&r=${Date.now()}`;
+                return;
+              }
               const alt = src.replace(/image\d+\.komiku\.to/i, "img.komiku.org");
-              if (alt !== src) {
-                const el = document.querySelector<HTMLImageElement>(`img[data-pg="${cur}"]`);
-                if (el && !el.dataset.fb) {
-                  el.dataset.fb = "1";
-                  el.src = alt;
-                  return;
-                }
+              if (alt !== src && !el.dataset.fb) {
+                el.dataset.fb = "1";
+                el.src = alt;
+                return;
               }
               setFailed((s) => new Set(s).add(cur));
             }}

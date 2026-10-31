@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { prefetchApi } from "@/lib/client";
+import { useIntentPrefetch } from "@/lib/use-intent-prefetch";
 import { captureCoverMorph } from "@/lib/morph";
 import type { MangaCard } from "@/lib/api/types";
 import { chapterPathToRoute, SourceBadge, TypeBadge } from "./cards";
@@ -12,12 +12,11 @@ import { chapterPathToRoute, SourceBadge, TypeBadge } from "./cards";
  * Dipakai /terbaru dan /genre/[slug] agar tampilannya sama.
  */
 export function KomikListCard({ item }: { item: MangaCard }) {
-  const warm = () => prefetchApi(`/api/manga/${encodeURIComponent(item.slug)}`);
+  const warm = useIntentPrefetch(`/api/manga/${encodeURIComponent(item.slug)}`);
   const meta = [item.genre, item.updatedAt].filter(Boolean).join(" | ");
   return (
     <article
-      onMouseEnter={warm}
-      onTouchStart={warm}
+      {...warm}
       className="cv-auto flex min-w-0 gap-2.5 border-b border-line py-3 last:border-0 sm:gap-3.5 sm:py-3.5 dark:border-line-dark"
     >
       <Link

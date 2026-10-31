@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { apiGet, peekApiCache, prefetchApi } from "@/lib/client";
+import { apiGet, peekApiCache } from "@/lib/client";
+import { useIntentPrefetch } from "@/lib/use-intent-prefetch";
 import { captureCoverMorph } from "@/lib/morph";
 import type { MangaCard, MangaDetail } from "@/lib/api/types";
 
@@ -92,14 +93,13 @@ export function SourceBadge({
 
 /** Kartu grid vertikal: cover bersudut miring + judul + chapter terbaru. Tanpa bingkai. */
 export function MangaGridCard({ item }: { item: MangaCard }) {
-  const detailPath = `/api/manga/${encodeURIComponent(item.slug)}`;
   // Hover/sentuh = niat membuka — panaskan data detail agar halaman
-  // tujuan terbuka dari cache (terasa instan).
-  const warm = () => prefetchApi(detailPath);
+  // tujuan terbuka dari cache (terasa instan). Sentuhan yang berubah jadi
+  // scroll dibatalkan, lihat useIntentPrefetch.
+  const warm = useIntentPrefetch(`/api/manga/${encodeURIComponent(item.slug)}`);
   return (
     <article
-      onMouseEnter={warm}
-      onTouchStart={warm}
+      {...warm}
       className="cv-auto group flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-paper-2 transition-colors duration-200 hover:border-accent/60 dark:border-line-dark dark:bg-ink-2"
     >
       <Link
@@ -163,12 +163,11 @@ export function MangaGridCard({ item }: { item: MangaCard }) {
  * judul di blok solid (bukan gradien) menempel di dasar.
  */
 export function UpdateTile({ item, featured = false }: { item: MangaCard; featured?: boolean }) {
-  const warm = () => prefetchApi(`/api/manga/${encodeURIComponent(item.slug)}`);
+  const warm = useIntentPrefetch(`/api/manga/${encodeURIComponent(item.slug)}`);
   if (!featured) return <MangaGridCard item={item} />;
   return (
     <article
-      onMouseEnter={warm}
-      onTouchStart={warm}
+      {...warm}
       className="group relative aspect-[16/11] min-w-0 md:absolute md:inset-0 md:aspect-auto"
     >
       <Link
@@ -206,11 +205,10 @@ export function UpdateTile({ item, featured = false }: { item: MangaCard; featur
 /** Baris update horizontal: thumb landscape + judul + meta + chapter. */
 export function UpdateRow({ item }: { item: MangaCard }) {
   const detailPath = `/api/manga/${encodeURIComponent(item.slug)}`;
-  const warm = () => prefetchApi(detailPath);
+  const warm = useIntentPrefetch(detailPath);
   return (
     <article
-      onMouseEnter={warm}
-      onTouchStart={warm}
+      {...warm}
       className="cv-row flex min-w-0 gap-2.5 border-b border-line py-2.5 last:border-0 sm:gap-3 sm:py-3 dark:border-line-dark"
     >
       <Link
@@ -304,13 +302,12 @@ function useResolvedType(item: MangaCard): string | undefined {
 /** Baris ranking: lencana nomor, cover + tipe, judul, genre, views, chapter terbaru. */
 export function RankRow({ item }: { item: MangaCard }) {
   const detailPath = `/api/manga/${encodeURIComponent(item.slug)}`;
-  const warm = () => prefetchApi(detailPath);
+  const warm = useIntentPrefetch(detailPath);
   const hasRank = typeof item.rank === "number";
   const type = useResolvedType(item);
   return (
     <article
-      onMouseEnter={warm}
-      onTouchStart={warm}
+      {...warm}
       className="cv-row group relative flex min-w-0 items-center gap-2.5 rounded-xl border border-line bg-paper-2 p-2.5 transition-[border-color,background-color,transform] duration-200 hover:border-accent/70 hover:bg-paper-3/60 active:scale-[0.99] sm:gap-3.5 sm:p-3 dark:border-line-dark dark:bg-ink-2 dark:hover:bg-ink-3/70"
     >
       {hasRank && (

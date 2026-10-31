@@ -14,7 +14,12 @@ import {
 } from "./shinigami";
 import { getMangaDetail } from "./manga";
 import { chapterNum, type ComicSourceId, type MergedMangaDetail } from "./aggregator";
+import { createKeyedCache } from "./cache";
 import type { ChapterData } from "./types";
+
+/** Chapter tidak berubah setelah terbit — cache 5 menit cukup; klik
+ *  Prev/Next berulang tidak perlu menyentuh upstream sama sekali. */
+const chapterCache = createKeyedCache<ChapterData>(5 * 60_000, 80);
 
 /**
  * Ambil satu chapter.
@@ -30,6 +35,16 @@ export async function getChapter(
 ): Promise<ChapterData> {
   const s = slug.replace(/^\/+|\/+$/g, "");
   const c = chapter.replace(/^\/+|\/+$/g, "");
+  return chapterCache.load(`${s}/${c}/${source ?? "auto"}`, () =>
+    loadChapter(s, c, source),
+  );
+}
+
+async function loadChapter(
+  s: string,
+  c: string,
+  source?: ComicSourceId,
+): Promise<ChapterData> {
   const num = parseNumToken(c);
 
   // Override eksplisit (dipakai ?source=... saat satu sisi gagal total).
@@ -72,7 +87,7 @@ async function getChapterMerged(
   num: number,
   prefer?: ComicSourceId,
 ): Promise<ChapterData> {
-  const merged = (await getMangaDetail(slug)) as MergedMangaDetail;
+  const merged = (await getMangaDetail(slug, { deep: false })) as MergedMangaDetail;
   const shinigamiId = merged.sourceSlug?.shinigami;
   const item = Number.isFinite(num)
     ? merged.chapters.find((ch) => Math.abs(chapterNum(ch.title) - num) < 1e-6)
@@ -113,7 +128,7 @@ async function getChapterMerged(
             : await Promise.reject(new KomikuError("Tidak tersedia di Shinigami.", slug))
           : src === "komikcast"
             ? await fetchKomikcastChapter(komikcastUrl)
-            : await fetchChapter(komikuUrl);
+            : await fetchChapter(komikuUrl, { nav: false });
       return withMergedNav(data, merged, num);
     } catch (e) {
       lastErr = e;

@@ -4,6 +4,9 @@ import { getLatest, getPopular, getRecommended } from "@/lib/api/manga";
 import { guard, handle } from "../_lib";
 
 export const dynamic = "force-dynamic";
+// Rantai scrape multi-source bisa melewati batas default lama (10 dtk) saat
+// satu upstream lambat — 504 membuat beranda kosong.
+export const maxDuration = 30;
 
 type HomeData = { latest: unknown[]; popular: unknown[]; recommended: unknown[] };
 

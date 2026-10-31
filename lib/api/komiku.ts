@@ -532,7 +532,10 @@ export function parseChapterPath(path: string): { mangaSlug: string; chapter: st
   return { mangaSlug: m[1], chapter: m[2] };
 }
 
-export async function fetchChapter(chapterPath: string): Promise<ChapterData> {
+export async function fetchChapter(
+  chapterPath: string,
+  opts: { nav?: boolean } = {},
+): Promise<ChapterData> {
   const clean = "/" + chapterPath.replace(/^\/+|\/+$/g, "") + "/";
   const parsed = parseChapterPath(clean);
   if (!parsed) {
@@ -578,24 +581,29 @@ export async function fetchChapter(chapterPath: string): Promise<ChapterData> {
   // index-1 = lebih baru (Next), index+1 = lebih lama (Prev).
   // Tanpa ini tombol Next hanya menebak "+1" — salah untuk chapter
   // desimal (11-2), chapter lompat, atau judul oneshot.
+  // `nav: false` dipakai jalur merge: prev/next di sana ditulis ulang dari
+  // daftar chapter gabungan, jadi scrape detail kedua ini murni pemborosan
+  // (satu request upstream penuh per chapter yang dibuka).
   let nextUrl: string | undefined;
-  try {
-    const detailHtml = await fetchHtml(`${KOMIKU_BASE}/manga/${encodeURIComponent(mangaSlug)}/`);
-    const $$ = cheerio.load(detailHtml);
-    const list: string[] = [];
-    $$("table#Daftar_Chapter tbody tr td.judulseries a[href]").each((_, a) => {
-      const href = toPath($$(a).attr("href"));
-      if (href && href.includes("-chapter-")) list.push(href);
-    });
-    const norm = (u: string) => u.replace(/\/+$/, "").toLowerCase();
-    const idx = list.findIndex((u) => norm(u) === norm(clean));
-    if (idx > 0) nextUrl = list[idx - 1];
-    // Koreksi Prev dari sumber yang sama bila ada (lebih tepercaya
-    // daripada tebakan link halaman).
-    if (idx >= 0 && idx + 1 < list.length) prevUrl = list[idx + 1];
-  } catch {
-    // Gagal memuat daftar chapter — navigasi tetap jalan dengan prevUrl
-    // dari toolbar + tebakan Next di frontend.
+  if (opts.nav !== false) {
+    try {
+      const detailHtml = await fetchHtml(`${KOMIKU_BASE}/manga/${encodeURIComponent(mangaSlug)}/`);
+      const $$ = cheerio.load(detailHtml);
+      const list: string[] = [];
+      $$("table#Daftar_Chapter tbody tr td.judulseries a[href]").each((_, a) => {
+        const href = toPath($$(a).attr("href"));
+        if (href && href.includes("-chapter-")) list.push(href);
+      });
+      const norm = (u: string) => u.replace(/\/+$/, "").toLowerCase();
+      const idx = list.findIndex((u) => norm(u) === norm(clean));
+      if (idx > 0) nextUrl = list[idx - 1];
+      // Koreksi Prev dari sumber yang sama bila ada (lebih tepercaya
+      // daripada tebakan link halaman).
+      if (idx >= 0 && idx + 1 < list.length) prevUrl = list[idx + 1];
+    } catch {
+      // Gagal memuat daftar chapter — navigasi tetap jalan dengan prevUrl
+      // dari toolbar + tebakan Next di frontend.
+    }
   }
 
   const chapterLabel =

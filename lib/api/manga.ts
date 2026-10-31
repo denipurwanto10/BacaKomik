@@ -40,6 +40,7 @@ import {
   type MergedMangaCard,
   type MergedMangaDetail,
 } from "./aggregator";
+import { createKeyedCache } from "./cache";
 import type { MangaCard, MangaDetail, PagedResult } from "./types";
 
 /**
@@ -293,8 +294,29 @@ export async function getLatestUpdate(): Promise<MangaCard[]> {
  * Komikcast selalu lewat resolve judul (exact match) karena skema slug-nya
  * beda (tanpa "-id"). Judul diambil dari hasil Komiku/Shinigami bila ada,
  * else dari slug.
+ *
+ * Cache memori 30 dtk: reader memanggil detail yang sama untuk tiap chapter
+ * (butuh daftar chapter + chapter_id), jadi tanpa cache setiap klik Next
+ * mengulang seluruh rantai scrape tiga source.
+ *
+ * `deep: false` melewati tahap resolve sekunder (Komikcast via judul +
+ * balik ke Shinigami). Reader tidak butuh itu: URL chapter Komikcast bisa
+ * dirakit dari slug + nomor, dan navigasi tetap ditulis ulang dari daftar
+ * gabungan — sementara tahap itu menambah 2-3 request berantai per chapter.
  */
-export async function getMangaDetail(slug: string): Promise<MangaDetail> {
+const detailCache = createKeyedCache<MangaDetail>(30_000, 60);
+
+export async function getMangaDetail(
+  slug: string,
+  opts: { deep?: boolean } = {},
+): Promise<MangaDetail> {
+  const deep = opts.deep !== false;
+  return detailCache.load(`${deep ? "deep" : "fast"}:${slug}`, () =>
+    buildMangaDetail(slug, deep),
+  );
+}
+
+async function buildMangaDetail(slug: string, deep: boolean): Promise<MangaDetail> {
   const { data } = await fetchAllSettled(
     {
       komiku: () => fetchMangaDetail(slug),
@@ -321,7 +343,7 @@ export async function getMangaDetail(slug: string): Promise<MangaDetail> {
   // Tahap 2: resolve Komikcast via judul (exact match, konservatif).
   // Gagal = Komikcast absen, sisi lain tetap serve. AltTitle (EN) ikut
   // diteruskan sebagai jembatan bila judul utama beda ejaan.
-  if (!data.komikcast && !isShiniId(slug)) {
+  if (deep && !data.komikcast && !isShiniId(slug)) {
     const title = data.shinigami?.title ?? data.komiku?.title ?? slug;
     const alt = data.shinigami?.altTitle ?? data.komiku?.altTitle;
     try {
@@ -333,7 +355,7 @@ export async function getMangaDetail(slug: string): Promise<MangaDetail> {
   // Tahap 2b: slug Komikcast-only → coba resolve Shinigami via judul+alt
   // Komikcast (exact). Berhasil = halaman detail ikut dapat chapter + cover
   // Shinigami; gagal = tetap serve Komiku+Komikcast.
-  if (!data.shinigami && data.komikcast && !isShiniId(slug)) {
+  if (deep && !data.shinigami && data.komikcast && !isShiniId(slug)) {
     try {
       data.shinigami = await resolveShiniDetailForSlug(
         data.komikcast.slug,

@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { getMangaDetail } from "@/lib/api/manga";
 import { guard, handle } from "../../_lib";
 
+export const maxDuration = 30;
+
 export async function GET(req: NextRequest, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
   // Slug persen-encode rusak membuat decodeURIComponent melempar URIError

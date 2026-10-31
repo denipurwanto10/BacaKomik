@@ -52,19 +52,27 @@ const hits = new Map<string, { n: number; reset: number }>();
 const WINDOW_MS = 60_000;
 const LIMIT = 60; // 60 req/menit/IP untuk /api/*
 
-export function rateLimited(req: Request): boolean {
+/**
+ * @param limit  batas per menit untuk bucket ini
+ * @param bucket nama bucket — tiap bucket punya hitungan sendiri.
+ *   Gambar reader WAJIB punya bucket terpisah: satu chapter bisa 20-100
+ *   gambar, jadi ikut menghitung di bucket API (60/menit) membuat gambar
+ *   berikutnya dijawab 429 dan halaman tampil kosong.
+ */
+export function rateLimited(req: Request, limit = LIMIT, bucket = "api"): boolean {
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-real-ip") ||
     "unknown";
+  const key = `${bucket}:${ip}`;
   const now = Date.now();
-  const rec = hits.get(ip);
+  const rec = hits.get(key);
   if (!rec || now > rec.reset) {
-    hits.set(ip, { n: 1, reset: now + WINDOW_MS });
+    hits.set(key, { n: 1, reset: now + WINDOW_MS });
     return false;
   }
   rec.n += 1;
-  return rec.n > LIMIT;
+  return rec.n > limit;
 }
 
 /** Cek password untuk dipakai route /api/gate (dibutuhkan di sana). */
